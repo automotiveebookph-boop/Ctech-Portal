@@ -30,11 +30,10 @@ fs.mkdirSync(`${OUTPUT}/static`, { recursive: true })
 // Copy all server files into the function directory
 fs.cpSync('dist/server', FUNC_DIR, { recursive: true })
 
-// Vercel Node.js function config
+// Vercel Edge Function config (TanStack Start uses Fetch API)
 fs.writeFileSync(`${FUNC_DIR}/.vc-config.json`, JSON.stringify({
-  runtime: 'nodejs22.x',
-  handler: 'server.js',
-  launcherType: 'Nodejs'
+  runtime: 'edge',
+  entrypoint: 'server.js'
 }, null, 2))
 
 // Copy static client assets
