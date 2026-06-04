@@ -1,5 +1,23 @@
-// TanStack Start server/deployment configuration is in app.config.ts
-// This file is kept minimal to satisfy TypeScript tooling
 import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
+import tsConfigPaths from 'vite-tsconfig-paths'
+import { TanStackRouterVite } from '@tanstack/router-plugin/vite'
 
-export default defineConfig({})
+export default defineConfig({
+  plugins: [
+    TanStackRouterVite({
+      autoCodeSplitting: true,
+    }),
+    react(),
+    tailwindcss(),
+    tsConfigPaths(),
+  ],
+  resolve: {
+    dedupe: ['react', 'react-dom', '@tanstack/react-router'],
+  },
+  server: {
+    port: 3000,
+    host: '0.0.0.0',
+  },
+})
