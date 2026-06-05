@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { CalendarCheck, CheckCircle2, Clock, X } from "lucide-react";
+import { CalendarCheck, CheckCircle2, Clock, Search, X } from "lucide-react";
 import { supabaseFleet } from "@/lib/supabase-fleet";
 import { formatDate } from "@/lib/my-car-session";
 
@@ -41,15 +41,19 @@ type ModalState =
   | { kind: "complete"; row: Row }
   | { kind: "cancel"; row: Row };
 
+const today = () => new Date().toISOString().slice(0, 10);
+
 export function AdminAppointments({
-  showFilter = false,
   title = "Appointment Requests",
-}: { showFilter?: boolean; title?: string } = {}) {
+}: { title?: string } = {}) {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<ModalState>({ kind: "none" });
   const [saving, setSaving] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"all" | Row["status"]>("all");
+  const [search, setSearch] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
 
   async function load() {
     setLoading(true);
@@ -76,6 +80,22 @@ export function AdminAppointments({
     const d = new Date(r.preferred_date);
     return d >= today && d <= inOneWeek;
   }).length;
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    return rows.filter((r) => {
+      if (statusFilter !== "all" && r.status !== statusFilter) return false;
+      if (fromDate && r.preferred_date < fromDate) return false;
+      if (toDate && r.preferred_date > toDate) return false;
+      if (!q) return true;
+      return (
+        (r.customers?.full_name ?? "").toLowerCase().includes(q) ||
+        (r.vehicles?.plate_number ?? "").toLowerCase().includes(q) ||
+        (r.service_type ?? "").toLowerCase().includes(q) ||
+        (r.notes ?? "").toLowerCase().includes(q)
+      );
+    });
+  }, [rows, statusFilter, search, fromDate, toDate]);
 
   async function doConfirm() {
     if (modal.kind !== "confirm") return;
@@ -156,8 +176,44 @@ export function AdminAppointments({
           />
         </div>
 
-        {showFilter && (
-          <div className="mb-4 flex flex-wrap items-center gap-2">
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <div className="relative min-w-[200px] flex-1 max-w-sm">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search customer, plate, service…"
+              className="w-full rounded-lg border border-stone-300 bg-white py-2 pl-10 pr-3 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-stone-900"
+            />
+          </div>
+          <label className="flex items-center gap-2 text-sm text-stone-600">
+            From:
+            <input
+              type="date"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+              className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="flex items-center gap-2 text-sm text-stone-600">
+            To:
+            <input
+              type="date"
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+              className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
+            />
+          </label>
+          {(search || fromDate || toDate) && (
+            <button
+              onClick={() => { setSearch(""); setFromDate(""); setToDate(""); }}
+              className="text-sm text-stone-500 underline"
+            >
+              Reset
+            </button>
+          )}
+          <div className="flex flex-wrap gap-2">
             {(["all", "pending", "confirmed", "completed", "cancelled"] as const).map((s) => (
               <button
                 key={s}
@@ -173,7 +229,7 @@ export function AdminAppointments({
               </button>
             ))}
           </div>
-        )}
+        </div>
 
         <div className="overflow-hidden rounded-xl border border-stone-200 bg-white">
           <div className="overflow-x-auto">
@@ -196,16 +252,14 @@ export function AdminAppointments({
                       Loading…
                     </td>
                   </tr>
-                ) : rows.length === 0 ? (
+                ) : filtered.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-4 py-10 text-center text-stone-500">
-                      No appointment requests yet.
+                      No appointments match these filters.
                     </td>
                   </tr>
                 ) : (
-                  rows
-                    .filter((r) => statusFilter === "all" || r.status === statusFilter)
-                    .map((r) => (
+                  filtered.map((r) => (
                     <tr key={r.id} className="hover:bg-stone-50">
                       <td className="px-4 py-4 align-top">
                         <div className="text-xs text-stone-500">
