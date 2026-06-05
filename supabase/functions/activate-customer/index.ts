@@ -4,28 +4,44 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+  });
+}
+
 serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
+  }
   if (req.method !== "POST") {
-    return new Response("Method not allowed", { status: 405 });
+    return json({ error: "Method not allowed" }, 405);
   }
 
   try {
     const { contact_request_id, email, full_name, phone } = await req.json();
 
     if (!contact_request_id || !email || !full_name) {
-      return new Response(JSON.stringify({ error: "Missing required fields" }), { status: 400 });
+      return json({ error: "Missing required fields" }, 400);
     }
 
     const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
-    // 1. Check if user already exists — direct SQL lookup (fast, avoids listUsers pagination)
+    // 1. Check if customer already exists (fast direct lookup, no listUsers)
     const { data: existingRow } = await supabase
       .from("customers")
       .select("id")
       .eq("email", email)
       .maybeSingle();
     if (existingRow) {
-      return new Response(JSON.stringify({ error: "A customer with this email already exists." }), { status: 409 });
+      return json({ error: "A customer with this email already exists." }, 409);
     }
 
     // 2. Create customer record
@@ -36,7 +52,7 @@ serve(async (req) => {
       .single();
 
     if (customerError) {
-      return new Response(JSON.stringify({ error: "Failed to create customer: " + customerError.message }), { status: 500 });
+      return json({ error: "Failed to create customer: " + customerError.message }, 500);
     }
 
     // 3. Invite user via email (sends set-password link)
@@ -46,9 +62,8 @@ serve(async (req) => {
     });
 
     if (inviteError) {
-      // Rollback customer record
       await supabase.from("customers").delete().eq("id", customer.id);
-      return new Response(JSON.stringify({ error: "Failed to send invite: " + inviteError.message }), { status: 500 });
+      return json({ error: "Failed to send invite: " + inviteError.message }, 500);
     }
 
     // 4. Create user_roles entry
@@ -59,7 +74,7 @@ serve(async (req) => {
     });
 
     if (roleError) {
-      return new Response(JSON.stringify({ error: "User invited but role assignment failed: " + roleError.message }), { status: 500 });
+      return json({ error: "User invited but role assignment failed: " + roleError.message }, 500);
     }
 
     // 5. Mark contact_request as activated
@@ -68,8 +83,8 @@ serve(async (req) => {
       .update({ status: "activated" })
       .eq("id", contact_request_id);
 
-    return new Response(JSON.stringify({ success: true, customer_id: customer.id }), { status: 200 });
+    return json({ success: true, customer_id: customer.id });
   } catch (err) {
-    return new Response(JSON.stringify({ error: String(err) }), { status: 500 });
+    return json({ error: String(err) }, 500);
   }
 });
