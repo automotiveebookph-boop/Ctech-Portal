@@ -134,7 +134,7 @@ export function AdminSidebar({ email }: { email?: string }) {
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto p-4">
-          {NAV.map(({ to, label, icon: Icon, showBadge }) => {
+          {NAV.map(({ to, label, icon: Icon, showBadge, showRequestsBadge }) => {
             const active = pathname === to;
             return (
               <Link
