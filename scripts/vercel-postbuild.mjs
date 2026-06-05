@@ -1,43 +1,45 @@
 /**
- * Post-build script: converts TanStack Start's dist/ output
- * into Vercel's Build Output API v3 format (.vercel/output/).
+ * Post-build script for SPA mode:
+ * TanStack Start with spa:true produces dist/client/ with index.html
+ * We create Vercel Build Output API structure for static serving.
  */
 
 import fs from 'fs'
+import path from 'path'
 
 const OUTPUT = '.vercel/output'
-const FUNC_DIR = `${OUTPUT}/functions/ssr.func`
 
 // Clean previous output
 if (fs.existsSync(OUTPUT)) {
   fs.rmSync(OUTPUT, { recursive: true })
 }
 
-// Create directories
-fs.mkdirSync(FUNC_DIR, { recursive: true })
+// Create static output directory
 fs.mkdirSync(`${OUTPUT}/static`, { recursive: true })
 
-// Copy all server files into the function directory
-fs.cpSync('dist/server', FUNC_DIR, { recursive: true })
+// Check if SPA index.html exists
+const spaIndex = 'dist/client/index.html'
+const clientDir = 'dist/client'
 
-// Copy the pre-written Node.js handler wrapper (ESM)
-fs.copyFileSync('scripts/vercel-handler.mjs', `${FUNC_DIR}/handler.mjs`)
+if (!fs.existsSync(spaIndex)) {
+  // If no index.html, check dist/ directly
+  const distIndex = 'dist/index.html'
+  if (fs.existsSync(distIndex)) {
+    fs.cpSync('dist', `${OUTPUT}/static`, { recursive: true })
+    console.log('Copied from dist/')
+  } else {
+    console.log('No index.html found - listing dist/client contents:')
+    if (fs.existsSync(clientDir)) {
+      console.log(fs.readdirSync(clientDir))
+    }
+    process.exit(1)
+  }
+} else {
+  fs.cpSync(clientDir, `${OUTPUT}/static`, { recursive: true })
+  console.log('Copied from dist/client/')
+}
 
-// Add package.json to mark directory as ESM
-fs.writeFileSync(`${FUNC_DIR}/package.json`, JSON.stringify({ type: 'module' }, null, 2))
-
-// Vercel Node.js function config
-fs.writeFileSync(`${FUNC_DIR}/.vc-config.json`, JSON.stringify({
-  runtime: 'nodejs22.x',
-  handler: 'handler.mjs',
-  launcherType: 'Nodejs',
-  shouldAddHelpers: false
-}, null, 2))
-
-// Copy static client assets
-fs.cpSync('dist/client', `${OUTPUT}/static`, { recursive: true })
-
-// Routing config
+// SPA routing: all routes → index.html
 fs.writeFileSync(`${OUTPUT}/config.json`, JSON.stringify({
   version: 3,
   routes: [
@@ -47,8 +49,8 @@ fs.writeFileSync(`${OUTPUT}/config.json`, JSON.stringify({
       continue: true
     },
     { handle: 'filesystem' },
-    { src: '/(.*)', dest: '/ssr' }
+    { src: '/(.*)', dest: '/index.html' }
   ]
 }, null, 2))
 
-console.log('✅ Vercel Build Output created at .vercel/output/')
+console.log('✅ Vercel static SPA output created at .vercel/output/')
