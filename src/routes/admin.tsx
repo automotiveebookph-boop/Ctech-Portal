@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Bell, CalendarCheck, Car, Clock, TrendingUp, Users } from "lucide-react";
+import { Bell, CalendarCheck, CalendarClock, Car, CheckCircle2, Clock, TrendingUp, Users } from "lucide-react";
 import { supabaseFleet } from "@/lib/supabase-fleet";
 import { AdminSidebar } from "@/components/AdminSidebar";
 import {
@@ -99,23 +99,38 @@ function AdminOverview({ email }: { email: string }) {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [pricing, setPricing] = useState<Pricing[]>([]);
   const [pendingBookings, setPendingBookings] = useState(0);
+  const [apptToday, setApptToday] = useState(0);
+  const [apptWeek, setApptWeek] = useState(0);
+  const [revenueMonth, setRevenueMonth] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
-      const [clientsRes, vehiclesRes, pricingRes, apptRes] = await Promise.all([
-        supabaseFleet.from("fleet_clients").select("*").order("created_at", { ascending: false }),
-        supabaseFleet.from("vehicle_status_view").select("*"),
-        supabaseFleet.from("pricing_reference").select("*"),
-        supabaseFleet
-          .from("appointments")
-          .select("id", { count: "exact", head: true })
-          .eq("status", "pending"),
-      ]);
+      const now = new Date();
+      const todayStr = now.toISOString().slice(0, 10);
+      const weekEnd = new Date(now);
+      weekEnd.setDate(now.getDate() + 7);
+      const weekEndStr = weekEnd.toISOString().slice(0, 10);
+      const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+
+      const [clientsRes, vehiclesRes, pricingRes, apptPending, apptTodayRes, apptWeekRes, revenueRes] =
+        await Promise.all([
+          supabaseFleet.from("fleet_clients").select("*").order("created_at", { ascending: false }),
+          supabaseFleet.from("vehicle_status_view").select("*"),
+          supabaseFleet.from("pricing_reference").select("*"),
+          supabaseFleet.from("appointments").select("id", { count: "exact", head: true }).eq("status", "pending"),
+          supabaseFleet.from("appointments").select("id", { count: "exact", head: true }).eq("preferred_date", todayStr).neq("status", "cancelled"),
+          supabaseFleet.from("appointments").select("id", { count: "exact", head: true }).gte("preferred_date", todayStr).lte("preferred_date", weekEndStr).neq("status", "cancelled"),
+          supabaseFleet.from("service_history").select("total_cost").gte("service_date", monthStart),
+        ]);
+
       setClients((clientsRes.data ?? []) as Client[]);
       setVehicles((vehiclesRes.data ?? []) as Vehicle[]);
       setPricing((pricingRes.data ?? []) as Pricing[]);
-      setPendingBookings(apptRes.count ?? 0);
+      setPendingBookings(apptPending.count ?? 0);
+      setApptToday(apptTodayRes.count ?? 0);
+      setApptWeek(apptWeekRes.count ?? 0);
+      setRevenueMonth((revenueRes.data ?? []).reduce((s, r) => s + (r.total_cost ?? 0), 0));
       setLoading(false);
     })();
   }, []);
@@ -170,35 +185,35 @@ function AdminOverview({ email }: { email: string }) {
               iconBg="rgba(217,119,6,0.15)"
               value={loading ? "—" : pendingBookings}
               label="Pending Bookings"
-              sub="walk-in requests"
+              sub="awaiting confirmation"
             />
             <StatCard
-              icon={<Users className="h-5 w-5" style={{ color: "#0F1E3A" }} />}
-              iconBg="rgba(15,30,58,0.15)"
-              value={loading ? "—" : activeClients}
-              label="Active Fleet Clients"
-              sub={`${clients.length} total enrolled`}
+              icon={<CalendarClock className="h-5 w-5 text-sky-600" />}
+              iconBg="rgba(2,132,199,0.15)"
+              value={loading ? "—" : apptToday}
+              label="Appointments Today"
+              sub="scheduled for today"
             />
             <StatCard
-              icon={<Car className="h-5 w-5" style={{ color: "#C9A227" }} />}
-              iconBg="rgba(201,162,39,0.20)"
-              value={loading ? "—" : totalVehicles}
-              label="Total Vehicles"
-              sub="across all fleets"
+              icon={<CheckCircle2 className="h-5 w-5 text-emerald-600" />}
+              iconBg="rgba(5,150,105,0.15)"
+              value={loading ? "—" : apptWeek}
+              label="This Week"
+              sub="next 7 days"
             />
             <StatCard
               icon={<Clock className="h-5 w-5" style={{ color: "#D97706" }} />}
               iconBg="rgba(217,119,6,0.15)"
               value={loading ? "—" : dueCount}
-              label="Services Due This Month"
+              label="Fleet Services Due"
               sub="needs attention"
             />
             <StatCard
               icon={<TrendingUp className="h-5 w-5" style={{ color: "#059669" }} />}
               iconBg="rgba(5,150,105,0.15)"
-              value={loading ? "—" : peso(monthlyRevenue)}
-              label="Monthly Revenue"
-              sub="est. with discounts applied"
+              value={loading ? "—" : peso(revenueMonth)}
+              label="Revenue This Month"
+              sub="from completed services"
             />
           </div>
 
