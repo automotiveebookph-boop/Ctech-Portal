@@ -14,6 +14,11 @@ export default defineConfig({
   resolve: {
     dedupe: ['react', 'react-dom', '@tanstack/react-router'],
   },
+  ssr: {
+    // Bundle all dependencies into the server output so Vercel
+    // doesn't need a separate node_modules install
+    noExternal: true,
+  },
   server: {
     port: 3000,
     host: '0.0.0.0',
