@@ -11,12 +11,21 @@ export const Route = createFileRoute("/admin/requests")({
   component: AdminRequestsPage,
 });
 
+type VehicleEntry = {
+  make: string;
+  model: string;
+  year: string;
+  transmission: string;
+  odometer: string;
+};
+
 type ContactRequest = {
   id: string;
   full_name: string;
   email: string;
   phone: string | null;
   vehicle_info: string | null;
+  vehicles: VehicleEntry[] | null;
   message: string | null;
   status: string | null;
   created_at: string;
@@ -179,11 +188,28 @@ function AdminRequestsPage() {
                           <Phone size={13} style={{ color: "#C9A227" }} />{r.phone}
                         </a>
                       )}
-                      {r.vehicle_info && (
+                      {(r.vehicles && r.vehicles.length > 0) ? (
+                        <div className="flex flex-col gap-1">
+                          {r.vehicles.map((v, i) => (
+                            <span key={i} className="flex items-start gap-1.5">
+                              <Car size={13} style={{ color: "#C9A227" }} className="mt-0.5 shrink-0" />
+                              <span>
+                                {[v.year, v.make, v.model].filter(Boolean).join(" ")}
+                                {(v.transmission || v.odometer) && (
+                                  <span className="text-stone-400">
+                                    {" · "}
+                                    {[v.transmission, v.odometer ? `${Number(v.odometer).toLocaleString()} km` : ""].filter(Boolean).join(", ")}
+                                  </span>
+                                )}
+                              </span>
+                            </span>
+                          ))}
+                        </div>
+                      ) : r.vehicle_info ? (
                         <span className="flex items-center gap-1.5">
                           <Car size={13} style={{ color: "#C9A227" }} />{r.vehicle_info}
                         </span>
-                      )}
+                      ) : null}
                     </div>
 
                     {r.message && (
