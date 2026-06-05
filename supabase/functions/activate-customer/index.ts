@@ -18,11 +18,14 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
-    // 1. Check if user already exists in auth
-    const { data: existingUsers } = await supabase.auth.admin.listUsers();
-    const alreadyExists = existingUsers?.users?.some((u) => u.email === email);
-    if (alreadyExists) {
-      return new Response(JSON.stringify({ error: "A user with this email already exists." }), { status: 409 });
+    // 1. Check if user already exists — direct SQL lookup (fast, avoids listUsers pagination)
+    const { data: existingRow } = await supabase
+      .from("customers")
+      .select("id")
+      .eq("email", email)
+      .maybeSingle();
+    if (existingRow) {
+      return new Response(JSON.stringify({ error: "A customer with this email already exists." }), { status: 409 });
     }
 
     // 2. Create customer record
@@ -38,7 +41,7 @@ serve(async (req) => {
 
     // 3. Invite user via email (sends set-password link)
     const { data: inviteData, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email, {
-      redirectTo: `${Deno.env.get("SITE_URL") ?? "https://fleetconnectportal.lovable.app"}/login`,
+      redirectTo: "https://ctechautomotiveph.com/login",
       data: { full_name, customer_id: customer.id },
     });
 
