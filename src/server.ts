@@ -74,12 +74,7 @@ export default {
       return await normalizeCatastrophicSsrResponse(response);
     } catch (error) {
       console.error(error);
-      // TEMP DEBUG: expose error message
-      const msg = error instanceof Error ? `${error.message}\n\n${error.stack}` : String(error);
-      return new Response(`DEBUG ERROR:\n${msg}`, {
-        status: 500,
-        headers: { 'content-type': 'text/plain' },
-      });
+      return brandedErrorResponse();
     }
   },
 };
