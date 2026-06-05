@@ -3,13 +3,17 @@ import { useEffect, useState } from "react";
 import { Bell, CalendarCheck, CalendarClock, CheckCircle2, Clock, TrendingUp, Users } from "lucide-react";
 import { supabaseFleet } from "@/lib/supabase-fleet";
 import { AdminSidebar } from "@/components/AdminSidebar";
-import { formatDate } from "@/lib/my-car-session";
 import {
   calculateEstimate,
   peso,
   type Pricing,
   type Vehicle,
 } from "@/lib/fleet-utils";
+
+function formatDate(d: string | null | undefined): string {
+  if (!d) return "—";
+  return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Fleet Admin — C-Tech Automotive" }] }),
