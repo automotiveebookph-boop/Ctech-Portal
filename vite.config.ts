@@ -6,9 +6,7 @@ import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 
 export default defineConfig({
   plugins: [
-    tanstackStart({
-      spa: true,
-    }),
+    tanstackStart(),
     react(),
     tailwindcss(),
     tsConfigPaths(),
