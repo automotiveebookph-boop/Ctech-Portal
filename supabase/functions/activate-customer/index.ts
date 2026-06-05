@@ -57,7 +57,7 @@ serve(async (req) => {
 
     // 3. Invite user via email (sends set-password link)
     const { data: inviteData, error: inviteError } = await supabase.auth.admin.inviteUserByEmail(email, {
-      redirectTo: "https://ctechautomotiveph.com/login",
+      redirectTo: "https://ctechautomotiveph.com/reset-password",
       data: { full_name, customer_id: customer.id },
     });
 

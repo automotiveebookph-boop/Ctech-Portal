@@ -24,6 +24,7 @@ function ResetPasswordPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
+  const [isInvite, setIsInvite] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -31,7 +32,8 @@ function ResetPasswordPage() {
     const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
     const type = hash.get("type");
     const accessToken = hash.get("access_token");
-    setReady(type === "recovery" || Boolean(accessToken));
+    setIsInvite(type === "invite");
+    setReady(type === "recovery" || type === "invite" || Boolean(accessToken));
   }, []);
 
   async function handleSubmit(e: FormEvent) {
@@ -60,9 +62,14 @@ function ResetPasswordPage() {
       return;
     }
 
-    await supabaseFleet.auth.signOut();
-    setNotice("Password updated. Redirecting to sign in…");
-    setTimeout(() => navigate({ to: "/" }), 900);
+    if (isInvite) {
+      setNotice("Password set! Redirecting to your portal…");
+      setTimeout(() => navigate({ to: "/my-car" }), 900);
+    } else {
+      await supabaseFleet.auth.signOut();
+      setNotice("Password updated. Redirecting to sign in…");
+      setTimeout(() => navigate({ to: "/login" }), 900);
+    }
   }
 
   return (
@@ -70,13 +77,17 @@ function ResetPasswordPage() {
       <div className="w-full max-w-md">
         <CTechLogo variant="dark" size="sm" />
         <h1 className="mt-10 text-3xl font-bold tracking-tight text-[#0F1E3A]">
-          Reset password
+          {isInvite ? "Set your password" : "Reset password"}
         </h1>
-        <p className="mt-2 text-stone-600">Create a new portal password.</p>
+        <p className="mt-2 text-stone-600">
+          {isInvite
+            ? "Welcome to C-Tech Fleet Portal! Create a password to activate your account."
+            : "Create a new portal password."}
+        </p>
 
         {!ready ? (
           <div className="mt-8 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            Open this page from the password reset link sent to your email.
+            Open this page from the {isInvite ? "invitation" : "password reset"} link sent to your email.
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="mt-8 space-y-5">
@@ -147,7 +158,7 @@ function ResetPasswordPage() {
               className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#0F1E3A] py-4 text-sm font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:translate-y-0"
             >
               {loading && <Loader2 size={18} className="animate-spin" />}
-              Update password
+              {isInvite ? "Activate My Account" : "Update password"}
             </button>
           </form>
         )}
