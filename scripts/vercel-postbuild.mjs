@@ -20,13 +20,16 @@ fs.mkdirSync(`${OUTPUT}/static`, { recursive: true })
 // Copy all server files into the function directory
 fs.cpSync('dist/server', FUNC_DIR, { recursive: true })
 
-// Copy the pre-written Node.js handler wrapper
-fs.copyFileSync('scripts/vercel-handler.js', `${FUNC_DIR}/handler.js`)
+// Copy the pre-written Node.js handler wrapper (ESM)
+fs.copyFileSync('scripts/vercel-handler.mjs', `${FUNC_DIR}/handler.mjs`)
+
+// Add package.json to mark directory as ESM
+fs.writeFileSync(`${FUNC_DIR}/package.json`, JSON.stringify({ type: 'module' }, null, 2))
 
 // Vercel Node.js function config
 fs.writeFileSync(`${FUNC_DIR}/.vc-config.json`, JSON.stringify({
   runtime: 'nodejs22.x',
-  handler: 'handler.js',
+  handler: 'handler.mjs',
   launcherType: 'Nodejs',
   shouldAddHelpers: false
 }, null, 2))
