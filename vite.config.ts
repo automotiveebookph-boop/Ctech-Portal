@@ -4,7 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 import tsConfigPaths from 'vite-tsconfig-paths'
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 
-export default defineConfig(({ command }) => ({
+export default defineConfig({
   plugins: [
     tanstackStart(),
     react(),
@@ -15,11 +15,12 @@ export default defineConfig(({ command }) => ({
     dedupe: ['react', 'react-dom', '@tanstack/react-router'],
   },
   ssr: {
-    // noExternal bundles all deps for Vercel production — causes CJS errors in dev
-    noExternal: command === 'build' ? true : undefined,
+    // Bundle all dependencies into the server output so Vercel
+    // doesn't need a separate node_modules install
+    noExternal: true,
   },
   server: {
     port: 3000,
     host: '0.0.0.0',
   },
-}))
+})
