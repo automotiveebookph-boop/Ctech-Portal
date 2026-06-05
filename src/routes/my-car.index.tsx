@@ -151,11 +151,43 @@ function MyCarHome() {
             />
           </div>
 
+          {/* Estimated due date */}
+          {(() => {
+            const avg = vehicle.avg_km_per_month;
+            const kmLeft = vehicle.km_to_next_service;
+            if (avg && avg > 0 && kmLeft > 0) {
+              const monthsLeft = kmLeft / avg;
+              const dueDate = new Date();
+              dueDate.setDate(dueDate.getDate() + Math.round(monthsLeft * 30.44));
+              const label = dueDate.toLocaleDateString("en-PH", { month: "long", year: "numeric" });
+              return (
+                <div className="mb-4 rounded-lg bg-amber-50 px-4 py-2.5 text-center text-sm text-amber-800 border border-amber-100">
+                  Est. next service: <span className="font-bold">{label}</span>
+                </div>
+              );
+            }
+            return null;
+          })()}
+
           {vehicle.service_status !== "OK" && estimate && (
             <div className="text-center text-sm text-stone-500">
-              Estimated next service: {peso(estimate)}
+              Estimated service cost: {peso(estimate)}
             </div>
           )}
+
+          {/* Vehicle specs */}
+          <div className="mt-4 border-t border-stone-100 pt-4 grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+            {vehicle.vehicle_type && (
+              <SpecRow label="Type" value={vehicle.vehicle_type} />
+            )}
+            {vehicle.engine && (
+              <SpecRow label="Engine" value={vehicle.engine} />
+            )}
+            {vehicle.engine_type && (
+              <SpecRow label="Fuel" value={vehicle.engine_type} />
+            )}
+            <SpecRow label="Oil" value={`${vehicle.oil_type} · ${vehicle.oil_liters}L`} />
+          </div>
         </div>
 
         {/* Quick Actions */}
@@ -219,6 +251,15 @@ function MyCarHome() {
         </div>
       </main>
       <MyCarFooter />
+    </div>
+  );
+}
+
+function SpecRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline gap-1">
+      <span className="text-stone-400 uppercase tracking-wider" style={{ fontSize: "9px" }}>{label}</span>
+      <span className="font-medium text-stone-700 truncate">{value}</span>
     </div>
   );
 }

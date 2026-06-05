@@ -110,6 +110,16 @@ function HistoryPage() {
                 <div className="mt-1 text-xs text-stone-500">
                   {(r.odometer_km ?? 0).toLocaleString()} km
                 </div>
+                {(r.parts_cost != null || r.labor_cost != null) && (
+                  <div className="mt-2 flex gap-3 text-xs text-stone-500">
+                    {r.parts_cost != null && (
+                      <span>Parts: <span className="font-semibold text-stone-700">{peso(r.parts_cost)}</span></span>
+                    )}
+                    {r.labor_cost != null && (
+                      <span>Labor: <span className="font-semibold text-stone-700">{peso(r.labor_cost)}</span></span>
+                    )}
+                  </div>
+                )}
                 {r.notes && (
                   <div
                     className="mt-2 rounded border-l-2 bg-stone-50 px-3 py-2 text-xs text-stone-600"
