@@ -1,8 +1,9 @@
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Bell, CalendarCheck, Car, Clock, TrendingUp, Users } from "lucide-react";
+import { Bell, CalendarCheck, CalendarClock, CheckCircle2, Clock, TrendingUp, Users } from "lucide-react";
 import { supabaseFleet } from "@/lib/supabase-fleet";
 import { AdminSidebar } from "@/components/AdminSidebar";
+import { formatDate } from "@/lib/my-car-session";
 import {
   calculateEstimate,
   peso,
@@ -94,28 +95,85 @@ function AdminLayout() {
   return <AdminOverview email={email} />;
 }
 
+type UpcomingAppt = {
+  id: string;
+  preferred_date: string;
+  preferred_time: string;
+  service_type: string;
+  status: string;
+  customers: { full_name: string; phone: string | null } | null;
+  vehicles: { plate_number: string; make: string; model: string } | null;
+};
+
 function AdminOverview({ email }: { email: string }) {
   const [clients, setClients] = useState<Client[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [pricing, setPricing] = useState<Pricing[]>([]);
   const [pendingBookings, setPendingBookings] = useState(0);
+  const [apptToday, setApptToday] = useState(0);
+  const [apptWeek, setApptWeek] = useState(0);
+  const [revenueMonth, setRevenueMonth] = useState<number | null>(null);
+  const [upcomingAppts, setUpcomingAppts] = useState<UpcomingAppt[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
-      const [clientsRes, vehiclesRes, pricingRes, apptRes] = await Promise.all([
-        supabaseFleet.from("fleet_clients").select("*").order("created_at", { ascending: false }),
-        supabaseFleet.from("vehicle_status_view").select("*"),
-        supabaseFleet.from("pricing_reference").select("*"),
-        supabaseFleet
-          .from("appointments")
-          .select("id", { count: "exact", head: true })
-          .eq("status", "pending"),
-      ]);
+      const now = new Date();
+      const todayStr = now.toISOString().slice(0, 10);
+      const weekEnd = new Date(now);
+      weekEnd.setDate(now.getDate() + 7);
+      const weekEndStr = weekEnd.toISOString().slice(0, 10);
+      const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+
+      const [clientsRes, vehiclesRes, pricingRes, apptPending, apptTodayRes, apptWeekRes, revenueRes, upcomingRes] =
+        await Promise.all([
+          supabaseFleet.from("fleet_clients").select("*").order("created_at", { ascending: false }),
+          supabaseFleet.from("vehicle_status_view").select("*"),
+          supabaseFleet.from("pricing_reference").select("*"),
+          supabaseFleet
+            .from("appointments")
+            .select("id", { count: "exact", head: true })
+            .eq("status", "pending"),
+          supabaseFleet
+            .from("appointments")
+            .select("id", { count: "exact", head: true })
+            .eq("preferred_date", todayStr)
+            .neq("status", "cancelled"),
+          supabaseFleet
+            .from("appointments")
+            .select("id", { count: "exact", head: true })
+            .gte("preferred_date", todayStr)
+            .lte("preferred_date", weekEndStr)
+            .neq("status", "cancelled"),
+          supabaseFleet
+            .from("service_history")
+            .select("total_cost")
+            .gte("service_date", monthStart),
+          supabaseFleet
+            .from("appointments")
+            .select(`id, preferred_date, preferred_time, service_type, status,
+              customers (full_name, phone),
+              vehicles (plate_number, make, model)`)
+            .gte("preferred_date", todayStr)
+            .lte("preferred_date", weekEndStr)
+            .neq("status", "cancelled")
+            .order("preferred_date", { ascending: true })
+            .order("preferred_time", { ascending: true })
+            .limit(8),
+        ]);
+
       setClients((clientsRes.data ?? []) as Client[]);
       setVehicles((vehiclesRes.data ?? []) as Vehicle[]);
       setPricing((pricingRes.data ?? []) as Pricing[]);
-      setPendingBookings(apptRes.count ?? 0);
+      setPendingBookings(apptPending.count ?? 0);
+      setApptToday(apptTodayRes.count ?? 0);
+      setApptWeek(apptWeekRes.count ?? 0);
+      const rev = (revenueRes.data ?? []).reduce(
+        (sum, r) => sum + (r.total_cost ?? 0),
+        0,
+      );
+      setRevenueMonth(rev);
+      setUpcomingAppts((upcomingRes.data ?? []) as unknown as UpcomingAppt[]);
       setLoading(false);
     })();
   }, []);
@@ -164,13 +222,27 @@ function AdminOverview({ email }: { email: string }) {
         </header>
 
         <main className="p-4 md:p-8">
-          <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
+          <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
             <StatCard
               icon={<CalendarCheck className="h-5 w-5 text-amber-700" />}
               iconBg="rgba(217,119,6,0.15)"
               value={loading ? "—" : pendingBookings}
               label="Pending Bookings"
-              sub="walk-in requests"
+              sub="awaiting confirmation"
+            />
+            <StatCard
+              icon={<CalendarClock className="h-5 w-5 text-sky-600" />}
+              iconBg="rgba(2,132,199,0.15)"
+              value={loading ? "—" : apptToday}
+              label="Appointments Today"
+              sub="scheduled for today"
+            />
+            <StatCard
+              icon={<CheckCircle2 className="h-5 w-5 text-emerald-600" />}
+              iconBg="rgba(5,150,105,0.15)"
+              value={loading ? "—" : apptWeek}
+              label="This Week"
+              sub="next 7 days"
             />
             <StatCard
               icon={<Users className="h-5 w-5" style={{ color: "#0F1E3A" }} />}
@@ -180,26 +252,78 @@ function AdminOverview({ email }: { email: string }) {
               sub={`${clients.length} total enrolled`}
             />
             <StatCard
-              icon={<Car className="h-5 w-5" style={{ color: "#C9A227" }} />}
-              iconBg="rgba(201,162,39,0.20)"
-              value={loading ? "—" : totalVehicles}
-              label="Total Vehicles"
-              sub="across all fleets"
-            />
-            <StatCard
               icon={<Clock className="h-5 w-5" style={{ color: "#D97706" }} />}
               iconBg="rgba(217,119,6,0.15)"
               value={loading ? "—" : dueCount}
-              label="Services Due This Month"
+              label="Fleet Services Due"
               sub="needs attention"
             />
             <StatCard
               icon={<TrendingUp className="h-5 w-5" style={{ color: "#059669" }} />}
               iconBg="rgba(5,150,105,0.15)"
-              value={loading ? "—" : peso(monthlyRevenue)}
-              label="Monthly Revenue"
-              sub="est. with discounts applied"
+              value={loading || revenueMonth === null ? "—" : peso(revenueMonth)}
+              label="Revenue This Month"
+              sub="from completed services"
             />
+          </div>
+
+          <div className="mb-6 overflow-hidden rounded-xl border border-stone-200 bg-white">
+            <div className="flex items-center justify-between border-b border-stone-200 px-4 py-4 md:px-6">
+              <div>
+                <div className="font-bold" style={{ color: "#0F1E3A" }}>
+                  Upcoming Appointments
+                </div>
+                <div className="text-xs text-stone-500">Next 7 days · {apptWeek} total</div>
+              </div>
+              <Link
+                to="/admin/walkin/appointments"
+                className="text-xs font-semibold hover:underline"
+                style={{ color: "#0F1E3A" }}
+              >
+                View all →
+              </Link>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[640px] text-sm">
+                <thead className="bg-stone-50 text-[10px] uppercase tracking-wider text-stone-500">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-bold">Date & Time</th>
+                    <th className="px-4 py-3 text-left font-bold">Customer</th>
+                    <th className="px-4 py-3 text-left font-bold">Vehicle</th>
+                    <th className="px-4 py-3 text-left font-bold">Service</th>
+                    <th className="px-4 py-3 text-left font-bold">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-100">
+                  {loading ? (
+                    <tr><td colSpan={5} className="px-4 py-8 text-center text-stone-500">Loading…</td></tr>
+                  ) : upcomingAppts.length === 0 ? (
+                    <tr><td colSpan={5} className="px-4 py-8 text-center text-stone-500">No appointments in the next 7 days.</td></tr>
+                  ) : (
+                    upcomingAppts.map((a) => (
+                      <tr key={a.id} className="hover:bg-stone-50">
+                        <td className="px-4 py-3">
+                          <div className="font-semibold" style={{ color: "#0F1E3A" }}>{formatDate(a.preferred_date)}</div>
+                          <div className="text-xs text-stone-500">{a.preferred_time}</div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="font-semibold">{a.customers?.full_name ?? "—"}</div>
+                          <div className="text-xs text-stone-500">{a.customers?.phone ?? ""}</div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="font-semibold">{a.vehicles?.plate_number ?? "—"}</div>
+                          <div className="text-xs text-stone-500">{a.vehicles?.make} {a.vehicles?.model}</div>
+                        </td>
+                        <td className="px-4 py-3">{a.service_type}</td>
+                        <td className="px-4 py-3">
+                          <ApptStatusPill status={a.status} />
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           <div className="overflow-hidden rounded-xl border border-stone-200 bg-white">
@@ -320,6 +444,20 @@ function StatCard({
       <div className="text-sm font-medium text-stone-700">{label}</div>
       <div className="mt-1 text-xs text-stone-500">{sub}</div>
     </div>
+  );
+}
+
+function ApptStatusPill({ status }: { status: string }) {
+  const map: Record<string, string> = {
+    pending: "bg-amber-50 text-amber-800 border-amber-200",
+    confirmed: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    completed: "bg-stone-100 text-stone-600 border-stone-200",
+    cancelled: "bg-stone-50 text-stone-400 border-stone-200",
+  };
+  return (
+    <span className={`inline-block rounded-md border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${map[status] ?? map.pending}`}>
+      {status}
+    </span>
   );
 }
 
