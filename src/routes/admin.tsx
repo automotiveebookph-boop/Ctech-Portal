@@ -95,6 +95,7 @@ function AdminLayout() {
 }
 
 function AdminOverview({ email }: { email: string }) {
+  const [error, setError] = useState<string | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [pricing, setPricing] = useState<Pricing[]>([]);
@@ -106,6 +107,7 @@ function AdminOverview({ email }: { email: string }) {
 
   useEffect(() => {
     (async () => {
+      try {
       const now = new Date();
       const todayStr = now.toISOString().slice(0, 10);
       const weekEnd = new Date(now);
@@ -132,6 +134,9 @@ function AdminOverview({ email }: { email: string }) {
       setApptWeek(apptWeekRes.count ?? 0);
       setRevenueMonth((revenueRes.data ?? []).reduce((s, r) => s + (r.total_cost ?? 0), 0));
       setLoading(false);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : String(e));
+      }
     })();
   }, []);
 
@@ -156,6 +161,17 @@ function AdminOverview({ email }: { email: string }) {
     }, 0);
 
   const topClients = clients.slice(0, 5);
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-stone-50 flex items-center justify-center p-8">
+        <div className="rounded-xl border border-red-200 bg-red-50 p-6 max-w-2xl w-full">
+          <div className="font-bold text-red-800 mb-2">Dashboard Error</div>
+          <pre className="text-xs text-red-700 whitespace-pre-wrap break-all">{error}</pre>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-stone-50">
