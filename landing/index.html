@@ -1,0 +1,3334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Auth bridge: Supabase password-reset / account-activation links fall back to
+     this landing domain (the project's Site URL). Forward them to the staff
+     portal's reset page, preserving the auth tokens in the query/hash. Only
+     triggers for recovery/invite links, so normal visitors are unaffected. -->
+<script>
+(function () {
+  try {
+    var s = location.search || '', h = location.hash || '';
+    if (/type=(recovery|invite)/.test(s + h)) {
+      location.replace('https://admin.ctechautomotiveph.com/reset-password' + s + h);
+    }
+  } catch (e) {}
+})();
+</script>
+
+<!-- ===== SEO / META ===== -->
+<title>C-Tech Automotive | Trusted PMS, Oil Change &amp; Auto Services in Bulacan</title>
+<meta name="description" content="C-Tech Automotive in Pulilan, Bulacan — honest, diagnostic-first PMS, change oil & auto repair for cars and trucks. Transparent pricing and free estimates." />
+<link rel="canonical" href="https://ctechautomotiveph.com/" />
+<meta name="author" content="C-Tech Automotive" />
+<meta name="robots" content="index, follow" />
+<meta name="google-site-verification" content="DshVzJloV7Xa9Xc3Yp71VwfxmQy6f2d9Sia7R237uPk" />
+
+<!-- Open Graph (Facebook / Messenger link previews) -->
+<meta property="og:title" content="C-Tech Automotive | Trusted PMS, Oil Change &amp; Auto Services in Bulacan" />
+<meta property="og:description" content="Diagnostic-first PMS, change oil & auto repair for cars and trucks in Pulilan, Bulacan. Transparent pricing and free estimates." />
+<meta property="og:image" content="https://ctechautomotiveph.com/assets/shop-collage.png" />
+<meta property="og:url" content="https://ctechautomotiveph.com/" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="C-Tech Automotive" />
+<meta property="og:locale" content="en_PH" />
+
+<!-- Twitter / X card -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="C-Tech Automotive | Trusted PMS, Oil Change &amp; Auto Services in Bulacan" />
+<meta name="twitter:description" content="Diagnostic-first PMS, change oil & auto repair for cars and trucks in Pulilan, Bulacan. Transparent pricing and free estimates." />
+<meta name="twitter:image" content="https://ctechautomotiveph.com/assets/shop-collage.png" />
+
+<!-- Structured data (Google rich results) -->
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"AutoRepair","name":"C-Tech Automotive","url":"https://ctechautomotiveph.com/","logo":"https://ctechautomotiveph.com/ctech-logo.png","image":"https://ctechautomotiveph.com/assets/shop-collage.png","description":"Honest, diagnostic-first PMS, change oil and auto repair for cars and trucks in Pulilan, Bulacan. Transparent pricing and free estimates.","telephone":"+639981516245","priceRange":"₱₱","address":{"@type":"PostalAddress","streetAddress":"9016 DRT Highway, Sto. Cristo","addressLocality":"Pulilan","addressRegion":"Bulacan","addressCountry":"PH"},"openingHoursSpecification":[{"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],"opens":"08:00","closes":"17:00"}],"sameAs":["https://www.facebook.com/cteachautomotive"]}
+</script>
+
+<link rel="icon" type="image/png" href="/ctech-logo.png" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* C-Tech brand colors from logo */
+    --navy: #142850;
+    --navy-deep: #0E1E3D;
+    --navy-soft: #1F3A6B;
+    --yellow: #FBC02D;
+    --yellow-bright: #FFD028;
+    --yellow-deep: #D9A300;
+    --ph-red: #CE1126;
+    --ph-blue: #0038A8;
+    --cream: #FAF8F3;
+    --white: #FFFFFF;
+    --gray-100: #F1EFE9;
+    --gray-300: #C9C5BB;
+    --gray-500: #6B6B66;
+    --gray-700: #2D3138;
+    --ink: #0A0E13;
+    --line: rgba(255,255,255,0.08);
+    --line-dark: rgba(20,40,80,0.08);
+    --green: #22C55E;
+    --radius: 6px;
+    --radius-lg: 14px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Manrope', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* STATUS BAR */
+  .status-bar {
+    background: var(--navy-deep);
+    color: var(--gray-300);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    padding: 8px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-transform: uppercase;
+  }
+  .status-bar .dot {
+    display: inline-block; width: 6px; height: 6px;
+    background: var(--green); border-radius: 50%; margin-right: 6px;
+    box-shadow: 0 0 8px rgba(34,197,94,0.5);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+  /* NAV */
+  nav {
+    background: var(--navy);
+    color: var(--cream);
+    padding: 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .logo-row { display: flex; align-items: center; gap: 12px; }
+  .logo-img {
+    height: 72px; width: auto;
+    display: block; flex-shrink: 0;
+  }
+  .logo-text {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-weight: 700; font-size: 19px;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+  .logo-text small {
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 500;
+    color: var(--yellow);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-top: 2px;
+    white-space: nowrap;
+  }
+  .nav-links { display: flex; gap: 28px; font-size: 14px; font-weight: 500; }
+  .nav-links a { color: var(--cream); text-decoration: none; opacity: 0.85; transition: opacity 0.2s; }
+  .nav-links a:hover { opacity: 1; color: var(--yellow); }
+  .nav-cta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; padding: 9px 16px;
+    border: 1px solid var(--yellow);
+    background: var(--yellow);
+    color: var(--navy);
+    border-radius: 6px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-weight: 700; text-decoration: none; white-space: nowrap;
+    transition: background 0.2s, transform 0.2s;
+  }
+  .nav-cta:hover { background: var(--yellow-bright); transform: translateY(-1px); }
+  @media (max-width: 768px) { .nav-links { display: none; } .nav-cta { font-size: 11px; padding: 6px 10px; } }
+
+  /* HERO */
+  .hero {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-deep) 100%);
+    color: var(--cream);
+    padding: 72px 24px 100px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(circle at 15% 20%, rgba(251,192,45,0.08), transparent 50%),
+      radial-gradient(circle at 85% 80%, rgba(251,192,45,0.04), transparent 50%);
+    pointer-events: none;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(to right, rgba(255,255,255,0.025) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+  }
+  .hero-video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .hero-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(20,40,80,0.82) 0%, rgba(14,30,61,0.90) 100%);
+    z-index: 1;
+    pointer-events: none;
+  }
+  .hero-container {
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: center;
+    position: relative;
+    z-index: 2;
+  }
+  .hero-container > * { min-width: 0; }
+  .hero-container .hero-sub { margin-left: auto; margin-right: auto; }
+  .hero-container .trust-row { justify-content: center; }
+  .hero-container .hero-serving { text-align: center; }
+  @media (max-width: 980px) {
+    .hero { padding: 48px 24px 64px; }
+  }
+  /* Primary hero CTA */
+  .hero-cta {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: var(--yellow); color: var(--navy);
+    font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700;
+    font-size: 17px; padding: 16px 34px; border-radius: 10px;
+    text-decoration: none; margin: 26px 0 4px;
+    box-shadow: 0 12px 34px -10px rgba(251,192,45,0.55);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .hero-cta span { transition: transform 0.2s; }
+  .hero-cta:hover { transform: translateY(-2px); box-shadow: 0 16px 42px -10px rgba(251,192,45,0.7); }
+  .hero-cta:hover span { transform: translateX(3px); }
+
+  /* FREE ESTIMATE SECTION (calculator) */
+  .estimate-section {
+    background: var(--navy-deep);
+    padding: 56px 24px 76px;
+  }
+  .estimate-head { text-align: center; max-width: 640px; margin: 0 auto 28px; }
+  .estimate-head h2 {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: clamp(26px, 3.2vw, 36px); font-weight: 700;
+    letter-spacing: -0.02em; color: var(--cream); margin-bottom: 10px;
+  }
+  .estimate-head p { color: var(--gray-300); font-size: 15px; line-height: 1.6; }
+  .estimate-section .calc { max-width: 560px; margin: 0 auto; }
+  .hero-tag {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--yellow);
+    border: 1px solid rgba(251,192,45,0.3);
+    background: rgba(251,192,45,0.08);
+    padding: 6px 12px; border-radius: 4px;
+    margin-bottom: 28px;
+  }
+  .hero-tag .dot { width: 6px; height: 6px; background: var(--yellow); border-radius: 50%; flex-shrink: 0; }
+  /* Keep the badge on one line on small screens so the dot stays aligned */
+  @media (max-width: 480px) {
+    .hero-tag { font-size: 9px; letter-spacing: 0.05em; padding: 6px 10px; white-space: nowrap; }
+  }
+
+  h1 {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: clamp(36px, 5vw, 58px);
+    font-weight: 700;
+    line-height: 1.04;
+    letter-spacing: -0.035em;
+    margin-bottom: 24px;
+  }
+  h1 .accent { color: var(--yellow); font-style: italic; font-weight: 500; }
+  .hero-sub {
+    font-size: 17px;
+    color: var(--gray-300);
+    max-width: 480px;
+    margin-bottom: 36px;
+    line-height: 1.55;
+  }
+  .trust-row {
+    display: flex; flex-wrap: wrap; gap: 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--gray-300);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .trust-row span { display: flex; align-items: center; gap: 8px; }
+  .trust-row .check { color: var(--yellow); font-weight: 700; }
+  .hero-highlight {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(251,192,45,0.14);
+    border: 1px solid rgba(251,192,45,0.45);
+    color: var(--yellow-bright);
+    font-size: 13.5px; font-weight: 600;
+    padding: 9px 18px; border-radius: 999px;
+    margin-bottom: 22px; line-height: 1.35;
+    text-align: left;
+  }
+  .hl-icon { width: 18px; height: 18px; flex-shrink: 0; }
+  .hero-serving {
+    margin-top: 20px;
+    font-size: 13px; color: var(--gray-300);
+    letter-spacing: 0.02em;
+  }
+
+  /* CALCULATOR */
+  .calc {
+    background: var(--cream);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.05),
+      0 40px 100px -10px rgba(0,0,0,0.6),
+      0 0 0 1px rgba(255,255,255,0.04);
+    color: var(--ink);
+    position: relative;
+  }
+  .calc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 22px;
+    padding-bottom: 18px;
+    border-bottom: 1px dashed var(--gray-300);
+  }
+  .calc-title {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 19px; font-weight: 600;
+    letter-spacing: -0.01em; line-height: 1.2;
+  }
+  .calc-title-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; text-transform: uppercase;
+    letter-spacing: 0.12em; color: var(--gray-500); margin-top: 6px;
+  }
+  .calc-title-sub .instant-pop {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: linear-gradient(135deg, var(--yellow-bright), var(--yellow-deep));
+    color: var(--navy); font-weight: 800;
+    padding: 3px 10px; border-radius: 999px;
+    letter-spacing: 0.1em;
+    box-shadow: 0 2px 10px -2px rgba(217,163,0,0.55);
+  }
+  .calc-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; text-transform: uppercase;
+    letter-spacing: 0.08em; padding: 5px 9px;
+    border-radius: 4px; background: var(--navy); color: var(--yellow);
+  }
+  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+  .field { display: flex; flex-direction: column; min-width: 0; }
+  .field.full { grid-column: 1 / -1; }
+  label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--gray-500);
+    margin-bottom: 6px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  label::before {
+    content: counter(field-counter, decimal-leading-zero);
+    counter-increment: field-counter;
+    color: var(--yellow-deep); font-weight: 600;
+  }
+  .calc { counter-reset: field-counter; }
+  select, input {
+    appearance: none; -webkit-appearance: none;
+    width: 100%; min-width: 0;
+    background: var(--white);
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius);
+    padding: 13px 14px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 15px; color: var(--ink);
+    transition: all 0.15s;
+  }
+  select {
+    cursor: pointer;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'><path d='M1 1.5L6 6.5L11 1.5' stroke='%23142850' stroke-width='1.5' stroke-linecap='round'/></svg>");
+    background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px;
+  }
+  select:focus, input:focus {
+    outline: none; border-color: var(--navy);
+    box-shadow: 0 0 0 3px rgba(20,40,80,0.12);
+  }
+  select:disabled, input:disabled { opacity: 0.4; cursor: not-allowed; background-color: var(--gray-100); }
+
+  .submit-btn {
+    width: 100%;
+    background: var(--navy);
+    color: var(--yellow);
+    border: none;
+    border-radius: var(--radius);
+    padding: 16px;
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 16px; font-weight: 700;
+    letter-spacing: -0.005em;
+    cursor: pointer;
+    margin-top: 16px;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    transition: all 0.15s;
+  }
+  .submit-btn:hover { background: var(--navy-soft); transform: translateY(-1px); }
+  .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  .submit-btn .arrow { transition: transform 0.2s; }
+  .submit-btn:hover .arrow { transform: translateX(3px); }
+  .micro-note {
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--gray-500); margin-top: 14px;
+  }
+
+  /* RESULT */
+  .result { display: none; animation: slide-up 0.45s cubic-bezier(0.16, 1, 0.3, 1); }
+  .result.show { display: block; }
+  @keyframes slide-up {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .result-header {
+    text-align: center; margin-bottom: 22px; padding: 16px;
+    background: var(--navy); border-radius: var(--radius); color: var(--cream);
+  }
+  .result-vehicle {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.1em;
+    color: var(--yellow); text-transform: uppercase; margin-bottom: 4px;
+  }
+  .result-total-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; text-transform: uppercase;
+    letter-spacing: 0.12em; color: var(--gray-300); margin-bottom: 6px;
+  }
+  .result-total {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 42px; font-weight: 700;
+    letter-spacing: -0.02em; color: var(--yellow); line-height: 1;
+  }
+  .result-total small {
+    font-size: 13px; color: var(--gray-300);
+    font-weight: 500; margin-left: 6px;
+  }
+  .breakdown {
+    background: var(--white); border-radius: var(--radius);
+    padding: 16px; border: 1px solid var(--gray-300); margin-bottom: 16px;
+  }
+  .breakdown-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--gray-500);
+    margin-bottom: 10px; padding-bottom: 10px;
+    border-bottom: 1px dashed var(--gray-300);
+  }
+  .breakdown-item {
+    display: flex; justify-content: space-between;
+    padding: 6px 0; font-size: 14px;
+  }
+  .breakdown-item .name { color: var(--gray-700); }
+  .breakdown-item .price {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; font-weight: 500;
+  }
+  .freebies {
+    background: linear-gradient(135deg, rgba(251,192,45,0.12), rgba(251,192,45,0.04));
+    border: 1px solid rgba(251,192,45,0.35);
+    border-radius: var(--radius);
+    padding: 14px 16px; margin-bottom: 16px;
+  }
+  .freebies-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; text-transform: uppercase;
+    letter-spacing: 0.12em; color: var(--yellow-deep);
+    font-weight: 700; margin-bottom: 10px;
+  }
+  .freebies ul {
+    list-style: none;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px 12px;
+    font-size: 12.5px; color: var(--gray-700);
+  }
+  .freebies li { display: flex; align-items: center; gap: 6px; }
+  .freebies li::before { content: '✓'; color: var(--yellow-deep); font-weight: 700; font-size: 13px; }
+
+  .notice {
+    background: var(--gray-100);
+    border-left: 3px solid var(--navy);
+    padding: 11px 14px;
+    font-size: 12px; color: var(--gray-700);
+    line-height: 1.5;
+    border-radius: 0 var(--radius) var(--radius) 0;
+    margin-bottom: 16px;
+  }
+  .notice strong {
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--navy); margin-bottom: 4px;
+  }
+
+  .result-cta {
+    width: 100%;
+    background: var(--yellow);
+    color: var(--navy);
+    border: none;
+    border-radius: var(--radius);
+    padding: 17px;
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 16px; font-weight: 700;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    transition: all 0.15s;
+  }
+  .result-cta:hover {
+    background: var(--yellow-bright);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px -6px rgba(251,192,45,0.5);
+  }
+  .result-actions {
+    display: flex; flex-direction: column; gap: 10px; margin-top: 4px;
+  }
+  .result-cta-email {
+    width: 100%;
+    background: white;
+    color: var(--navy);
+    border: 2px solid var(--navy);
+    border-radius: var(--radius);
+    padding: 15px;
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 16px; font-weight: 700;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    transition: all 0.15s;
+  }
+  .result-cta-email:hover {
+    background: var(--navy); color: white;
+    transform: translateY(-1px);
+  }
+  .email-confirm {
+    display: none;
+    margin-top: 12px;
+    padding: 16px 18px;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    border-left: 4px solid #10b981;
+    border-radius: var(--radius);
+    color: #065f46;
+    font-size: 15px;
+    line-height: 1.5;
+    text-align: center;
+  }
+  .email-confirm.show { display: block; }
+  /* DATE PICKER */
+  .date-picker-wrap {
+    margin-bottom: 16px;
+  }
+  .date-picker-label {
+    font-size: 12px; font-weight: 700; color: var(--navy);
+    text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px;
+  }
+  .day-picker {
+    display: flex; gap: 6px; flex-wrap: wrap;
+  }
+  .day-btn {
+    flex: 1; min-width: 44px;
+    padding: 9px 4px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    background: #fff;
+    font-family: 'Manrope', sans-serif;
+    font-size: 13px; font-weight: 600; color: var(--gray-600);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .day-btn:hover { border-color: var(--yellow); color: var(--navy); }
+  .day-btn.selected {
+    background: var(--yellow); border-color: var(--yellow);
+    color: var(--navy); box-shadow: 0 2px 8px rgba(251,192,45,0.4);
+  }
+  .date-picker-note {
+    font-size: 11px; color: var(--gray-400); margin-top: 6px;
+  }
+  .time-btn { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px; }
+  .time-btn .tb-time { font-size: 14px; font-weight: 700; }
+  .time-btn .tb-slots { font-size: 9px; font-weight: 600; color: var(--green); text-transform: uppercase; letter-spacing: 0.03em; }
+  .time-btn.selected .tb-slots { color: var(--navy); }
+  .time-btn.slot-low .tb-slots { color: var(--yellow-deep); }
+  .time-btn.slot-full { opacity: 0.5; cursor: not-allowed; }
+  .time-btn.slot-full:hover { border-color: #e2e8f0; color: inherit; }
+  .time-btn.slot-full .tb-slots { color: var(--gray-500); }
+  .slots-hint { font-weight: 600; color: var(--green); text-transform: none; letter-spacing: 0; font-size: 11px; }
+  /* KM loading-bar slider */
+  .km-slider { margin-top: 14px; }
+  .km-track {
+    position: relative; height: 12px; border-radius: 999px;
+    background: #e8ebf0; overflow: hidden;
+  }
+  .km-fill {
+    position: absolute; left: 0; top: 0; bottom: 0; width: 0%;
+    border-radius: 999px; background: var(--yellow);
+    background-image: repeating-linear-gradient(
+      -45deg, rgba(255,255,255,0.28) 0 10px, rgba(255,255,255,0) 10px 20px);
+    background-size: 28px 28px;
+    animation: kmLoad 0.7s linear infinite;
+    transition: width 0.12s ease-out;
+    pointer-events: none;
+  }
+  @keyframes kmLoad { from { background-position: 0 0; } to { background-position: 28px 0; } }
+  .km-range {
+    -webkit-appearance: none; appearance: none;
+    position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+    width: 100%; height: 24px; margin: 0; background: transparent;
+    cursor: pointer; z-index: 2;
+  }
+  .km-range:disabled { cursor: not-allowed; }
+  .km-range::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--navy); border: 3px solid var(--yellow);
+    box-shadow: 0 2px 6px rgba(20,40,80,0.35); cursor: grab;
+  }
+  .km-range::-webkit-slider-thumb:active { cursor: grabbing; }
+  .km-range::-moz-range-thumb {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--navy); border: 3px solid var(--yellow);
+    box-shadow: 0 2px 6px rgba(20,40,80,0.35); cursor: grab;
+  }
+  .km-range::-moz-range-track { background: transparent; }
+  .km-slider.is-disabled { opacity: 0.5; }
+  .km-slider.is-disabled .km-fill { animation: none; }
+  .km-ticks {
+    display: flex; justify-content: space-between; margin-top: 8px;
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    color: var(--gray-500); letter-spacing: 0.04em;
+  }
+  .km-hint {
+    margin-top: 8px; text-align: center;
+    font-size: 12px; font-weight: 600; color: var(--navy-soft);
+  }
+  .visit-date-input {
+    width: 100%; cursor: pointer;
+    padding: 13px 14px;
+    border: 2px solid #cbd5e1;
+    border-radius: 8px;
+    background: #fff;
+    font-family: 'Manrope', sans-serif;
+    font-size: 15px; font-weight: 600; color: var(--navy);
+    min-height: 48px;
+  }
+  .visit-date-input:focus {
+    border-color: var(--yellow); outline: none;
+    box-shadow: 0 0 0 3px rgba(251,192,45,0.22);
+  }
+  /* Make the native calendar icon clearly visible / tappable on mobile */
+  .visit-date-input::-webkit-calendar-picker-indicator {
+    opacity: 1; cursor: pointer; font-size: 18px;
+    padding: 4px; margin-left: 4px;
+  }
+  .visit-date-display { font-size: 12.5px; font-weight: 600; color: var(--navy); margin-top: 6px; min-height: 16px; }
+
+  /* STICKY MOBILE BOTTOM BAR */
+  .sticky-bar {
+    display: none;
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 999;
+    background: var(--navy);
+    padding: 10px 16px 14px;
+    gap: 10px;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.25);
+  }
+  @media (max-width: 640px) {
+    .sticky-bar { display: flex; }
+  }
+  .sticky-bar a {
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 13px 8px;
+    border-radius: 10px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 14px; font-weight: 700;
+    text-decoration: none; transition: opacity 0.15s;
+  }
+  .sticky-bar a:active { opacity: 0.85; }
+  .sticky-bar .bar-call {
+    background: var(--yellow); color: var(--navy);
+  }
+  .sticky-bar .bar-msg {
+    background: #0A7CFF; color: #fff;
+  }
+
+  .reset-link {
+    display: block; text-align: center; margin-top: 12px;
+    background: none; border: none; color: var(--gray-500);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.1em; cursor: pointer; padding: 6px;
+  }
+  .reset-link:hover { color: var(--navy); }
+
+  /* ── SERVICE TYPE SELECTOR ── */
+  .service-type-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px dashed var(--gray-300);
+  }
+  .svc-btn {
+    background: var(--white);
+    border: 1.5px solid var(--gray-300);
+    border-radius: var(--radius);
+    padding: 11px 8px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+  }
+  .svc-btn .icon { font-size: 20px; line-height: 1; }
+  .svc-btn .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--gray-500); font-weight: 600;
+  }
+  .svc-btn.active { background: var(--navy); border-color: var(--navy); }
+  .svc-btn.active .label { color: var(--yellow); }
+  .svc-btn:hover:not(.active) { border-color: var(--navy-soft); }
+
+  /* ── CONCERN TEXTAREA ── */
+  .concern-box {
+    width: 100%; min-height: 96px;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 14px; color: var(--ink);
+    resize: vertical; line-height: 1.55;
+    transition: border-color 0.15s;
+  }
+  .concern-box:focus {
+    outline: none; border-color: var(--navy);
+    box-shadow: 0 0 0 3px rgba(20,40,80,0.12);
+  }
+  .concern-box::placeholder { color: var(--gray-300); font-size: 13px; }
+
+  /* ── CHANGE OIL PLACEHOLDER ── */
+  /* ── OIL TYPE TOGGLE ── */
+  .oil-type-toggle {
+    display: flex; gap: 8px; margin-top: 4px;
+  }
+  .oil-btn {
+    flex: 1; padding: 10px 8px;
+    border: 1.5px solid var(--gray-300); border-radius: 8px;
+    background: white; color: var(--gray-600);
+    font-family: 'Manrope', sans-serif; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all .15s;
+    text-align: center;
+  }
+  .oil-btn:hover { border-color: var(--navy); color: var(--navy); }
+  .oil-btn.active {
+    background: var(--navy); color: white;
+    border-color: var(--navy);
+  }
+  /* ── CO CALCULATOR RESULT ── */
+  .co-calc-result {
+    background: var(--navy); color: white;
+    border-radius: 12px; padding: 18px 20px;
+    margin: 16px 0 12px; text-align: center;
+    display: none;
+  }
+  .co-calc-result.show { display: block; }
+  .co-calc-label { font-size: 12px; opacity: .75; margin-bottom: 4px; letter-spacing:.05em; text-transform:uppercase; }
+  .co-calc-price { font-size: 36px; font-weight: 800; font-family:'Bricolage Grotesque',sans-serif; }
+  .co-calc-note  { font-size: 11px; opacity: .65; margin-top: 4px; }
+  .co-inclusions { margin: 12px 0; padding: 12px 16px; background: var(--gray-100); border-radius: 8px; display:none; }
+  .co-inclusions.show { display: block; }
+  .co-inclusions-title { font-size: 11px; font-weight: 700; color: var(--gray-500); text-transform:uppercase; letter-spacing:.08em; margin-bottom: 8px; }
+  .co-inclusions ul { list-style: none; display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 0; margin: 0; }
+  .co-inclusions li { font-size: 12px; color: var(--gray-600); }
+  .co-inclusions li::before { content: '✓ '; color: var(--navy); font-weight: 700; }
+  /* ── CONTACT DETAILS SECTION ── */
+  .contact-section {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--gray-300);
+  }
+  .contact-section-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; text-transform: uppercase;
+    letter-spacing: 0.12em; color: var(--navy);
+    font-weight: 700; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .optional-tag {
+    background: var(--gray-100); border: 1px solid var(--gray-300);
+    border-radius: 3px; padding: 2px 7px;
+    font-size: 9px; color: var(--gray-500);
+    letter-spacing: 0.08em; font-weight: 500;
+  }
+  input[type="text"], input[type="tel"], input[type="email"] {
+    appearance: none; -webkit-appearance: none;
+    background: var(--white);
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius);
+    padding: 13px 14px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 15px; color: var(--ink);
+    width: 100%; transition: all 0.15s;
+  }
+  input[type="text"]:focus, input[type="tel"]:focus, input[type="email"]:focus {
+    outline: none; border-color: var(--navy);
+    box-shadow: 0 0 0 3px rgba(20,40,80,0.12);
+  }
+  input::placeholder { color: var(--gray-300); }
+
+  /* SECTION: TRUSTED PARTS */
+  .parts-section {
+    background: var(--navy-deep);
+    color: var(--cream);
+    padding: 64px 24px;
+  }
+  .parts-container { max-width: 1240px; margin: 0 auto; }
+  .section-tag {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.15em;
+    color: var(--yellow); text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .section-h2 {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: clamp(28px, 3.5vw, 40px);
+    font-weight: 700; line-height: 1.1;
+    letter-spacing: -0.025em;
+    margin-bottom: 16px;
+    max-width: 720px;
+  }
+  .section-sub {
+    font-size: 15.5px;
+    color: var(--gray-300);
+    max-width: 620px;
+    line-height: 1.6;
+    margin-bottom: 40px;
+  }
+  .parts-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  @media (max-width: 900px) { .parts-grid { grid-template-columns: 1fr; } }
+  .parts-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: all 0.3s;
+  }
+  .parts-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(251,192,45,0.3);
+  }
+  .parts-card img {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .parts-card-body { padding: 20px 22px; }
+  .parts-card-brand {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.12em;
+    color: var(--yellow); text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .parts-card h3 {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 17px; font-weight: 600;
+    letter-spacing: -0.01em; margin-bottom: 8px;
+  }
+  .parts-card p { font-size: 13.5px; color: var(--gray-300); line-height: 1.55; }
+
+  /* HOW IT WORKS */
+  .how-it-works {
+    background: var(--cream);
+    padding: 72px 24px;
+  }
+  .hiw-container { max-width: 1240px; margin: 0 auto; }
+  .hiw-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+    margin-top: 36px;
+  }
+  @media (max-width: 900px) { .hiw-grid { grid-template-columns: 1fr; } }
+  .hiw-card {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    border: 1px solid var(--gray-300);
+    position: relative;
+    transition: all 0.25s;
+  }
+  .hiw-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--yellow);
+    box-shadow: 0 12px 32px -8px rgba(20,40,80,0.12);
+  }
+  .hiw-num {
+    display: flex; align-items: baseline; gap: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.12em;
+    color: var(--yellow-deep); font-weight: 700; margin-bottom: 14px;
+  }
+  .hiw-step {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 34px; line-height: 1; font-weight: 800;
+    letter-spacing: -0.02em; color: var(--navy);
+  }
+  .hiw-card h3 {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 22px; font-weight: 600;
+    letter-spacing: -0.015em;
+    margin-bottom: 10px; color: var(--navy);
+  }
+  .hiw-card p { font-size: 14.5px; color: var(--gray-500); line-height: 1.6; }
+
+  .section-h2-light { color: var(--navy); }
+  .section-sub-light { color: var(--gray-500); }
+
+  /* TESTIMONIALS */
+  .testimonials {
+    background: var(--white);
+    padding: 72px 24px;
+    border-top: 1px solid var(--line-dark);
+  }
+  .tst-container { max-width: 1240px; margin: 0 auto; }
+  .tst-head { text-align: center; margin-bottom: 40px; }
+  .tst-head .section-h2 { margin: 0 auto 16px; }
+  .tst-head .section-sub { margin: 0 auto 20px; }
+  .tst-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; letter-spacing: 0.03em; color: var(--gray-500);
+    background: var(--cream); border: 1px solid var(--gray-300);
+    border-radius: 999px; padding: 7px 16px;
+  }
+  .tst-badge .tst-badge-stars { color: var(--yellow-deep); letter-spacing: 1px; }
+  .tst-badge strong { color: var(--navy); }
+  /* Carousel (scroll + swipe) */
+  .tst-carousel { position: relative; }
+  .tst-grid {
+    display: flex;
+    gap: 24px;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scroll-behavior: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 6px 4px 14px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    cursor: grab;
+  }
+  .tst-grid::-webkit-scrollbar { display: none; }
+  .tst-grid.is-dragging { cursor: grabbing; scroll-snap-type: none; }
+  .tst-grid.is-anim { scroll-snap-type: none; }
+  .tst-grid.is-dragging .tst-card { pointer-events: none; }
+  .tst-grid > .tst-card {
+    flex: 0 0 min(340px, 82vw);
+    scroll-snap-align: start;
+  }
+  .tst-arrow {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 44px; height: 44px; z-index: 3;
+    display: grid; place-items: center;
+    background: var(--navy); color: var(--yellow);
+    border: none; border-radius: 50%; cursor: pointer;
+    font-size: 20px; line-height: 1;
+    box-shadow: 0 6px 18px -4px rgba(20,40,80,0.35);
+    transition: background 0.2s, transform 0.2s, opacity 0.2s;
+  }
+  .tst-arrow:hover { background: var(--navy-soft); }
+  .tst-arrow:active { transform: translateY(-50%) scale(0.94); }
+  .tst-arrow.prev { left: -8px; }
+  .tst-arrow.next { right: -8px; }
+  .tst-arrow[disabled] { opacity: 0.35; cursor: default; }
+  @media (max-width: 768px) { .tst-arrow { display: none; } }
+  .tst-more { text-align: center; margin-top: 36px; }
+  .tst-more-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: #1877F2; color: #fff;
+    padding: 13px 26px; border-radius: 10px;
+    font-family: 'Manrope', sans-serif; font-weight: 700; font-size: 15px;
+    text-decoration: none; transition: all 0.15s;
+  }
+  .tst-more-btn:hover { background: #0d6ae0; transform: translateY(-1px); }
+  .tst-card {
+    background: var(--cream);
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-lg);
+    padding: 26px;
+    display: flex; flex-direction: column;
+    transition: all 0.25s;
+  }
+  .tst-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--yellow);
+    box-shadow: 0 12px 32px -8px rgba(20,40,80,0.12);
+  }
+  .tst-stars { color: var(--yellow-deep); font-size: 16px; letter-spacing: 2px; margin-bottom: 14px; }
+  .tst-quote { font-size: 14.5px; color: var(--gray-700); line-height: 1.65; flex-grow: 1; }
+  .tst-foot { display: flex; align-items: center; gap: 12px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line-dark); }
+  .tst-avatar {
+    width: 44px; height: 44px; border-radius: 50%;
+    overflow: hidden; flex-shrink: 0;
+    background: var(--navy);
+    border: 2px solid var(--yellow);
+  }
+  .tst-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .tst-meta { display: flex; flex-direction: column; min-width: 0; }
+  .tst-name { font-weight: 700; font-size: 14px; color: var(--navy); }
+  .tst-date { font-size: 12px; color: var(--gray-500); }
+  .tst-fb { margin-left: auto; font-size: 11px; color: var(--ph-blue); font-weight: 700; white-space: nowrap; }
+
+  /* WE ACCEPT CREDIT CARD BAND */
+  .cc-band {
+    background: var(--navy);
+    color: var(--cream);
+    padding: 26px 24px;
+    position: relative;
+    overflow: hidden;
+    border-top: 3px solid var(--yellow);
+  }
+  .cc-band::before {
+    content: "";
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at 12% 50%, rgba(251,192,45,0.14), transparent 55%);
+    pointer-events: none;
+  }
+  .cc-inner {
+    max-width: 1240px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: center;
+    gap: 22px; flex-wrap: wrap;
+    position: relative;
+  }
+  .cc-icon {
+    font-size: 26px; line-height: 1;
+    background: var(--yellow); color: var(--navy);
+    width: 52px; height: 52px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 6px 18px -6px rgba(251,192,45,0.6);
+  }
+  .cc-text h3 {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: clamp(18px, 2.4vw, 23px); font-weight: 700;
+    letter-spacing: -0.02em; color: var(--white); line-height: 1.15;
+  }
+  .cc-text p { font-size: 13.5px; color: var(--gray-300); margin-top: 3px; }
+  .cc-logos { display: flex; gap: 8px; flex-wrap: wrap; margin-left: 6px; }
+  .cc-logos span {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.14);
+    padding: 8px 12px; border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+    color: var(--cream);
+  }
+  /* CARD PAYMENT LOGO BADGES */
+  .pay-logos { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .pay-logo {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: #fff; border-radius: 6px;
+    height: 34px; min-width: 56px; padding: 0 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+    font-family: Arial, Helvetica, sans-serif; font-weight: 800;
+    font-size: 15px; line-height: 1; letter-spacing: -0.3px;
+  }
+  .pay-logo svg { display: block; }
+  .pay-visa    { color: #1A1F71; font-style: italic; letter-spacing: -0.5px; }
+  .pay-gcash   { color: #0074E0; font-size: 14px; }
+  .pay-bancnet { font-size: 12.5px; }
+  .pay-bancnet .b { color: #E4002B; }
+  .pay-bancnet .n { color: #003DA5; }
+  .pay-mc { padding: 0 9px; }
+  .pay-svg { height: 16px; width: auto; display: block; }
+  .pay-logo.mini .pay-svg { height: 11px; }
+  .pay-img { height: 22px; width: auto; display: block; object-fit: contain; }
+  .pay-logo.mini .pay-img { height: 15px; }
+  /* Mini variant for the hero trust row */
+  .pay-logos.mini { gap: 6px; }
+  .pay-logo.mini {
+    height: 24px; min-width: 42px; padding: 0 7px;
+    font-size: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+  .pay-logo.mini.pay-gcash { font-size: 11px; }
+  .pay-logo.mini.pay-bancnet { font-size: 10px; }
+  .pay-logo.mini svg { width: 24px; height: 15px; }
+  @media (max-width: 720px) {
+    .cc-inner { flex-direction: column; gap: 16px; text-align: center; }
+  }
+
+  /* SHOP PROOF SECTION */
+  .shop-proof {
+    background: var(--navy);
+    color: var(--cream);
+    padding: 64px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .shop-proof::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle at 70% 30%, rgba(251,192,45,0.06), transparent 50%);
+    pointer-events: none;
+  }
+  .proof-container { max-width: 1240px; margin: 0 auto; position: relative; z-index: 1; }
+  .proof-cta-wrap { text-align: center; margin-top: 44px; }
+  .proof-flex {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 56px;
+    align-items: center;
+  }
+  @media (max-width: 900px) { .proof-flex { grid-template-columns: 1fr; gap: 36px; } }
+  .proof-photos img {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: contain;
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .proof-text h2 {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: clamp(28px, 3.5vw, 38px);
+    font-weight: 700; line-height: 1.1;
+    letter-spacing: -0.025em;
+    margin-bottom: 18px;
+  }
+  .proof-text h2 .accent { color: var(--yellow); }
+  .proof-text p {
+    font-size: 15.5px;
+    color: var(--gray-300);
+    line-height: 1.65;
+    margin-bottom: 14px;
+  }
+  .proof-stats {
+    display: flex; gap: 36px; margin-top: 28px;
+    padding-top: 24px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+  }
+  .stat {
+    display: flex; flex-direction: column;
+  }
+  .stat-num {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 36px; font-weight: 700; color: var(--yellow);
+    letter-spacing: -0.02em; line-height: 1;
+  }
+  .stat-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.12em;
+    color: var(--gray-300); text-transform: uppercase; margin-top: 6px;
+  }
+
+  /* FOOTER */
+  footer {
+    background: var(--navy-deep);
+    color: var(--gray-300);
+    padding: 48px 24px 24px;
+  }
+  /* On mobile the fixed bottom bar (Call/Message) overlaps the footer — add clearance */
+  @media (max-width: 640px) {
+    footer { padding-bottom: calc(112px + env(safe-area-inset-bottom, 0px)); }
+  }
+  .footer-container { max-width: 1240px; margin: 0 auto; }
+  .footer-top {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr;
+    gap: 40px;
+    margin-bottom: 32px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  @media (max-width: 768px) { .footer-top { grid-template-columns: 1fr; gap: 28px; } }
+  .footer-brand-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .footer-brand-row img { height: 80px; width: auto; }
+  .footer-brand-row .brand-name {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-weight: 700; font-size: 18px; color: var(--cream); letter-spacing: -0.01em;
+  }
+  .footer-tagline {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.1em;
+    color: var(--yellow); text-transform: uppercase; margin-bottom: 18px;
+  }
+  .footer-desc { font-size: 13.5px; line-height: 1.7; max-width: 360px; }
+  .footer-col h4 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.12em;
+    color: var(--yellow); text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .footer-col p, .footer-col a {
+    font-size: 13.5px; color: var(--gray-300);
+    line-height: 1.7; text-decoration: none; display: block;
+  }
+  .footer-col a:hover { color: var(--yellow); }
+  .footer-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    color: var(--gray-500);
+  }
+  .payment-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .payment-row > span:not(.pay-label) {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    padding: 5px 9px;
+    border-radius: 4px;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+  }
+  .payment-row .pay-label {
+    background: none; border: none; padding: 0;
+    color: var(--gray-300); font-size: 11px; letter-spacing: 0.05em;
+  }
+  @media (max-width: 768px) { .footer-bottom { flex-direction: column; gap: 14px; align-items: flex-start; } }
+  .footer-bottom a { color: var(--gray-300); text-decoration: none; }
+  .footer-bottom a:hover { color: var(--yellow); }
+  .footer-powered {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    color: var(--gray-500);
+  }
+  .footer-powered a {
+    color: var(--gray-300);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .footer-powered a:hover { color: var(--yellow); }
+  .footer-powered img { height: 24px; width: auto; vertical-align: middle; }
+
+  /* ── SUCCESS STATE ── */
+  .success-state {
+    display: none;
+    animation: slide-up 0.45s cubic-bezier(0.16,1,0.3,1);
+  }
+  .success-state.show { display: block; }
+  .success-header {
+    text-align: center;
+    background: linear-gradient(135deg, var(--navy), var(--navy-soft));
+    border-radius: var(--radius);
+    padding: 22px 16px; margin-bottom: 16px; color: var(--cream);
+  }
+  .success-icon { font-size: 36px; margin-bottom: 8px; }
+  .success-title {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 22px; font-weight: 700;
+    letter-spacing: -0.01em; color: var(--yellow); margin-bottom: 4px;
+  }
+  .success-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--gray-300);
+  }
+  .success-summary {
+    background: var(--white);
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius);
+    padding: 14px 16px; margin-bottom: 14px;
+    font-size: 13.5px; color: var(--gray-700); line-height: 1.7;
+  }
+  .success-summary strong {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--navy);
+    display: block; margin-bottom: 6px;
+  }
+  .success-row { display: flex; justify-content: space-between; padding: 3px 0; }
+  .success-row .label { color: var(--gray-500); }
+  .success-row .value { font-weight: 600; color: var(--navy); }
+  .next-steps {
+    background: linear-gradient(135deg, rgba(251,192,45,0.10), rgba(251,192,45,0.03));
+    border: 1px solid rgba(251,192,45,0.3);
+    border-radius: var(--radius);
+    padding: 12px 16px; margin-bottom: 14px;
+    font-size: 12.5px; color: var(--gray-700); line-height: 1.8;
+  }
+  .next-steps strong {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--yellow-deep);
+    display: block; margin-bottom: 6px;
+  }
+  .submit-btn.loading {
+    opacity: 0.7; cursor: not-allowed;
+    background: var(--gray-700);
+  }
+
+  /* ── SERVICES CONFIGURATOR ── */
+  #services-config {
+    margin-top: 14px;
+    border: 1.5px solid var(--navy);
+    border-radius: var(--radius);
+    overflow: hidden;
+    animation: slide-up 0.3s cubic-bezier(0.16,1,0.3,1);
+  }
+  .svc-config-header {
+    background: var(--navy);
+    padding: 11px 14px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .svc-config-title {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 14px; font-weight: 600;
+    color: var(--cream); letter-spacing: -0.01em;
+  }
+  .svc-config-title span { color: var(--yellow); }
+  .svc-config-subtitle {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; text-transform: uppercase;
+    letter-spacing: 0.1em; color: rgba(255,255,255,0.45); margin-top: 2px;
+  }
+  .svc-group { background: var(--white); }
+  .svc-group + .svc-group { border-top: 1px solid var(--gray-100); }
+  .svc-group-header {
+    padding: 8px 14px 3px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--gray-500); font-weight: 700;
+  }
+  .svc-item {
+    display: flex; align-items: center;
+    padding: 6px 14px; gap: 9px;
+  }
+  .svc-item:hover:not(.locked) { background: var(--gray-100); }
+  .svc-item input[type="checkbox"] {
+    width: 15px; height: 15px; flex-shrink: 0;
+    accent-color: var(--navy); cursor: pointer;
+    appearance: auto; -webkit-appearance: auto;
+    background: none; background-image: none;
+    border: none; padding: 0; border-radius: 0;
+  }
+  .svc-item.locked input[type="checkbox"] {
+    opacity: 0.4; pointer-events: none; cursor: default;
+  }
+  .svc-item label {
+    display: flex; justify-content: space-between; align-items: center;
+    width: 100%; cursor: pointer;
+    font-family: 'Manrope', sans-serif; font-size: 13px;
+    color: var(--gray-700); letter-spacing: 0;
+    text-transform: none; margin: 0;
+  }
+  .svc-item.locked label { cursor: default; }
+  #services-config label::before { display: none; counter-increment: none; }
+  .svc-item-name { flex: 1; line-height: 1.35; }
+  .svc-item-note {
+    display: block; font-size: 10px;
+    color: var(--gray-500); margin-top: 1px;
+  }
+  .svc-item-meta {
+    display: flex; align-items: center; gap: 6px; flex-shrink: 0; margin-left: 8px;
+  }
+  .svc-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px; text-transform: uppercase;
+    letter-spacing: 0.08em; padding: 2px 5px;
+    border-radius: 3px; font-weight: 700; white-space: nowrap;
+  }
+  .badge-included { background: rgba(34,197,94,0.12); color: #16a34a; }
+  .pkg-inclusions {
+    display: flex; flex-wrap: wrap; gap: 4px;
+    padding: 6px 14px 10px 38px;
+    border-bottom: 1px solid var(--gray-200);
+  }
+  .pkg-chip {
+    font-size: 10px; font-family: 'Manrope', sans-serif;
+    background: rgba(20,40,80,0.06); color: var(--navy);
+    border-radius: 20px; padding: 2px 8px;
+    font-weight: 600; white-space: nowrap;
+  }
+  .badge-rec {
+    background: var(--yellow); color: var(--navy);
+    font-weight: 800;
+  }
+  .svc-item.recommended {
+    background: rgba(251,192,45,0.10);
+    border-left: 3px solid var(--yellow);
+    margin: 2px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .svc-item.recommended:hover { background: rgba(251,192,45,0.18); }
+  .svc-item.recommended .svc-item-name { color: var(--navy); font-weight: 600; }
+  .svc-item.recommended .svc-price { color: var(--navy); font-weight: 700; }
+  .svc-price {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; font-weight: 600;
+    color: var(--navy); min-width: 56px; text-align: right;
+  }
+  .svc-running-total {
+    background: linear-gradient(135deg, var(--navy), var(--navy-soft));
+    padding: 11px 14px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .svc-total-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; text-transform: uppercase;
+    letter-spacing: 0.12em; color: rgba(255,255,255,0.55);
+  }
+  .svc-total-value {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 22px; font-weight: 700;
+    color: var(--yellow); letter-spacing: -0.02em;
+  }
+</style>
+</head>
+<body>
+
+<!-- Payment brand logos (referenced by the .pay-logo badges below) -->
+<svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true" focusable="false">
+  <symbol id="pm-visa" viewBox="0 0 52 17">
+    <text x="26" y="14.5" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="900" font-style="italic" font-size="17" letter-spacing="0.5" fill="#1434CB">VISA</text>
+  </symbol>
+  <symbol id="pm-gcash" viewBox="0 0 94 24">
+    <rect x="1" y="1" width="22" height="22" rx="6.5" fill="#007DFE"/>
+    <circle cx="12" cy="12" r="6.2" fill="#fff"/>
+    <circle cx="12" cy="12" r="2.7" fill="#007DFE"/>
+    <rect x="12" y="10.4" width="7.5" height="3.2" fill="#007DFE"/>
+    <text x="29" y="17.5" font-family="Arial,Helvetica,sans-serif" font-weight="800" font-size="16" fill="#007DFE">GCash</text>
+  </symbol>
+  <symbol id="pm-bancnet" viewBox="0 0 110 24">
+    <rect x="0.5" y="4.5" width="15" height="15" rx="3" fill="#00539F"/>
+    <text x="8" y="16.2" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="900" font-size="12" fill="#fff">B</text>
+    <text x="19" y="17.5" font-family="Arial,Helvetica,sans-serif" font-weight="900" font-size="16"><tspan fill="#ED1C24">Banc</tspan><tspan fill="#00539F">Net</tspan></text>
+  </symbol>
+</svg>
+
+<div class="status-bar">
+  <span><span class="dot"></span>Open Now · Mon-Sat 8AM-5PM</span>
+  <span>📞 0998-1516-245</span>
+</div>
+
+<nav>
+  <div class="logo-row">
+    <img class="logo-img" src="ctech-logo.png" alt="C-Tech Automotive">
+    <div class="logo-text">C-Tech Automotive<small>Cars &amp; Trucks</small></div>
+  </div>
+  <div class="nav-links">
+    <a href="services.html">Services</a>
+    <a href="#how">How It Works</a>
+    <a href="#shop">Our Shop</a>
+    <a href="#contact">Contact</a>
+  </div>
+  <a href="#calc" class="nav-cta">Get Free Estimate</a>
+</nav>
+
+<section class="hero">
+  <video class="hero-video" autoplay muted loop playsinline preload="auto" poster="assets/shop-exterior.jpg">
+    <source src="assets/hero-video.mp4" type="video/mp4">
+  </video>
+  <div class="hero-overlay"></div>
+  <div class="hero-container">
+    <div>
+      <div class="hero-tag"><span class="dot"></span>Diagnostic-First · Honest · Transparent</div>
+      <h1>Trusted PMS, Oil Change &amp; Auto Services in Bulacan<br><span class="accent">Proper Inspection. Clear Recommendations.</span></h1>
+      <p class="hero-sub">Get a fast PMS or change oil estimate for your vehicle in 30 seconds. C-Tech Automotive uses diagnostic-first service, transparent pricing, and clear approval before any extra repair.</p>
+      <div class="hero-highlight">
+        <svg class="hl-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M12 2.5 5 5.2v5.6c0 4.6 3.1 7.9 7 9.2 3.9-1.3 7-4.6 7-9.2V5.2l-7-2.7z" fill="currentColor" fill-opacity="0.15" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"></path>
+          <path d="M8.6 12.2l2.3 2.3 4.5-4.7" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+        Free ECU Scan + Vehicle Safety Inspection in every PMS Booking
+      </div>
+      <div class="trust-row">
+        <span><span class="check">✓</span>30-Second Estimate</span>
+        <span><span class="check">✓</span>1-Hour Response</span>
+        <span><span class="check">✓</span>Transparent Pricing</span>
+        <div class="pay-logos mini" aria-label="Card payments accepted">
+          <span class="pay-logo mini pay-visa"><img class="pay-img" src="assets/visa.png" alt="Visa"></span>
+          <span class="pay-logo mini pay-mc"><img class="pay-img" src="assets/mastercard.png" alt="Mastercard"></span>
+          <span class="pay-logo mini pay-gcash"><img class="pay-img" src="assets/gcash.png" alt="GCash"></span>
+          <span class="pay-logo mini pay-bancnet"><svg class="pay-svg" viewBox="0 0 110 24"><use href="#pm-bancnet"></use></svg></span>
+        </div>
+      </div>
+      <p class="hero-serving">📍 Serving Bulacan and nearby Cities</p>
+      <a href="#calc" class="hero-cta">⚡ Get Free PMS & Oil Change Estimate in 30 Seconds<span>→</span></a>
+    </div>
+  </div>
+</section>
+
+<!-- FREE ESTIMATE -->
+<section class="estimate-section" id="calc">
+  <div class="estimate-head">
+    <h2>Get Your Free PMS &amp; Oil Change Estimate</h2>
+    <p>Pick your vehicle and get a transparent PMS or change-oil estimate in 30 seconds — no obligation.</p>
+  </div>
+    <div class="calc">
+
+      <!-- SHARED HEADER — always visible -->
+      <div class="calc-header">
+        <div>
+          <div class="calc-title" id="calc-title">Get your free PMS estimate</div>
+          <div class="calc-title-sub"><span class="instant-pop">⚡ Instant</span></div>
+        </div>
+        <div class="calc-badge">FREE</div>
+      </div>
+
+      <!-- SERVICE TYPE SELECTOR -->
+      <div class="service-type-row">
+        <button class="svc-btn active" data-svc="pms">
+          <span class="icon">🔧</span>
+          <span class="label">PMS</span>
+        </button>
+        <button class="svc-btn" data-svc="co">
+          <span class="icon">🛢️</span>
+          <span class="label">Change Oil</span>
+        </button>
+        <button class="svc-btn" data-svc="repair">
+          <span class="icon">🔩</span>
+          <span class="label">Repair</span>
+        </button>
+      </div>
+
+      <!-- PMS FORM -->
+      <div id="pms-form">
+        <div class="field-grid">
+          <div class="field"><label>Brand</label><select id="brand"><option value="">Select brand</option></select></div>
+          <div class="field"><label>Model</label><select id="model" disabled><option value="">Select model</option></select></div>
+          <div class="field"><label>Year</label><select id="year" disabled><option value="">Select year</option></select></div>
+          <div class="field"><label>Transmission</label>
+            <select id="trans" disabled>
+              <option value="">Select</option>
+              <option value="AT">Automatic (AT)</option>
+              <option value="MT">Manual (MT)</option>
+            </select>
+          </div>
+          <div class="field full"><label>Odometer (KM)</label>
+            <input type="number" id="odo" inputmode="numeric" min="0" max="500000" step="500" placeholder="e.g. 42000 — your exact mileage" disabled>
+            <div class="km-slider is-disabled" data-km-slider>
+              <div class="km-track">
+                <div class="km-fill"></div>
+                <input type="range" class="km-range" min="0" max="150000" step="1000" value="0" disabled aria-label="Odometer quick select">
+              </div>
+              <div class="km-ticks"><span>0</span><span>50K</span><span>100K</span><span>150K</span></div>
+              <div class="km-hint">👆 Swipe to set your mileage — or type it above</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- OIL TYPE SELECTOR -->
+        <div class="field full" style="margin-top:14px;">
+          <label style="font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--gray-500);">Oil Type</label>
+          <div class="oil-type-toggle" id="pms-oil-toggle">
+            <button type="button" class="oil-btn active" data-synth="SemiSynth">Semi-Synthetic 10W40</button>
+            <button type="button" class="oil-btn" data-synth="FullySynth">Fully Synthetic 5W40</button>
+          </div>
+        </div>
+
+        <!-- Contact Details -->
+        <div class="contact-section">
+          <div class="contact-section-title">📋 Your Contact Details</div>
+          <div class="field full" style="margin-bottom:10px;">
+            <label style="counter-increment:none;">Full Name</label>
+            <input type="text" id="pms-name" placeholder="e.g. Juan dela Cruz" autocomplete="name">
+          </div>
+          <div class="field-grid">
+            <div class="field">
+              <label style="counter-increment:none;">Contact Number</label>
+              <input type="tel" id="pms-contact" placeholder="09XX XXX XXXX" autocomplete="tel">
+            </div>
+            <div class="field">
+              <label style="counter-increment:none;">Email</label>
+              <input type="email" id="pms-email" placeholder="your@email.com (optional)" autocomplete="email">
+            </div>
+          </div>
+        </div>
+        <button class="submit-btn" id="submit" disabled>Get My Free Estimate<span class="arrow">→</span></button>
+        <div class="micro-note">⚡ Estimate ready in 3 seconds</div>
+      </div>
+
+      <!-- CHANGE OIL CALCULATOR -->
+      <div id="co-form" style="display:none">
+        <div class="field-grid">
+          <div class="field"><label>Brand</label><select id="co-brand"><option value="">Select brand</option></select></div>
+          <div class="field"><label>Model</label><select id="co-model" disabled><option value="">Select model</option></select></div>
+          <div class="field"><label>Year</label><select id="co-year" disabled><option value="">Select year</option></select></div>
+          <div class="field"><label>Transmission</label>
+            <select id="co-trans" disabled>
+              <option value="">Select</option>
+              <option value="AT">Automatic (AT)</option>
+              <option value="MT">Manual (MT)</option>
+            </select>
+          </div>
+          <div class="field full"><label>Odometer (KM)</label>
+            <input type="number" id="co-odo" inputmode="numeric" min="0" max="500000" step="500" placeholder="e.g. 42000 — your exact mileage" disabled>
+            <div class="km-slider is-disabled" data-km-slider>
+              <div class="km-track">
+                <div class="km-fill"></div>
+                <input type="range" class="km-range" min="0" max="150000" step="1000" value="0" disabled aria-label="Odometer quick select">
+              </div>
+              <div class="km-ticks"><span>0</span><span>50K</span><span>100K</span><span>150K</span></div>
+              <div class="km-hint">👆 Swipe to set your mileage — or type it above</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- OIL TYPE SELECTOR -->
+        <div class="field full" style="margin-top:14px;">
+          <label style="font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--gray-500);">Oil Type</label>
+          <div class="oil-type-toggle" id="co-oil-toggle">
+            <button type="button" class="oil-btn active" data-synth="SemiSynth">Semi-Synthetic 10W40</button>
+            <button type="button" class="oil-btn" data-synth="FullySynth">Fully Synthetic 5W40</button>
+          </div>
+        </div>
+
+        <div class="contact-section">
+          <div class="contact-section-title">📋 Your Contact Details</div>
+          <div class="field full" style="margin-bottom:10px;">
+            <label style="counter-increment:none;">Full Name</label>
+            <input type="text" id="co-name" placeholder="e.g. Juan dela Cruz" autocomplete="name">
+          </div>
+          <div class="field-grid">
+            <div class="field">
+              <label style="counter-increment:none;">Contact Number</label>
+              <input type="tel" id="co-contact" placeholder="09XX XXX XXXX" autocomplete="tel">
+            </div>
+            <div class="field">
+              <label style="counter-increment:none;">Email</label>
+              <input type="email" id="co-email" placeholder="your@email.com" autocomplete="email" required>
+            </div>
+          </div>
+        </div>
+        <button class="submit-btn" id="co-submit" disabled>Get My Oil Change Estimate<span class="arrow">→</span></button>
+        <div class="micro-note">⚡ Estimate ready in 3 seconds</div>
+      </div>
+
+      <!-- REPAIR INQUIRY FORM -->
+      <div id="repair-form" style="display:none">
+        <div class="field-grid">
+          <div class="field"><label>Brand</label><select id="r-brand"><option value="">Select brand</option></select></div>
+          <div class="field"><label>Model</label><select id="r-model" disabled><option value="">Select model</option></select></div>
+          <div class="field full"><label>Year</label><select id="r-year" disabled><option value="">Select year</option></select></div>
+        </div>
+        <div style="margin-top:12px; display:flex; flex-direction:column; gap:6px;">
+          <label style="font-family:'JetBrains Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:0.1em; color:var(--gray-500);">Describe your concern or symptoms</label>
+          <textarea id="r-concern" class="concern-box"
+            placeholder="E.g. Maingay ang makina pagsisimula, nag-o-overheat, may tangis na tunog sa ilalim, ayaw mag-start, mahamok ang brakes... Maging detalyado para mas mabilis ang aming tugon."></textarea>
+        </div>
+
+        <!-- Contact Details -->
+        <div class="contact-section">
+          <div class="contact-section-title">📋 Your Contact Details</div>
+          <div class="field full" style="margin-bottom:10px;">
+            <label style="counter-increment:none;">Full Name</label>
+            <input type="text" id="r-name" placeholder="e.g. Juan dela Cruz" autocomplete="name">
+          </div>
+          <div class="field-grid">
+            <div class="field">
+              <label style="counter-increment:none;">Contact Number</label>
+              <input type="tel" id="r-contact" placeholder="09XX XXX XXXX" autocomplete="tel">
+            </div>
+            <div class="field">
+              <label style="counter-increment:none;">Email</label>
+              <input type="email" id="r-email" placeholder="your@email.com" autocomplete="email" required>
+            </div>
+          </div>
+        </div>
+        <button class="submit-btn" id="repair-submit" disabled style="margin-top:16px;">
+          Send Repair Inquiry via Messenger<span class="arrow">→</span>
+        </button>
+        <div class="micro-note">We respond within 1 hour · Mon-Sat 8AM-5PM</div>
+      </div>
+
+      <!-- PMS RESULT PANEL -->
+      <div class="result" id="result-state">
+        <div class="result-header">
+          <div class="result-vehicle" id="result-vehicle"></div>
+          <div class="result-total-label">Estimated Total</div>
+          <div class="result-total">₱<span id="result-total">0</span><small>est.</small></div>
+        </div>
+        <div class="breakdown">
+          <div class="breakdown-title" id="breakdown-title">Package Breakdown</div>
+          <div id="breakdown-items"></div>
+        </div>
+
+        <!-- ADD-ONS (populated on submit) -->
+        <div id="result-addons" style="display:none">
+          <div class="svc-group" id="result-rec-group" style="display:none">
+            <div class="svc-group-header">⚡ Recommended at your KM interval</div>
+            <div id="result-rec-list"></div>
+          </div>
+          <div class="svc-group">
+            <div class="svc-group-header">➕ Optional Add-ons</div>
+            <div id="result-opt-list"></div>
+          </div>
+          <div class="svc-running-total">
+            <div class="svc-total-label">Updated Total</div>
+            <div class="svc-total-value">₱<span id="result-running-total">0</span></div>
+          </div>
+        </div>
+
+        <div class="freebies">
+          <div class="freebies-title">✨ Free with your PMS</div>
+          <ul>
+            <li>Full ECU Scan</li><li>Safety Inspection</li>
+            <li>Battery Check</li><li>Under-Chassis Check</li>
+            <li>Clean &amp; Adjust Brakes</li><li>Tire Rotation*</li>
+          </ul>
+        </div>
+        <div class="notice">
+          <strong>🔍 Diagnostic-Driven Notice</strong>
+          This is your base PMS estimate. Additional services (brake pads, EGR cleaning, etc.) are inspection-based. We inform you and seek approval before any extra work. No surprises.
+        </div>
+        <!-- PREFERRED DATE SELECTOR -->
+        <div class="date-picker-wrap">
+          <div class="date-picker-label">📅 Preferred visit date</div>
+          <input type="date" id="visit-date" class="visit-date-input">
+          <div class="visit-date-display" id="visit-date-display"></div>
+          <div class="date-picker-label" style="margin-top:16px;">⏰ Preferred time <span class="slots-hint">· 2 slots per time</span></div>
+          <div class="day-picker time-picker" id="time-picker">
+            <button type="button" class="day-btn time-btn" data-time="8:00 AM"><span class="tb-time">8AM</span><span class="tb-slots">2 slots</span></button>
+            <button type="button" class="day-btn time-btn" data-time="10:00 AM"><span class="tb-time">10AM</span><span class="tb-slots">2 slots</span></button>
+            <button type="button" class="day-btn time-btn" data-time="1:00 PM"><span class="tb-time">1PM</span><span class="tb-slots">2 slots</span></button>
+            <button type="button" class="day-btn time-btn" data-time="3:00 PM"><span class="tb-time">3PM</span><span class="tb-slots">2 slots</span></button>
+          </div>
+          <div class="date-picker-note">Closed Sundays · Mon–Sat 8AM–5PM</div>
+        </div>
+        <div class="result-actions">
+          <button class="result-cta" id="email-estimate-btn">📅 Reserve my Slot<span>→</span></button>
+        </div>
+        <div id="email-confirm" class="email-confirm" role="status"></div>
+        <button class="reset-link" id="reset-btn">← Try another vehicle</button>
+      </div>
+
+      <!-- SUCCESS STATE (all service types) -->
+      <div class="success-state" id="success-state">
+        <div class="success-header">
+          <div class="success-icon">✅</div>
+          <div class="success-title">Booking Request Sent!</div>
+          <div class="success-sub">We've opened Messenger — chat with us to confirm your slot · Mon-Sat 8AM-5PM</div>
+        </div>
+        <div class="success-summary">
+          <strong>📋 Your Estimate & Booking Details</strong>
+          <div id="success-summary-rows"></div>
+        </div>
+        <div class="next-steps">
+          <strong>⚡ What happens next</strong>
+          1. Your estimate & preferred schedule reached our team automatically<br>
+          2. Continue in the <strong>Messenger chat we just opened</strong><br>
+          3. We reply on Messenger within <strong>1 hour</strong> to <strong>confirm your booking date & final details</strong><br>
+          4. Bring your vehicle on the confirmed date — we'll be ready
+        </div>
+        <a id="success-messenger-link" href="https://m.me/cteachautomotive" target="_blank"
+           style="display:block; text-decoration:none;">
+          <button class="result-cta" style="width:100%;">
+            💬 If you have any questions, feel free to reach out
+          </button>
+        </a>
+        <div class="micro-note" style="margin-top:12px;">
+          Can't open Messenger? Call us: <strong>0998-1516-245</strong>
+        </div>
+        <button class="reset-link" id="success-reset">← Submit another inquiry</button>
+      </div>
+    </div>
+</section>
+
+<!-- WE ACCEPT CREDIT CARD -->
+<section class="cc-band" aria-label="Card payments accepted">
+  <div class="cc-inner">
+    <div class="cc-icon">💳</div>
+    <div class="cc-text">
+      <h3>We Accept Credit &amp; Debit Cards</h3>
+      <p>Pay conveniently in-store — no need for exact cash.</p>
+    </div>
+    <div class="pay-logos">
+      <span class="pay-logo pay-visa"><img class="pay-img" src="assets/visa.png" alt="Visa"></span>
+      <span class="pay-logo pay-mc"><img class="pay-img" src="assets/mastercard.png" alt="Mastercard"></span>
+      <span class="pay-logo pay-gcash"><img class="pay-img" src="assets/gcash.png" alt="GCash"></span>
+      <span class="pay-logo pay-bancnet"><svg class="pay-svg" viewBox="0 0 110 24"><use href="#pm-bancnet"></use></svg></span>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="testimonials" id="reviews">
+  <div class="tst-container">
+    <div class="tst-head">
+      <div class="section-tag" style="color: var(--yellow-deep);">WHAT DRIVERS SAY</div>
+      <h2 class="section-h2 section-h2-light">Trusted Auto Shop in Bulacan</h2>
+      <p class="section-sub section-sub-light">Real, unedited recommendations from C-Tech customers on Facebook.</p>
+      <div class="tst-badge"><span class="tst-badge-stars">★★★★★</span> <strong>5.0</strong> · Verified Facebook recommendations</div>
+    </div>
+    <div class="tst-carousel">
+    <button class="tst-arrow prev" type="button" aria-label="Previous reviews">‹</button>
+    <div class="tst-grid">
+
+      <div class="tst-card">
+        <div class="tst-stars">★★★★★</div>
+        <p class="tst-quote">"Thank you very much for taking care of my car. Your shop is highly recommendable for its excellent service, and the staff — especially the mechanics — are truly passionate about their work."</p>
+        <div class="tst-foot">
+          <div class="tst-avatar"><img src="assets/reviews/kenneth.png" alt="Kenneth Martin Cruz" loading="lazy"></div>
+          <div class="tst-meta">
+            <span class="tst-name">Kenneth Martin Cruz</span>
+            <span class="tst-date">May 9, 2025</span>
+          </div>
+          <span class="tst-fb">f</span>
+        </div>
+      </div>
+
+      <div class="tst-card">
+        <div class="tst-stars">★★★★★</div>
+        <p class="tst-quote">"Sobrang accommodating ng mechanic nila. Fair ang treatment kahit ano pa sasakyan mo, at may air-conditioned waiting area. Sa kanila na talaga ako magpapa-PMS ng sasakyan ko. Highly recommended!"</p>
+        <div class="tst-foot">
+          <div class="tst-avatar"><img src="assets/reviews/emi.png" alt="Emi Talavera-Pablo" loading="lazy"></div>
+          <div class="tst-meta">
+            <span class="tst-name">Emi Talavera-Pablo</span>
+            <span class="tst-date">April 14, 2025</span>
+          </div>
+          <span class="tst-fb">f</span>
+        </div>
+      </div>
+
+      <div class="tst-card">
+        <div class="tst-stars">★★★★★</div>
+        <p class="tst-quote">"They will price the work fairly, and you can be sure with the quality of their work. I had my PMS with them recently and I am very satisfied with how they maintained my car."</p>
+        <div class="tst-foot">
+          <div class="tst-avatar"><img src="assets/reviews/france.png" alt="France Lee" loading="lazy"></div>
+          <div class="tst-meta">
+            <span class="tst-name">France Lee</span>
+            <span class="tst-date">September 5, 2024</span>
+          </div>
+          <span class="tst-fb">f</span>
+        </div>
+      </div>
+
+      <div class="tst-card">
+        <div class="tst-stars">★★★★★</div>
+        <p class="tst-quote">"Very satisfied with the service here. They even have a lifter to check the tires, which in my case was the issue. Skilled ang mga mechanics at mabusisi to make sure everything is correctly in place. Highly recommended!"</p>
+        <div class="tst-foot">
+          <div class="tst-avatar"><img src="assets/reviews/roy.png" alt="Roy Lapitan" loading="lazy"></div>
+          <div class="tst-meta">
+            <span class="tst-name">Roy Lapitan</span>
+            <span class="tst-date">May 14, 2024</span>
+          </div>
+          <span class="tst-fb">f</span>
+        </div>
+      </div>
+
+      <div class="tst-card">
+        <div class="tst-stars">★★★★★</div>
+        <p class="tst-quote">"Highly recommended 👌 Very professional at helpful ang mga technician nyo kahit gaano kalakas ang bagyo. Kahit nasa barko ako, very supportive ang online crew nila para lagi ako updated sa unit. Salamat talaga, C-Tech! ❤️"</p>
+        <div class="tst-foot">
+          <div class="tst-avatar"><img src="assets/reviews/raymond.png" alt="Raymond Eusebio" loading="lazy"></div>
+          <div class="tst-meta">
+            <span class="tst-name">Raymond Eusebio</span>
+            <span class="tst-date">July 30, 2024</span>
+          </div>
+          <span class="tst-fb">f</span>
+        </div>
+      </div>
+
+      <div class="tst-card">
+        <div class="tst-stars">★★★★★</div>
+        <p class="tst-quote">"Sobrang solid ng service. May attention to detail ang mga staff at very accommodating. Sulit ang bayad — plus di sila mahal maningil. 💯"</p>
+        <div class="tst-foot">
+          <div class="tst-avatar"><img src="assets/reviews/louie.png" alt="Louie Angelo Surio" loading="lazy"></div>
+          <div class="tst-meta">
+            <span class="tst-name">Louie Angelo Surio</span>
+            <span class="tst-date">May 3, 2024</span>
+          </div>
+          <span class="tst-fb">f</span>
+        </div>
+      </div>
+
+    </div>
+    <button class="tst-arrow next" type="button" aria-label="Next reviews">›</button>
+    </div>
+    <div class="tst-more">
+      <a href="https://www.facebook.com/cteachautomotive/reviews/?id=61555751113236&sk=reviews" target="_blank" rel="noopener" class="tst-more-btn">See More Reviews on Facebook →</a>
+    </div>
+    <script>
+    (function () {
+      var carousel = document.currentScript.parentElement.querySelector('.tst-carousel');
+      if (!carousel) return;
+      var track = carousel.querySelector('.tst-grid');
+      var prev = carousel.querySelector('.tst-arrow.prev');
+      var next = carousel.querySelector('.tst-arrow.next');
+      if (!track) return;
+
+      function maxScroll() { return Math.max(0, track.scrollWidth - track.clientWidth); }
+      function step() {
+        var card = track.querySelector('.tst-card');
+        var gap = parseFloat(getComputedStyle(track).columnGap || getComputedStyle(track).gap) || 24;
+        return card ? card.offsetWidth + gap : track.clientWidth * 0.85;
+      }
+      function updateArrows() {
+        if (!prev || !next) return;
+        prev.disabled = track.scrollLeft <= 8;
+        next.disabled = track.scrollLeft >= maxScroll() - 8;
+      }
+
+      /* Native smooth-scroll is unreliable here (and mandatory snap fights it),
+         so animate scrollLeft ourselves with rAF and instant per-frame writes. */
+      var anim = null;
+      function cancelAnim() { if (anim) { clearInterval(anim); anim = null; track.classList.remove('is-anim'); } }
+      function animateTo(target) {
+        target = Math.max(0, Math.min(target, maxScroll()));
+        cancelAnim();
+        var start = track.scrollLeft, dist = target - start;
+        if (Math.abs(dist) < 1) { track.scrollLeft = target; updateArrows(); return; }
+        var dur = 420, t0 = Date.now();
+        track.classList.add('is-anim');            /* disables snap during animation */
+        anim = setInterval(function () {
+          var p = Math.min(1, (Date.now() - t0) / dur);
+          var e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2; /* easeInOutQuad */
+          track.scrollLeft = start + dist * e;
+          if (p >= 1) { clearInterval(anim); anim = null; track.classList.remove('is-anim'); updateArrows(); }
+        }, 16);
+      }
+      function go(dir) {
+        var s = step();
+        var idx = Math.round(track.scrollLeft / s);
+        animateTo((idx + dir) * s);
+      }
+      if (prev) prev.addEventListener('click', function () { go(-1); });
+      if (next) next.addEventListener('click', function () { go(1); });
+      track.addEventListener('scroll', updateArrows, { passive: true });
+      window.addEventListener('resize', updateArrows);
+      updateArrows();
+
+      /* Drag-to-swipe (mouse / pen); native touch scrolling handles fingers */
+      var down = false, startX = 0, startScroll = 0, moved = false;
+      track.addEventListener('pointerdown', function (e) {
+        if (e.pointerType === 'touch') return;
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        cancelAnim();
+        down = true; moved = false;
+        startX = e.clientX; startScroll = track.scrollLeft;
+        track.classList.add('is-dragging');
+      });
+      track.addEventListener('pointermove', function (e) {
+        if (!down) return;
+        var dx = e.clientX - startX;
+        if (Math.abs(dx) > 4) moved = true;
+        track.scrollLeft = startScroll - dx;
+      });
+      function endDrag() {
+        if (!down) return;
+        down = false;
+        track.classList.remove('is-dragging');
+        /* snap to nearest card */
+        var s = step();
+        animateTo(Math.round(track.scrollLeft / s) * s);
+      }
+      track.addEventListener('pointerup', endDrag);
+      track.addEventListener('pointercancel', endDrag);
+      track.addEventListener('pointerleave', endDrag);
+      track.addEventListener('click', function (e) { if (moved) { e.preventDefault(); e.stopPropagation(); } }, true);
+
+      /* Gentle auto-advance; pauses on hover / interaction / off-screen */
+      var timer = null, paused = false;
+      function tick() {
+        if (paused) return;
+        if (track.scrollLeft >= maxScroll() - 2) animateTo(0);
+        else go(1);
+      }
+      function start() { if (!timer) timer = setInterval(tick, 4500); }
+      function stop() { if (timer) { clearInterval(timer); timer = null; } }
+      ['mouseenter', 'pointerdown', 'touchstart', 'focusin'].forEach(function (ev) {
+        carousel.addEventListener(ev, function () { paused = true; }, { passive: true });
+      });
+      ['mouseleave', 'touchend', 'focusout'].forEach(function (ev) {
+        carousel.addEventListener(ev, function () { paused = false; }, { passive: true });
+      });
+      if ('IntersectionObserver' in window) {
+        new IntersectionObserver(function (entries) {
+          entries.forEach(function (en) { en.isIntersecting ? start() : stop(); });
+        }, { threshold: 0.2 }).observe(carousel);
+      } else { start(); }
+    })();
+    </script>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how-it-works" id="how">
+  <div class="hiw-container">
+    <div class="section-tag" style="color: var(--yellow-deep);">HOW IT WORKS</div>
+    <h2 class="section-h2 section-h2-light">From inquiry to road-ready in three simple steps.</h2>
+    <p class="section-sub section-sub-light">No vague "depende po" pricing. No 5-hour wait for a quote. C-Tech respects your time and your wallet.</p>
+    <div class="hiw-grid">
+      <div class="hiw-card">
+        <div class="hiw-num"><span class="hiw-step">01</span> TELL US YOUR CAR</div>
+        <h3>30-Second Quote</h3>
+        <p>Pick your brand, model, year, and current odometer above. The calculator gives you a transparent estimate instantly based on real C-Tech pricing — no fluff.</p>
+      </div>
+      <div class="hiw-card">
+        <div class="hiw-num"><span class="hiw-step">02</span> RESERVE YOUR SLOT</div>
+        <h3>1-Tap Booking</h3>
+        <p>One tap sends your details straight to our inbox. Our admin or team responds within 1 hour, confirms your slot, and answers any questions.</p>
+      </div>
+      <div class="hiw-card">
+        <div class="hiw-num"><span class="hiw-step">03</span> DIAGNOSTIC-DRIVEN SERVICE</div>
+        <h3>Inspect → Inform → Service</h3>
+        <p>We don't replace what's not broken. Every vehicle gets ECU scan + safety inspection FREE. Found extra work? We tell you first and wait for your approval.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SHOP PROOF -->
+<section class="shop-proof" id="shop">
+  <div class="proof-container">
+    <div class="proof-flex">
+      <div class="proof-photos">
+        <img src="assets/shop-collage.png" alt="C-Tech Automotive shop, team, and service work in Pulilan, Bulacan">
+      </div>
+      <div class="proof-text">
+        <div class="section-tag">A REAL SHOP · A REAL TEAM</div>
+        <h2>Built in Bulacan. <span class="accent">Trusted across the province.</span></h2>
+        <p>C-Tech Automotive is a full-service auto care center located along DRT Highway, Sto. Cristo, Pulilan. Six service bays, diagnostic-trained technicians, and a commitment to honest, transparent service for every client — from sedans to pickups to commercial vans.</p>
+        <p>We service Bulacan and nearby cities — and we welcome customers driving in from Manila for premium service at fair Bulacan prices.</p>
+        <div class="proof-stats">
+          <div class="stat"><div class="stat-num">6</div><div class="stat-label">Service Bays</div></div>
+          <div class="stat"><div class="stat-num">100%</div><div class="stat-label">Diagnostic-Driven</div></div>
+          <div class="stat"><div class="stat-num">1HR</div><div class="stat-label">Response SLA</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="proof-cta-wrap">
+      <a href="#calc" class="hero-cta">⚡ Get Free PMS &amp; Oil Change Estimate in 30 Seconds<span>→</span></a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer id="contact">
+  <div class="footer-container">
+    <div class="footer-top">
+      <div>
+        <div class="footer-brand-row">
+          <img class="logo-img" src="ctech-logo.png" alt="C-Tech Automotive">
+          <span class="brand-name">C-Tech Automotive</span>
+        </div>
+        <div class="footer-tagline">NEXT-LEVEL AUTOMOTIVE EXCELLENCE</div>
+        <p class="footer-desc">Next-Level Automotive Excellence for Cars &amp; Trucks. Premium OEM parts, premium-quality oils suited for Philippine driving conditions, transparent pricing, and diagnostic-first service.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Visit Us</h4>
+        <p>9016 DRT Highway<br>Sto. Cristo, Pulilan<br>Bulacan, Philippines</p>
+        <p style="margin-top: 10px;">Mon-Sat: 8 AM – 5 PM<br>Sunday: Closed</p>
+      </div>
+      <div class="footer-col">
+        <h4>Get In Touch</h4>
+        <a href="tel:09981516245">📞 0998-1516-245</a>
+        <a href="https://m.me/cteachautomotive">💬 Messenger</a>
+        <a href="https://www.facebook.com/cteachautomotive" target="_blank">📘 Facebook Page</a>
+        <a href="https://maps.app.goo.gl/ntzCNv1DbW5EnXSR8" target="_blank" rel="noopener">🗺️ Google Maps</a>
+        <a href="https://www.waze.com/ul?q=C-Tech%20Automotive%20DRT%20Highway%20Sto.%20Cristo%20Pulilan%20Bulacan&navigate=yes" target="_blank" rel="noopener">🧭 Waze</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div>© 2026 C-Tech Automotive &nbsp;|&nbsp; <a href="https://www.facebook.com/cteachautomotive" target="_blank" rel="noopener">Facebook Page</a> &nbsp;|&nbsp; All Rights Reserved</div>
+      <div class="payment-row">
+        <span class="pay-label">💳 We accept card payments:</span>
+        <div class="pay-logos">
+          <span class="pay-logo pay-visa"><img class="pay-img" src="assets/visa.png" alt="Visa"></span>
+          <span class="pay-logo pay-mc"><img class="pay-img" src="assets/mastercard.png" alt="Mastercard"></span>
+          <span class="pay-logo pay-gcash"><img class="pay-img" src="assets/gcash.png" alt="GCash"></span>
+          <span class="pay-logo pay-bancnet"><svg class="pay-svg" viewBox="0 0 110 24"><use href="#pm-bancnet"></use></svg></span>
+        </div>
+      </div>
+    </div>
+    <div class="footer-powered">
+      Powered by
+      <a href="https://www.facebook.com/TotoGaragehomeservice/" target="_blank" rel="noopener">
+        <img src="assets/dealerpath.png" alt="DealerPath Digital">
+        DealerPath Digital
+      </a>
+    </div>
+  </div>
+</footer>
+
+<script>
+
+// ═══════════════════════════════════════════════
+// BACKEND NOTIFICATIONS
+// All inquiry/lead notifications are sent by email through our own serverless
+// function (/api/send-email → Resend). See postEmail() / sendEmail() below.
+// ═══════════════════════════════════════════════
+
+// ── MESSENGER BOOKING LINK ──
+// Encodes the booking (unit / service / date) into the m.me referral so the
+// confirmation bot (api/messenger-webhook.js) can verify the details back to
+// the client. Falls back to a plain link if encoding fails or gets too long.
+const MESSENGER_PAGE = 'cteachautomotive';
+function messengerBookingUrl(fields) {
+  try {
+    const clean = {};
+    Object.entries(fields).forEach(([k, v]) => {
+      const s = (v == null ? '' : String(v)).trim();
+      if (s && s !== 'Not specified' && s !== 'Not provided') clean[k] = s;
+    });
+    if (clean.u || clean.s) {
+      const ref = btoa(unescape(encodeURIComponent(JSON.stringify(clean))))
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      if (ref.length <= 900) return `https://m.me/${MESSENGER_PAGE}?ref=${ref}`;
+    }
+  } catch (e) { /* fall through to plain link */ }
+  return `https://m.me/${MESSENGER_PAGE}`;
+}
+
+// ── TELEGRAM NOTIFICATION ──
+// Relayed through our own serverless function (/api/notify-telegram) so the
+// bot token stays server-side and the call isn't blocked by mobile/ad-blockers.
+function notifyTelegram(summary) {
+  fetch('/api/notify-telegram', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ summary })
+  }).catch(() => {});
+}
+
+// ── EMAIL NOTIFICATION ──
+function postEmail(summary, breakdown, opts) {
+  opts = opts || {};
+  return fetch('/api/send-email', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      summary,
+      breakdown,
+      inclusions: opts.inclusions || currentInclusions(),
+      freebies:   opts.freebies   || currentFreebies(),
+      customerOnly: !!opts.customerOnly
+    })
+  });
+}
+// Fire-and-forget (admin + customer) — used on estimate generation
+function sendEmail(summary, breakdown, opts) {
+  postEmail(summary, breakdown, opts).catch(() => {});
+}
+
+// Reads the currently-shown estimate line items (base package + any ticked add-ons)
+function currentBreakdown() {
+  const base = [...document.querySelectorAll('#breakdown-items .breakdown-item')].map(r => ({
+    name:  r.querySelector('.name')?.textContent?.trim()  || '',
+    price: r.querySelector('.price')?.textContent?.trim() || ''
+  }));
+  const addons = [...document.querySelectorAll('#result-addons input[type="checkbox"]:checked')].map(cb => ({
+    name:  cb.dataset.name || '',
+    price: '₱' + parseInt(cb.dataset.price || '0').toLocaleString()
+  }));
+  return [...base, ...addons];
+}
+
+// Service inclusions shown as chips inside the package breakdown
+function currentInclusions() {
+  return [...document.querySelectorAll('#breakdown-items .pkg-chip')]
+    .map(c => c.textContent.trim()).filter(Boolean);
+}
+
+// The "Free with your service" list shown in the result panel
+function currentFreebies() {
+  return [...document.querySelectorAll('#result-state .freebies li')]
+    .map(li => li.textContent.trim()).filter(Boolean);
+}
+
+// ── LEAD CAPTURE (fires the moment an estimate is generated) ──
+let _lastLeadKey = '';
+function recordLead(lead) {
+  // Guard against recording the identical estimate twice in a row
+  const key = [lead.service, lead.vehicle, lead.contact, lead.email, lead.estimated_amount].join('|');
+  if (key === _lastLeadKey) return;
+  _lastLeadKey = key;
+  const summary = {
+    'Stage': '📝 Estimate Generated (lead)',
+    'Service': lead.service,
+    'Vehicle': lead.vehicle,
+    'Odometer': lead.odometer,
+    'Estimated Total': lead.estimated_amount,
+    'Name': lead.name,
+    'Contact': lead.contact,
+    'Email': lead.email
+  };
+  notifyTelegram(summary);
+  sendEmail(summary, lead.breakdown, { inclusions: lead.inclusions, freebies: lead.freebies });
+}
+
+function showSuccess(info) {
+  document.getElementById('pms-form').style.display = 'none';
+  document.getElementById('co-form').style.display = 'none';
+  document.getElementById('repair-form').style.display = 'none';
+  document.getElementById('result-state').classList.remove('show');
+  const rows = document.getElementById('success-summary-rows');
+  rows.innerHTML = '';
+  Object.entries(info.summary).forEach(([label, value]) => {
+    if (!value || value === 'Not provided') return;
+    const div = document.createElement('div');
+    div.className = 'success-row';
+    div.innerHTML = `<span class="label">${label}</span><span class="value">${value}</span>`;
+    rows.appendChild(div);
+  });
+  document.getElementById('success-messenger-link').href =
+    info.booking ? messengerBookingUrl(info.booking) : `https://m.me/${MESSENGER_PAGE}`;
+  document.getElementById('success-state').classList.add('show');
+  notifyTelegram(info.summary);
+  sendEmail(info.summary, info.breakdown, { inclusions: info.inclusions, freebies: info.freebies });
+}
+
+document.getElementById('success-reset').addEventListener('click', () => {
+  document.getElementById('success-state').classList.remove('show');
+  const activeSvc = document.querySelector('.svc-btn.active')?.dataset.svc || 'pms';
+  if (activeSvc === 'pms') document.getElementById('pms-form').style.display = 'block';
+  else if (activeSvc === 'co') document.getElementById('co-form').style.display = 'block';
+  else document.getElementById('repair-form').style.display = 'block';
+});
+
+const vehicles = {
+  "Toyota": {
+    "Wigo":                            { years: [2014,2025], class: "Sedan",            fuel: "Gas",    oilL: 3, oilType: "Fully Synth 5W-30" },
+    "Vios":                            { years: [2014,2025], class: "Sedan",            fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Yaris Cross":                     { years: [2023,2025], class: "Mid SUV",          fuel: "Gas",    oilL: 4, oilType: "Fully Synth 0W-20" },
+    "Corolla Altis":                   { years: [2014,2024], class: "Sedan",            fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Corolla Cross":                   { years: [2020,2025], class: "Mid SUV",          fuel: "Gas",    oilL: 4, oilType: "Fully Synth 0W-20" },
+    "C-HR (1.8 Gas)":                  { years: [2018,2023], class: "Mid SUV",          fuel: "Gas",    oilL: 4, oilType: "Fully Synth 0W-20" },
+    "Camry":                           { years: [2018,2025], class: "Sedan",            fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
+    "Alphard / Vellfire (2.5 Gas)":    { years: [2015,2025], class: "Large SUV/Pickup", fuel: "Gas",    oilL: 5, oilType: "Fully Synth 0W-20" },
+    "Raize (1.0T)":                    { years: [2021,2025], class: "Mid SUV",          fuel: "Gas",    oilL: 3, oilType: "Fully Synth 0W-20" },
+    "Rush":                            { years: [2018,2025], class: "Mid SUV",          fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Veloz":                           { years: [2022,2025], class: "Mid SUV",          fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Avanza":                          { years: [2012,2025], class: "Sedan",            fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Tamaraw (2.8 Diesel)":            { years: [2024,2025], class: "Mid SUV",          fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
+    "86 / GR86":                       { years: [2012,2025], class: "Sedan",            fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
+    "GR Supra (2.0T / 3.0T)":         { years: [2020,2025], class: "Sedan",            fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
+    "Innova (2.8 Diesel)":             { years: [2016,2024], class: "Mid SUV",          fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
+    "Innova Cross (2.0 Gas Turbo)":    { years: [2024,2025], class: "Mid SUV",          fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
+    "Fortuner (2.4/2.8 Diesel)":       { years: [2016,2025], class: "Mid SUV",          fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
+    "Hilux (2.4/2.8 Diesel)":          { years: [2016,2025], class: "Large SUV/Pickup", fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
+    "Hiace Commuter (2.8 Diesel)":     { years: [2018,2025], class: "Large SUV/Pickup", fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
+    "Hiace Super Grandia (2.8 Diesel)":{ years: [2019,2025], class: "Large SUV/Pickup", fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
+    "Granvia (2.8 Diesel)":            { years: [2020,2025], class: "Large SUV/Pickup", fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
+    "FJ Cruiser (4.0 V6 Gas)":         { years: [2007,2014], class: "Mid SUV",          fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
+    "Land Cruiser 200 (4.5 Diesel)":   { years: [2008,2021], class: "Large SUV/Pickup", fuel: "Diesel", oilL: 8, oilType: "Fully Synth 5W-40" },
+    "Land Cruiser LC300 (3.3 Diesel)": { years: [2022,2025], class: "Large SUV/Pickup", fuel: "Diesel", oilL: 8, oilType: "Fully Synth 5W-40" },
+    "Land Cruiser Prado (2.8 Diesel)": { years: [2014,2025], class: "Mid SUV",          fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
+  },
+  "Mitsubishi": {
+    "Mirage (1.2 Gas)":              { years: [2014,2025], class: "Sedan",           fuel: "Gas",    oilL: 3, oilType: "Fully Synth 5W-30" },
+    "Mirage G4 (1.2 Gas)":           { years: [2014,2025], class: "Sedan",           fuel: "Gas",    oilL: 3, oilType: "Fully Synth 5W-30" },
+    "Lancer EX (1.5/1.6 Gas)":       { years: [2009,2017], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Galant (2.4 Gas)":              { years: [2004,2012], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Xpander (1.5 Gas)":             { years: [2018,2025], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Xpander Cross (1.5 Gas)":       { years: [2021,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "ASX (2.0 Gas)":                 { years: [2012,2022], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Eclipse Cross (1.5T Gas)":      { years: [2019,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
+    "Outlander (2.5 Gas)":           { years: [2022,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
+    "Adventure (2.5 Diesel)":        { years: [2006,2020], class: "Mid SUV",         fuel: "Diesel", oilL: 5, oilType: "Semi-Synth 15W-40" },
+    "Montero Sport (2.4 Diesel)":    { years: [2016,2025], class: "Mid SUV",         fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
+    "Strada (2.4 Diesel)":           { years: [2015,2025], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
+    "L300 (2.5 Diesel)":             { years: [2005,2025], class: "Mid SUV",         fuel: "Diesel", oilL: 6, oilType: "Semi-Synth 15W-40" },
+    "Pajero (3.2 Diesel)":           { years: [2004,2020], class: "Mid SUV",         fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
+  },
+  "Honda": {
+    "Brio (1.2 Gas)":                { years: [2012,2025], class: "Sedan",           fuel: "Gas",    oilL: 3, oilType: "Fully Synth 5W-30" },
+    "City (Older Gen 1.3/1.5)":      { years: [2009,2013], class: "Sedan",           fuel: "Gas",    oilL: 3, oilType: "Fully Synth 5W-30" },
+    "City (2014-2020)":              { years: [2014,2020], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "City (2021-present)":           { years: [2021,2025], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "City Hatchback":                { years: [2021,2025], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Jazz / Fit (Older 1.5)":        { years: [2008,2013], class: "Sedan",           fuel: "Gas",    oilL: 3, oilType: "Fully Synth 5W-30" },
+    "Jazz / Fit (2014-2020)":        { years: [2014,2020], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Freed (1.5 Gas)":               { years: [2009,2015], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Mobilio (1.5 Gas)":             { years: [2014,2019], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Civic (FD/FB 1.8)":             { years: [2006,2015], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Civic (FC/FK 1.5T 2016-2021)":  { years: [2016,2021], class: "Sedan",           fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
+    "Civic (2022-present 1.5T)":     { years: [2022,2025], class: "Sedan",           fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
+    "Integra (1.5T)":                { years: [2023,2025], class: "Sedan",           fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
+    "Accord (Older 2.4)":            { years: [2008,2017], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Accord (2018-present 1.5T)":    { years: [2018,2025], class: "Sedan",           fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
+    "BR-V (1.5 Gas)":                { years: [2016,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "HR-V (2015-2021)":              { years: [2015,2021], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "HR-V (2022-present 1.5T)":      { years: [2022,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "WR-V (1.5 Gas)":                { years: [2023,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "CR-V (Diesel 1.6 iDTEC)":       { years: [2013,2017], class: "Mid SUV",         fuel: "Diesel", oilL: 4, oilType: "Fully Synth 5W-40" },
+    "CR-V (Gas/Turbo 1.5T)":         { years: [2017,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
+    "ZR-V (1.5T)":                   { years: [2023,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Odyssey (2.4 Gas)":             { years: [2014,2021], class: "Large SUV/Pickup", fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Pilot (3.5 V6 Gas)":            { years: [2016,2025], class: "Large SUV/Pickup", fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
+  },
+  "Ford": {
+    "Fiesta (1.5 Gas)":          { years: [2010,2019], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "EcoSport (1.5 Gas)":        { years: [2014,2022], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Focus Hatchback (1.5T)":    { years: [2013,2019], class: "Sedan",           fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
+    "Focus Sedan (1.5T)":        { years: [2013,2019], class: "Sedan",           fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
+    "Ranger (2.2 Diesel)":       { years: [2012,2015], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
+    "Ranger (3.2 Diesel)":       { years: [2015,2018], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
+    "Ranger (2.0 Bi-Turbo)":     { years: [2019,2025], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 8, oilType: "Fully Synth 5W-40" },
+    "Everest (3.2 Diesel)":      { years: [2015,2018], class: "Mid SUV",         fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
+    "Everest (2.0 Bi-Turbo)":    { years: [2019,2025], class: "Mid SUV",         fuel: "Diesel", oilL: 8, oilType: "Fully Synth 5W-40" },
+    "Territory (1.5T Gas)":      { years: [2020,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
+    "Bronco Sport (1.5T Gas)":   { years: [2023,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Puma (1.0T EcoBoost)":      { years: [2024,2025], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Explorer (2.3 EcoBoost)":   { years: [2021,2025], class: "Large SUV/Pickup",fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
+    "Expedition (3.5 EcoBoost)": { years: [2018,2025], class: "Large SUV/Pickup",fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
+    "Mustang (2.3T EcoBoost)":   { years: [2016,2025], class: "Sedan",           fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
+    "Mustang (5.0 V8)":          { years: [2016,2025], class: "Sedan",           fuel: "Gas",    oilL: 8, oilType: "Fully Synth 5W-50" },
+  },
+  "Hyundai": {
+    "i10 (1.2 Gas)":                 { years: [2014,2020], class: "Sedan",           fuel: "Gas",    oilL: 3, oilType: "Fully Synth 5W-30" },
+    "Reina (1.4 Gas)":               { years: [2019,2024], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Accent (Gas 1.4/1.6)":          { years: [2011,2024], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Accent (Diesel 1.6 CRDi)":      { years: [2011,2020], class: "Sedan",           fuel: "Diesel", oilL: 4, oilType: "Fully Synth 5W-40" },
+    "Elantra (Older 1.6 Gas)":       { years: [2012,2020], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Elantra (2021-present 1.6)":    { years: [2021,2025], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Creta (1.5 Gas)":               { years: [2022,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Kona (2.0 Gas)":                { years: [2018,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Tucson (Gas 2.0)":              { years: [2016,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Tucson (Diesel 2.0 CRDi)":      { years: [2016,2022], class: "Mid SUV",         fuel: "Diesel", oilL: 5, oilType: "Fully Synth 5W-40" },
+    "Santa Fe (Older 2.2 CRDi)":     { years: [2013,2018], class: "Mid SUV",         fuel: "Diesel", oilL: 5, oilType: "Fully Synth 5W-40" },
+    "Santa Fe (2019-present 2.2)":   { years: [2019,2025], class: "Mid SUV",         fuel: "Diesel", oilL: 5, oilType: "Fully Synth 5W-40" },
+    "Palisade (2.2 CRDi)":           { years: [2020,2025], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 6, oilType: "Fully Synth 5W-40" },
+    "Starex / H-1 (2.5 CRDi)":      { years: [2007,2021], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
+    "Staria (2.2 CRDi)":             { years: [2022,2025], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 5, oilType: "Fully Synth 5W-40" },
+  },
+  "Kia": {
+    "Picanto (1.0/1.2 Gas)":         { years: [2011,2025], class: "Sedan",           fuel: "Gas",    oilL: 3, oilType: "Fully Synth 5W-30" },
+    "Rio (1.4 Gas)":                 { years: [2012,2018], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Soluto (1.4 Gas)":              { years: [2019,2024], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Forte / Cerato (Older 2.0)":    { years: [2014,2018], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Forte / Cerato (2019-present)": { years: [2019,2025], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Soul (1.6 Gas)":                { years: [2014,2020], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Stonic (1.4 Gas)":              { years: [2019,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Seltos (1.4T Gas)":             { years: [2021,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Sportage (Older 2.0 Gas)":      { years: [2015,2021], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Sportage (2022-present Gas)":   { years: [2022,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
+    "Grand Carnival (2.2 CRDi)":     { years: [2015,2020], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 6, oilType: "Fully Synth 5W-40" },
+    "Carnival (2021-present 2.2)":   { years: [2021,2025], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
+    "Sorento (Older 2.2 CRDi)":      { years: [2015,2020], class: "Mid SUV",         fuel: "Diesel", oilL: 6, oilType: "Fully Synth 5W-40" },
+    "Sorento (2021-present 2.2)":    { years: [2021,2025], class: "Mid SUV",         fuel: "Diesel", oilL: 6, oilType: "Fully Synth 5W-40" },
+    "Telluride (3.8 V6 Gas)":        { years: [2021,2025], class: "Large SUV/Pickup",fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
+  },
+  "Nissan": {
+    "Almera (1.0T Gas)":             { years: [2015,2025], class: "Sedan",           fuel: "Gas",    oilL: 3, oilType: "Fully Synth 5W-30" },
+    "Sentra (1.6 Gas)":              { years: [2005,2014], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Note (1.2 Gas)":                { years: [2013,2018], class: "Sedan",           fuel: "Gas",    oilL: 3, oilType: "Fully Synth 5W-30" },
+    "Magnite (1.0T Gas)":            { years: [2022,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 3, oilType: "Fully Synth 5W-30" },
+    "Juke (1.6T Gas)":               { years: [2012,2020], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Kicks (1.6 Gas)":               { years: [2018,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "X-Trail (2.0 Gas)":             { years: [2015,2022], class: "Mid SUV",         fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
+    "Patrol (4.0 V6 Gas)":           { years: [2010,2025], class: "Large SUV/Pickup",fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
+    "Navara (2.5 Diesel)":           { years: [2015,2025], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
+    "Terra (2.5 Diesel)":            { years: [2018,2025], class: "Mid SUV",         fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
+    "NV350 Urvan (2.5 Diesel)":      { years: [2013,2025], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
+  },
+  "Suzuki": {
+    "Multicab / Carry (0.66L F6A)":  { years: [1992,2010], class: "Sedan",           fuel: "Gas",    oilL: 3, oilType: "Semi-Synth 10W-40" },
+    "Super Carry (1.5L K15B)":       { years: [2019,2025], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "APV (1.6 Gas)":                 { years: [2005,2025], class: "Large SUV/Pickup", fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "S-Presso (1.0 Gas)":            { years: [2023,2025], class: "Sedan",           fuel: "Gas",    oilL: 3, oilType: "Fully Synth 5W-30" },
+    "Celerio (1.0 Gas)":             { years: [2015,2025], class: "Sedan",           fuel: "Gas",    oilL: 3, oilType: "Fully Synth 5W-30" },
+    "Baleno (1.4 Gas)":              { years: [2016,2022], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Swift (1.2 Gas)":               { years: [2017,2025], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Dzire (1.2 Gas)":               { years: [2020,2025], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Ciaz (1.4 Gas)":                { years: [2015,2021], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Ertiga (1.5 Gas)":              { years: [2015,2025], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "XL7 (1.5 Gas)":                 { years: [2020,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Fronx (1.5 Gas)":               { years: [2024,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Vitara (1.6 Gas)":              { years: [2015,2023], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Grand Vitara (2.4 Gas)":        { years: [2005,2015], class: "Mid SUV",         fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
+    "Jimny (1.5 Gas)":               { years: [2019,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+  },
+  "Mazda": {
+    "Mazda2 (Gas 1.5)":              { years: [2015,2025], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Mazda2 (Diesel 1.5)":           { years: [2015,2022], class: "Sedan",           fuel: "Diesel", oilL: 4, oilType: "Fully Synth 5W-40" },
+    "Mazda3 (2014-2018 2.0)":        { years: [2014,2018], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Mazda3 (2019-present 2.0)":     { years: [2019,2025], class: "Sedan",           fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
+    "Mazda6 (2.0/2.5 Gas)":          { years: [2014,2023], class: "Sedan",           fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
+    "CX-3 (Gas 2.0)":                { years: [2016,2023], class: "Mid SUV",         fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
+    "CX-3 (Diesel 1.5)":             { years: [2016,2021], class: "Mid SUV",         fuel: "Diesel", oilL: 4, oilType: "Fully Synth 5W-40" },
+    "CX-30 (Gas 2.0)":               { years: [2020,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
+    "CX-5 (Gas 2.5)":                { years: [2017,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
+    "CX-5 (Diesel 2.2)":             { years: [2017,2025], class: "Mid SUV",         fuel: "Diesel", oilL: 6, oilType: "Fully Synth 5W-40" },
+    "CX-8 (Diesel 2.2)":             { years: [2019,2025], class: "Mid SUV",         fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
+    "CX-60 (Diesel 3.3)":            { years: [2024,2025], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
+    "BT-50 (3.0 Diesel)":            { years: [2021,2025], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 8, oilType: "Fully Synth 5W-40" },
+  },
+  "Isuzu": {
+    "Crosswind (2.5 Diesel)":        { years: [2001,2015], class: "Mid SUV",         fuel: "Diesel", oilL: 7, oilType: "Semi-Synth 15W-40" },
+    "Sportivo (2.5 Diesel)":         { years: [2005,2012], class: "Mid SUV",         fuel: "Diesel", oilL: 7, oilType: "Semi-Synth 15W-40" },
+    "Trooper (3.0 Diesel)":          { years: [2000,2007], class: "Mid SUV",         fuel: "Diesel", oilL: 7, oilType: "Semi-Synth 15W-40" },
+    "D-Max (Older 2.5 Diesel)":      { years: [2004,2015], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 7, oilType: "Semi-Synth 15W-40" },
+    "D-Max (3.0 Diesel)":            { years: [2016,2025], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 8, oilType: "Fully Synth 5W-40" },
+    "mu-X (3.0 Diesel)":             { years: [2017,2025], class: "Mid SUV",         fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
+  },
+  "Geely": {
+    "Coolray (1.5T)":            { years: [2020,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Azkarra (1.8T)":            { years: [2020,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
+    "Okavango (1.5T)":           { years: [2021,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Emgrand":                   { years: [2022,2025], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+  },
+  "MG": {
+    "MG5 (1.5T)":                    { years: [2021,2025], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "MG6 (1.5T)":                    { years: [2023,2025], class: "Sedan",           fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
+    "ZS (1.5)":                      { years: [2019,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "HS (2.0T)":                     { years: [2021,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
+    "VS (1.5T)":                     { years: [2020,2023], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "One (1.5T)":                    { years: [2022,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Extender (2.0 Diesel)":         { years: [2021,2025], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 6, oilType: "Fully Synth 5W-40" },
+  },
+  "Chery / OMODA": {
+    "Tiggo 4 Pro (1.5T)":            { years: [2023,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Tiggo 5x (1.5T)":               { years: [2021,2024], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Tiggo 7 Pro (1.5T)":            { years: [2022,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
+    "Tiggo 8 Pro (1.6T)":            { years: [2022,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
+    "OMODA 5 (1.5T)":                { years: [2023,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "OMODA C5 (1.6T)":               { years: [2024,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
+  },
+  "Jetour": {
+    "Dashing (1.5T)":            { years: [2023,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "X70 (1.5T)":                { years: [2022,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "X90 Plus (2.0T)":           { years: [2024,2025], class: "Large SUV/Pickup",fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
+  },
+  "Foton": {
+    "Gratour (1.0 Gas)":             { years: [2018,2025], class: "Sedan",           fuel: "Gas",    oilL: 3, oilType: "Fully Synth 5W-30" },
+    "Toano (2.8 Diesel)":            { years: [2018,2025], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
+    "Toplander (2.8 Diesel)":        { years: [2018,2025], class: "Mid SUV",         fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
+    "Thunder (2.0 Diesel)":          { years: [2020,2025], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 6, oilType: "Fully Synth 5W-40" },
+  },
+  "Chevrolet": {
+    "Spark (1.2 Gas)":               { years: [2011,2018], class: "Sedan",           fuel: "Gas",    oilL: 3, oilType: "Fully Synth 5W-30" },
+    "Sonic (1.4 Gas)":               { years: [2013,2018], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Cruze (1.8 Gas)":               { years: [2011,2015], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Orlando (1.8 Gas)":             { years: [2012,2016], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
+    "Captiva (2.0 Diesel)":          { years: [2008,2018], class: "Mid SUV",         fuel: "Diesel", oilL: 5, oilType: "Fully Synth 5W-40" },
+    "Trailblazer (2.8 Diesel)":      { years: [2013,2020], class: "Mid SUV",         fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
+    "Colorado (2.8 Diesel)":         { years: [2013,2020], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
+    "Traverse (3.6 V6 Gas)":         { years: [2018,2025], class: "Large SUV/Pickup",fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
+  },
+};
+
+const pmsPricing = {
+  "3L_Gas_SemiSynth":    2690, "3L_Gas_FullySynth":    3290,
+  "4L_Gas_SemiSynth":    3190, "4L_Gas_FullySynth":    3990,
+  "5L_Gas_SemiSynth":    3690, "5L_Gas_FullySynth":    4790,
+  "5L_Diesel_SemiSynth": 3690, "5L_Diesel_FullySynth": 4790,
+  "6L_Diesel_SemiSynth": 4390, "6L_Diesel_FullySynth": 5590,
+  "7L_Diesel_SemiSynth": 4990, "7L_Diesel_FullySynth": 6390,
+  "8L_Diesel_SemiSynth": 5590, "8L_Diesel_FullySynth": 6990,
+};
+const oilChangePricing = {
+  "3L_Gas_SemiSynth":    1990, "3L_Gas_FullySynth":    2590,
+  "4L_Gas_SemiSynth":    2490, "4L_Gas_FullySynth":    3290,
+  "5L_Gas_SemiSynth":    2990, "5L_Gas_FullySynth":    4090,
+  "5L_Diesel_SemiSynth": 2990, "5L_Diesel_FullySynth": 4090,
+  "6L_Diesel_SemiSynth": 3690, "6L_Diesel_FullySynth": 4890,
+  "7L_Diesel_SemiSynth": 4290, "7L_Diesel_FullySynth": 5690,
+  "8L_Diesel_SemiSynth": 4790, "8L_Diesel_FullySynth": 5990,
+};
+const airFilterPricing = { "Sedan": 700, "Mid SUV": 1000, "Large SUV/Pickup": 1500 };
+const cabinFilterPrice = 500;
+
+const addonCatalog = [
+  { id: 'sparkplug',   name: 'Spark Plug Replacement',
+    prices: 450,
+    fuel: ['Gas'],          recommendAt: [40000, 80000], note: 'Labor only · parts billed separately' },
+  { id: 'throttle',    name: 'Throttle Body Cleaning',
+    prices: 1500,
+    fuel: ['Gas'],          recommendAt: [40000, 80000], note: 'Restores smooth idle' },
+  { id: 'fuelfilter',  name: 'Fuel Filter Replacement',
+    prices: 750,
+    fuel: ['Diesel'],       recommendAt: [40000, 80000], note: 'Labor only · parts billed separately' },
+  { id: 'brakefluid',  name: 'Brake Fluid Flush (DOT3/DOT4)',
+    prices: 1500,
+    fuel: ['Gas','Diesel'], recommendAt: [40000, 80000], note: 'Every 2 years / 40K KM' },
+  { id: 'coolant',     name: 'Coolant Flush + Refill',
+    prices: 1200,
+    fuel: ['Gas','Diesel'], recommendAt: [60000],        note: 'Due at 60K interval' },
+  { id: 'psteering',   name: 'Power Steering Fluid Change',
+    prices: 800,
+    fuel: ['Gas','Diesel'], recommendAt: [40000],        note: 'Every 40K KM' },
+  { id: 'brakepads',   name: 'Brake Pads Replacement (Front)',
+    prices: 650,
+    fuel: ['Gas','Diesel'], recommendAt: [],             note: 'Labor only · parts billed separately' },
+  { id: 'egrsystem',   name: 'EGR System Cleaning',
+    prices: 5500,
+    fuel: ['Diesel'],       recommendAt: [],             note: 'On request' },
+  { id: 'turbo',       name: 'Turbo System Cleaning',
+    prices: 2500,
+    fuel: ['Diesel'],       recommendAt: [],             note: 'On request' },
+  { id: 'cooling',     name: 'Cooling System Refresh',
+    prices: 5000,
+    fuel: ['Gas','Diesel'], recommendAt: [],             note: 'On request' },
+  { id: 'atfdialysis', name: 'ATF Dialysis',
+    prices: 3500,
+    fuel: ['Gas','Diesel'], recommendAt: [],             note: 'On request' },
+  { id: 'wheelbalance', name: 'Wheel Balance (4 Wheels)',
+    prices: 1200,
+    fuel: ['Gas','Diesel'], recommendAt: [],             note: 'Recommended every oil change' },
+  { id: 'airfilter', name: 'Air Filter Replacement',
+    prices: { "Sedan": 700, "Mid SUV": 1000, "Large SUV/Pickup": 1500 },
+    fuel: ['Gas','Diesel'], recommendAt: [20000,40000,60000,80000], note: 'Every 20K KM' },
+  { id: 'atfmtf', name: 'ATF / MTF Fluid Change',
+    prices: { "_AT": 4500, "_MT": 850 },
+    fuel: ['Gas','Diesel'], recommendAt: [40000,60000,80000], note: 'Every 40K KM' },
+  { id: 'diffoil', name: 'Differential Oil Change (MT)',
+    prices: 850, transOnly: 'MT',
+    fuel: ['Gas','Diesel'], recommendAt: [40000,80000], note: 'For manual transmission vehicles' },
+];
+
+const brandSelect = document.getElementById('brand');
+const modelSelect = document.getElementById('model');
+const yearSelect  = document.getElementById('year');
+const transSelect = document.getElementById('trans');
+const odoSelect   = document.getElementById('odo');
+const submitBtn   = document.getElementById('submit');
+
+const pmsName    = document.getElementById('pms-name');
+const pmsContact = document.getElementById('pms-contact');
+const pmsEmail   = document.getElementById('pms-email');
+const coName     = document.getElementById('co-name');
+const coContact  = document.getElementById('co-contact');
+const coEmail    = document.getElementById('co-email');
+const rName      = document.getElementById('r-name');
+const rContact   = document.getElementById('r-contact');
+const rEmail     = document.getElementById('r-email');
+
+// ── SHARED: build add-ons in result panel ──
+let _resultBasePrice = 0;
+function buildResultAddons(v, odo, trans, inclusions) {
+  const recAddons = [], optAddons = [];
+  addonCatalog.forEach(a => {
+    if (!a.fuel.includes(v.fuel)) return;
+    if (a.transOnly && a.transOnly !== trans) return;
+    let price;
+    if (typeof a.prices === 'number') price = a.prices;
+    else if (a.id === 'atfmtf') price = trans === 'AT' ? 4500 : 850;
+    else price = a.prices[v.class] || 0;
+    const displayName = a.id === 'atfmtf'
+      ? (trans === 'AT' ? 'ATF Fluid Change (Automatic)' : 'MTF Fluid Change (Manual)')
+      : a.name;
+    const entry = { ...a, name: displayName, resolvedPrice: price };
+    if (a.recommendAt.some(m => Math.abs(m - odo) <= 5000)) recAddons.push(entry);
+    else optAddons.push(entry);
+  });
+
+  const recGroup = document.getElementById('result-rec-group');
+  const recList  = document.getElementById('result-rec-list');
+  const optList  = document.getElementById('result-opt-list');
+
+  if (recAddons.length) {
+    recGroup.style.display = 'block';
+    recList.innerHTML = recAddons.map(a => `
+      <div class="svc-item recommended">
+        <input type="checkbox" id="ra-${a.id}" data-price="${a.resolvedPrice}" data-name="${a.name}" onchange="updateResultTotal()">
+        <label for="ra-${a.id}">
+          <span class="svc-item-name">${a.name}<span class="svc-item-note">${a.note}</span></span>
+          <span class="svc-item-meta">
+            <span class="svc-badge badge-rec">Recommended</span>
+            <span class="svc-price">₱${a.resolvedPrice.toLocaleString()}</span>
+          </span>
+        </label>
+      </div>`).join('');
+  } else {
+    recGroup.style.display = 'none';
+  }
+
+  optList.innerHTML = optAddons.map(a => `
+    <div class="svc-item">
+      <input type="checkbox" id="ra-${a.id}" data-price="${a.resolvedPrice}" data-name="${a.name}" onchange="updateResultTotal()">
+      <label for="ra-${a.id}">
+        <span class="svc-item-name">${a.name}<span class="svc-item-note">${a.note}</span></span>
+        <span class="svc-item-meta"><span class="svc-price">₱${a.resolvedPrice.toLocaleString()}</span></span>
+      </label>
+    </div>`).join('');
+
+  document.getElementById('result-addons').style.display = 'block';
+  updateResultTotal();
+}
+
+function updateResultTotal() {
+  let total = _resultBasePrice;
+  document.querySelectorAll('#result-addons input[type="checkbox"]:checked')
+    .forEach(cb => { total += parseInt(cb.dataset.price || 0); });
+  document.getElementById('result-total').textContent = total.toLocaleString();
+  document.getElementById('result-running-total').textContent = total.toLocaleString();
+}
+
+Object.keys(vehicles).forEach(brand => {
+  const opt = document.createElement('option');
+  opt.value = brand; opt.textContent = brand;
+  brandSelect.appendChild(opt);
+});
+const otherOpt = document.createElement('option');
+otherOpt.value = '__OTHER__'; otherOpt.textContent = 'Other / Not Listed';
+brandSelect.appendChild(otherOpt);
+
+brandSelect.addEventListener('change', () => {
+  modelSelect.innerHTML = '<option value="">Select model</option>';
+  yearSelect.innerHTML  = '<option value="">Select year</option>';
+  transSelect.value = '';
+  odoSelect.value   = '';
+  modelSelect.disabled = !brandSelect.value || brandSelect.value === '__OTHER__';
+  yearSelect.disabled  = true;
+  transSelect.disabled = true;
+  odoSelect.disabled   = true;
+  checkComplete();
+  if (brandSelect.value === '__OTHER__') {
+    alert("For vehicles not listed, we'll give you a manual quote on Messenger within 1 hour. Click 'Get Free Estimate' to be redirected!");
+    submitBtn.disabled = false;
+    submitBtn.dataset.mode = 'manual';
+    return;
+  }
+  submitBtn.dataset.mode = 'auto';
+  if (!brandSelect.value) return;
+  Object.keys(vehicles[brandSelect.value]).forEach(model => {
+    const opt = document.createElement('option');
+    opt.value = model; opt.textContent = model;
+    modelSelect.appendChild(opt);
+  });
+});
+
+modelSelect.addEventListener('change', () => {
+  yearSelect.innerHTML = '<option value="">Select year</option>';
+  transSelect.value = '';
+  odoSelect.value   = '';
+  yearSelect.disabled  = !modelSelect.value;
+  transSelect.disabled = true;
+  odoSelect.disabled   = true;
+  checkComplete();
+  if (!modelSelect.value) return;
+  const v = vehicles[brandSelect.value][modelSelect.value];
+  updateOilToggle(v.fuel, 'pms-oil-toggle');
+  for (let y = v.years[1]; y >= v.years[0]; y--) {
+    const opt = document.createElement('option');
+    opt.value = y; opt.textContent = y;
+    yearSelect.appendChild(opt);
+  }
+  const olderOpt = document.createElement('option');
+  olderOpt.value = `${v.years[0] - 1} or earlier`;
+  olderOpt.textContent = `${v.years[0] - 1} or earlier`;
+  yearSelect.appendChild(olderOpt);
+});
+
+yearSelect.addEventListener('change', () => {
+  transSelect.value = '';
+  transSelect.disabled = !yearSelect.value;
+  odoSelect.value  = '';
+  odoSelect.disabled = true;
+  checkComplete();
+});
+
+transSelect.addEventListener('change', () => {
+  odoSelect.disabled = !transSelect.value;
+  odoSelect.value    = '';
+  checkComplete();
+});
+
+odoSelect.addEventListener('change', () => { checkComplete(); });
+odoSelect.addEventListener('input', () => { checkComplete(); });
+pmsName.addEventListener('input', checkComplete);
+pmsContact.addEventListener('input', checkComplete);
+pmsEmail.addEventListener('input', checkComplete);
+
+function checkComplete() {
+  if (submitBtn.dataset.mode === 'manual') return;
+  const hasVehicle = brandSelect.value && modelSelect.value && yearSelect.value && transSelect.value && parseInt(odoSelect.value) > 0;
+  const hasContact = pmsName.value.trim().length >= 2 && pmsContact.value.trim().length >= 10;
+  submitBtn.disabled = !(hasVehicle && hasContact);
+}
+
+submitBtn.addEventListener('click', async () => {
+  if (submitBtn.dataset.mode === 'manual') {
+    window.open('https://m.me/cteachautomotive', '_blank');
+    return;
+  }
+  submitBtn.classList.add('loading');
+  submitBtn.textContent = 'Calculating...';
+
+  const v     = vehicles[brandSelect.value][modelSelect.value];
+  const odo   = parseInt(odoSelect.value);
+  const trans = transSelect.value;
+  const synth = document.getElementById('pms-oil-toggle')?.querySelector('.oil-btn.active')?.dataset.synth || 'FullySynth';
+  const synthLabel = synth === 'SemiSynth' ? 'Semi-Synthetic 10W40' : (v.fuel === 'Gas' ? 'Fully Synthetic 5W30' : 'Fully Synthetic 5W40');
+  const oilKey = `${v.oilL}L_${v.fuel === 'Gas' ? 'Gas' : 'Diesel'}_${synth}`;
+  const basePrice = pmsPricing[oilKey] || 4000;
+
+  // Populate result panel
+  document.getElementById('result-vehicle').textContent =
+    `${brandSelect.value} ${modelSelect.value} ${yearSelect.value} ${trans} · ${(odo/1000).toFixed(0)}K PMS`;
+  document.getElementById('breakdown-title').textContent = 'PMS Package Breakdown';
+
+  const bdEl = document.getElementById('breakdown-items');
+  const pmsInclusions = ['Engine Oil','Oil Filter','Cabin Filter Cleaning','Air Filter Cleaning','Brake Cleaning','Fluid Top-Up','Battery Check','Under Chassis Check','Labor'];
+  bdEl.innerHTML = `
+    <div class="breakdown-item">
+      <span class="name">PMS Package — ${v.oilL}L ${synthLabel}</span>
+      <span class="price">₱${basePrice.toLocaleString()}</span>
+    </div>
+    <div class="pkg-inclusions" style="padding:6px 0 10px;">
+      ${pmsInclusions.map(i => `<span class="pkg-chip">${i}</span>`).join('')}
+    </div>`;
+
+  _resultBasePrice = basePrice;
+  // Reset add-on checkboxes and rebuild
+  document.querySelectorAll('#result-addons input[type="checkbox"]').forEach(cb => cb.checked = false);
+  buildResultAddons(v, odo, trans, pmsInclusions);
+
+  // Store context for Book/Email buttons
+  document.getElementById('result-state').dataset.service = 'PMS';
+  document.getElementById('result-state').dataset.vehicle =
+    `${brandSelect.value} ${modelSelect.value} ${yearSelect.value} ${trans}`;
+  document.getElementById('result-state').dataset.odo = odo;
+  document.getElementById('result-state').dataset.name = pmsName.value.trim();
+  document.getElementById('result-state').dataset.contact = pmsContact.value.trim();
+  document.getElementById('result-state').dataset.email = pmsEmail.value.trim();
+
+  // Record the lead immediately (name / contact / email) on estimate generation
+  recordLead({
+    service: 'PMS',
+    vehicle: `${brandSelect.value} ${modelSelect.value} ${yearSelect.value} ${trans}`,
+    odometer: odo + ' KM',
+    estimated_amount: '₱' + document.getElementById('result-total').textContent,
+    name: pmsName.value.trim(),
+    contact: pmsContact.value.trim(),
+    email: pmsEmail.value.trim() || 'Not provided',
+    breakdown: currentBreakdown(),
+    inclusions: currentInclusions(),
+    freebies: currentFreebies()
+  });
+
+  submitBtn.classList.remove('loading');
+  submitBtn.textContent = 'Get My Free Estimate';
+  document.getElementById('pms-form').style.display = 'none';
+  document.getElementById('result-state').classList.add('show');
+});
+
+document.getElementById('reset-btn').addEventListener('click', () => {
+  document.getElementById('result-state').classList.remove('show');
+  // Clear preferred date/time selections
+  selectedDay = ''; selectedTime = '';
+  if (visitDateInput) { visitDateInput.value = ''; }
+  if (visitDateDisplay) { visitDateDisplay.textContent = ''; }
+  document.querySelectorAll('#time-picker .time-btn').forEach(b => b.classList.remove('selected'));
+  const activeSvc = document.querySelector('.svc-btn.active')?.dataset.svc || 'pms';
+  if (activeSvc === 'co') {
+    document.getElementById('co-form').style.display = 'block';
+    coBrandSel.value = '';
+    coModelSel.innerHTML = '<option value="">Select model</option>';
+    coYearSel.innerHTML  = '<option value="">Select year</option>';
+    coTransSel.value = ''; coOdoSel.value = '';
+    coModelSel.disabled = true; coYearSel.disabled = true;
+    coTransSel.disabled = true; coOdoSel.disabled = true;
+    coSubmitBtn.disabled = true; coSubmitBtn.dataset.mode = '';
+    coName.value = ''; coContact.value = ''; coEmail.value = '';
+  } else {
+    document.getElementById('pms-form').style.display = 'block';
+    brandSelect.value = '';
+    modelSelect.innerHTML = '<option value="">Select model</option>';
+    yearSelect.innerHTML  = '<option value="">Select year</option>';
+    transSelect.value = ''; odoSelect.value = '';
+    modelSelect.disabled = true; yearSelect.disabled = true;
+    transSelect.disabled = true; odoSelect.disabled = true;
+    submitBtn.disabled = true;
+    pmsName.value = ''; pmsContact.value = ''; pmsEmail.value = '';
+  }
+});
+
+// ── OIL TOGGLE HELPER ──
+function updateOilToggle(fuel, toggleId) {
+  const wrap = document.getElementById(toggleId);
+  const btns = wrap.querySelectorAll('.oil-btn');
+  btns[0].style.display = '';
+  btns[0].textContent = 'Semi-Synthetic 10W40';
+  btns[1].textContent = fuel === 'Gas' ? 'Fully Synthetic 5W30' : 'Fully Synthetic 5W40';
+  if (!btns[0].classList.contains('active') && !btns[1].classList.contains('active')) {
+    btns[0].classList.add('active');
+  }
+}
+
+// ── PMS OIL TYPE TOGGLE ──
+document.getElementById('pms-oil-toggle').querySelectorAll('.oil-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.getElementById('pms-oil-toggle').querySelectorAll('.oil-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+// ── VISIT DATE (calendar) ──
+// ── SUPABASE BOOKING BACKEND (C-Tech Fleet Portal) ──
+// The public page talks to two SECURITY DEFINER RPCs only: it can read live
+// slot availability and create a PENDING booking, but has no direct access to
+// the bookings table or any customer data.
+const SB_URL = 'https://azcrctokesvpwxdptatl.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF6Y3JjdG9rZXN2cHd4ZHB0YXRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3NTc5NzMsImV4cCI6MjA5NDMzMzk3M30.Z_Lvnb2bW5qXMr4yZiSuD2D7ggDvLpffH5Y4SDLp_cU';
+async function sbRpc(fn, args) {
+  const res = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY },
+    body: JSON.stringify(args)
+  });
+  if (!res.ok) throw new Error(`${fn} ${res.status}`);
+  return res.json();
+}
+
+let selectedTime = '';
+
+// Paint the four time buttons with live remaining-slot counts.
+function paintSlots(slots) {
+  document.querySelectorAll('#time-picker .time-btn').forEach(btn => {
+    const t = btn.dataset.time;
+    const label = btn.querySelector('.tb-slots');
+    btn.classList.remove('slot-full', 'slot-low');
+    const rem = (slots && Object.prototype.hasOwnProperty.call(slots, t)) ? slots[t] : null;
+    if (rem === null) { if (label) label.textContent = '2 slots'; return; }
+    if (rem <= 0) {
+      btn.classList.add('slot-full');
+      btn.classList.remove('selected');
+      if (t === selectedTime) selectedTime = '';
+      if (label) label.textContent = 'Fully booked';
+    } else {
+      if (rem === 1) btn.classList.add('slot-low');
+      if (label) label.textContent = rem === 1 ? '1 slot left' : rem + ' slots';
+    }
+  });
+}
+
+// Load availability for a YYYY-MM-DD date and update the UI. Returns the data.
+async function refreshAvailability(iso) {
+  if (!iso) { paintSlots(null); return null; }
+  try {
+    const data = await sbRpc('landing_slot_availability', { p_date: iso });
+    if (data && data.blocked) { paintSlots({ '8:00 AM':0,'10:00 AM':0,'1:00 PM':0,'3:00 PM':0 }); return data; }
+    paintSlots(data ? data.slots : null);
+    return data;
+  } catch (e) { paintSlots(null); return null; }
+}
+
+let selectedDay = '';
+let selectedDateISO = '';
+const visitDateInput = document.getElementById('visit-date');
+const visitDateDisplay = document.getElementById('visit-date-display');
+if (visitDateInput) {
+  const _pad = n => String(n).padStart(2, '0');
+  const _ymd = d => `${d.getFullYear()}-${_pad(d.getMonth() + 1)}-${_pad(d.getDate())}`;
+  const _today = new Date(); _today.setHours(0, 0, 0, 0);
+  visitDateInput.min = _ymd(_today);
+  visitDateInput.addEventListener('change', async () => {
+    // Reset the time selection whenever the date changes.
+    selectedTime = '';
+    document.querySelectorAll('#time-picker .time-btn').forEach(b => b.classList.remove('selected'));
+    if (!visitDateInput.value) { selectedDay = ''; selectedDateISO = ''; visitDateDisplay.textContent = ''; paintSlots(null); return; }
+    const d = new Date(visitDateInput.value + 'T00:00:00');
+    if (d.getDay() === 0) {
+      alert("We're closed on Sundays. Please pick a day from Monday to Saturday.");
+      visitDateInput.value = ''; selectedDay = ''; selectedDateISO = ''; visitDateDisplay.textContent = ''; paintSlots(null);
+      return;
+    }
+    selectedDateISO = visitDateInput.value;
+    selectedDay = d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+    visitDateDisplay.textContent = '✓ ' + selectedDay;
+    const avail = await refreshAvailability(selectedDateISO);
+    // Shop-blocked day off (blocked_dates) — reject the selection.
+    if (avail && avail.blocked) {
+      visitDateDisplay.textContent = "⚠ Sorry, we're closed on " + selectedDay + '. Please pick another date.';
+      visitDateInput.value = ''; selectedDay = ''; selectedDateISO = '';
+    }
+  });
+}
+
+// ── KM LOADING-BAR SLIDER ──
+document.querySelectorAll('[data-km-slider]').forEach(wrap => {
+  const input = wrap.parentElement.querySelector('input[type="number"]');
+  const range = wrap.querySelector('.km-range');
+  const fill = wrap.querySelector('.km-fill');
+  const max = parseInt(range.max) || 150000;
+  const setFill = () => {
+    const pct = Math.max(0, Math.min(100, (parseInt(range.value) || 0) / max * 100));
+    fill.style.width = pct + '%';
+  };
+  // slider -> number input
+  range.addEventListener('input', () => {
+    if (input.disabled) { range.value = 0; setFill(); return; }
+    input.value = range.value;
+    setFill();
+    input.dispatchEvent(new Event('input'));
+  });
+  // number input -> slider (typed value, presets, resets)
+  const syncFromInput = () => {
+    range.value = Math.min(max, Math.max(0, parseInt(input.value) || 0));
+    setFill();
+  };
+  input.addEventListener('input', syncFromInput);
+  // mirror the number input's disabled state onto the slider
+  const syncDisabled = () => {
+    range.disabled = input.disabled;
+    wrap.classList.toggle('is-disabled', input.disabled);
+  };
+  new MutationObserver(syncDisabled).observe(input, { attributes: true, attributeFilter: ['disabled'] });
+  syncDisabled();
+  setFill();
+});
+
+// ── TIME PICKER (live slot availability) ──
+document.querySelectorAll('#time-picker .time-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (btn.classList.contains('slot-full')) return;   // can't pick a fully-booked slot
+    document.querySelectorAll('#time-picker .time-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedTime = btn.dataset.time;
+  });
+});
+
+function getResultContext() {
+  const rs = document.getElementById('result-state');
+  const total = document.getElementById('result-total').textContent;
+  // Collect base breakdown + checked add-ons
+  const baseRows = [...document.querySelectorAll('#breakdown-items .breakdown-item')];
+  const addonRows = [...document.querySelectorAll('#result-addons input[type="checkbox"]:checked')];
+  const lines = [
+    ...baseRows.map(r => `  • ${r.querySelector('.name')?.textContent}: ${r.querySelector('.price')?.textContent}`),
+    ...addonRows.map(cb => `  • ${cb.dataset.name}: ₱${parseInt(cb.dataset.price).toLocaleString()}`)
+  ].join('\n');
+  return {
+    service:  rs.dataset.service  || '',
+    vehicle:  rs.dataset.vehicle  || '',
+    odo:      rs.dataset.odo      || '',
+    name:     rs.dataset.name     || '',
+    contact:  rs.dataset.contact  || '',
+    email:    rs.dataset.email    || '',
+    total, lines
+  };
+}
+
+// (Removed: "Send Estimate & Reserve Slot via Messenger" button — the flow is
+//  now email-only; the shop calls the customer to confirm the booking time.)
+
+// ── EMAIL ESTIMATE BUTTON ──
+// Sends the estimate straight to the customer's inbox via our server (Resend).
+document.getElementById('email-estimate-btn').addEventListener('click', async () => {
+  const ctx = getResultContext();
+  const btn = document.getElementById('email-estimate-btn');
+  if (!ctx.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ctx.email)) {
+    alert('Please enter a valid email in the form above so we can send your estimate.');
+    return;
+  }
+
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+
+  // Reserve the slot in the booking system (pending — the shop confirms it).
+  let booked = false;
+  if (selectedDateISO && selectedTime) {
+    try {
+      const bk = await sbRpc('landing_book_slot', {
+        p_date: selectedDateISO, p_time: selectedTime,
+        p_service: ctx.service, p_vehicle: ctx.vehicle,
+        p_name: ctx.name, p_contact: ctx.contact, p_email: ctx.email
+      });
+      if (bk && bk.ok === false && bk.reason === 'full') {
+        alert(`Sorry, the ${selectedTime} slot on ${selectedDay} just filled up. Please choose another time.`);
+        await refreshAvailability(selectedDateISO);
+        btn.disabled = false; btn.textContent = original;
+        return;
+      }
+      if (bk && bk.ok) booked = true;
+    } catch (e) { /* non-blocking — still send the email inquiry */ }
+  }
+
+  const summary = {
+    'Service': ctx.service,
+    'Vehicle': ctx.vehicle,
+    'Odometer': ctx.odo ? ctx.odo + ' KM' : '',
+    'Estimated Total': '₱' + ctx.total,
+    'Preferred Date': selectedDay || '',
+    'Preferred Time': selectedTime || '',
+    'Name': ctx.name,
+    'Contact': ctx.contact,
+    'Email': ctx.email
+  };
+
+  // customerOnly:false → also notifies the shop admin (replaces the old Formspree lead log)
+  let emailed = false;
+  try {
+    const res = await postEmail(summary, currentBreakdown(), { customerOnly: false });
+    emailed = !!(res && res.ok);
+  } catch { emailed = false; }
+
+  // The reservation counts as received if EITHER the slot was booked OR the
+  // email went out — the shop is also notified via the pending booking + Telegram.
+  if (emailed || booked) {
+    if (booked) notifyTelegram(summary);   // ensure the shop is pinged even if email failed
+    btn.style.display = 'none';
+    const confirm = document.getElementById('email-confirm');
+    confirm.innerHTML = booked
+      ? `✅ <strong>Slot reserved!</strong> Your ${selectedTime} slot on ${selectedDay} is held. We'll call you shortly to confirm.`
+      : "✅ <strong>Slot reservation received!</strong> We've emailed your estimate and will call you shortly to confirm your preferred booking time.";
+    confirm.classList.add('show');
+    if (selectedDateISO) refreshAvailability(selectedDateISO);   // reflect the just-taken slot
+  } else {
+    btn.disabled = false;
+    btn.textContent = 'Could not send — tap to retry';
+  }
+});
+
+// ── SERVICE TYPE SWITCHING ──
+const svcBtns    = document.querySelectorAll('.svc-btn');
+const calcTitle  = document.getElementById('calc-title');
+const pmsFormEl  = document.getElementById('pms-form');
+const coFormEl   = document.getElementById('co-form');
+const repairFormEl = document.getElementById('repair-form');
+const resultEl   = document.getElementById('result-state');
+
+const svcTitles = {
+  pms:    'Get your free PMS estimate',
+  co:     'Get a Change Oil quote',
+  repair: 'Describe your repair concern'
+};
+
+svcBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    svcBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const svc = btn.dataset.svc;
+    calcTitle.textContent = svcTitles[svc];
+    pmsFormEl.style.display    = svc === 'pms'    ? 'block' : 'none';
+    coFormEl.style.display     = svc === 'co'     ? 'block' : 'none';
+    repairFormEl.style.display = svc === 'repair' ? 'block' : 'none';
+    resultEl.classList.remove('show');
+  });
+});
+
+// ── CHANGE OIL CALCULATOR ──
+const coBrandSel = document.getElementById('co-brand');
+const coModelSel = document.getElementById('co-model');
+const coYearSel  = document.getElementById('co-year');
+const coTransSel = document.getElementById('co-trans');
+const coOdoSel   = document.getElementById('co-odo');
+const coSubmitBtn = document.getElementById('co-submit');
+
+Object.keys(vehicles).forEach(brand => {
+  const opt = document.createElement('option');
+  opt.value = brand; opt.textContent = brand;
+  coBrandSel.appendChild(opt);
+});
+const coOtherOpt = document.createElement('option');
+coOtherOpt.value = '__OTHER__'; coOtherOpt.textContent = 'Other / Not Listed';
+coBrandSel.appendChild(coOtherOpt);
+
+function checkCO() {
+  if (coSubmitBtn.dataset.mode === 'manual') return;
+  const hasVehicle = coBrandSel.value && coModelSel.value && coYearSel.value && coTransSel.value && parseInt(coOdoSel.value) > 0;
+  const hasContact = coName.value.trim().length >= 2 && coContact.value.trim().length >= 10;
+  coSubmitBtn.disabled = !(hasVehicle && hasContact);
+}
+
+coBrandSel.addEventListener('change', () => {
+  coModelSel.innerHTML = '<option value="">Select model</option>';
+  coYearSel.innerHTML  = '<option value="">Select year</option>';
+  coTransSel.value = ''; coOdoSel.value = '';
+  coModelSel.disabled = !coBrandSel.value || coBrandSel.value === '__OTHER__';
+  coYearSel.disabled = true; coTransSel.disabled = true; coOdoSel.disabled = true;
+
+  checkCO();
+  if (coBrandSel.value === '__OTHER__') {
+    alert("For vehicles not listed, we'll give you a manual quote on Messenger within 1 hour.");
+    coSubmitBtn.disabled = false;
+    coSubmitBtn.dataset.mode = 'manual';
+  } else {
+    coSubmitBtn.dataset.mode = '';
+    if (coBrandSel.value) {
+      Object.keys(vehicles[coBrandSel.value]).forEach(model => {
+        const opt = document.createElement('option');
+        opt.value = model; opt.textContent = model;
+        coModelSel.appendChild(opt);
+      });
+    }
+  }
+});
+
+coModelSel.addEventListener('change', () => {
+  coYearSel.innerHTML = '<option value="">Select year</option>';
+  coTransSel.value = ''; coOdoSel.value = '';
+  coYearSel.disabled = !coModelSel.value;
+  coTransSel.disabled = true; coOdoSel.disabled = true;
+
+  if (coModelSel.value && coBrandSel.value !== '__OTHER__') {
+    const v = vehicles[coBrandSel.value][coModelSel.value];
+    updateOilToggle(v.fuel, 'co-oil-toggle');
+    for (let y = v.years[1]; y >= v.years[0]; y--) {
+      const opt = document.createElement('option');
+      opt.value = y; opt.textContent = y;
+      coYearSel.appendChild(opt);
+    }
+    const coOlderOpt = document.createElement('option');
+    coOlderOpt.value = `${v.years[0] - 1} or earlier`;
+    coOlderOpt.textContent = `${v.years[0] - 1} or earlier`;
+    coYearSel.appendChild(coOlderOpt);
+  }
+  checkCO();
+});
+
+coYearSel.addEventListener('change', () => {
+  coTransSel.disabled = !coYearSel.value;
+  coOdoSel.disabled = true;
+  checkCO();
+});
+coTransSel.addEventListener('change', () => {
+  coOdoSel.disabled = !coTransSel.value;
+  checkCO();
+});
+coOdoSel.addEventListener('change', () => { checkCO(); });
+coOdoSel.addEventListener('input', () => { checkCO(); });
+
+document.getElementById('co-oil-toggle').querySelectorAll('.oil-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.getElementById('co-oil-toggle').querySelectorAll('.oil-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+coName.addEventListener('input', checkCO);
+coContact.addEventListener('input', checkCO);
+
+coSubmitBtn.addEventListener('click', async () => {
+  if (coSubmitBtn.dataset.mode === 'manual') {
+    window.open('https://m.me/cteachautomotive', '_blank');
+    return;
+  }
+  coSubmitBtn.classList.add('loading');
+  coSubmitBtn.textContent = 'Calculating...';
+
+  const v     = vehicles[coBrandSel.value][coModelSel.value];
+  const odo   = parseInt(coOdoSel.value);
+  const trans = coTransSel.value;
+  const synth = document.getElementById('co-oil-toggle').querySelector('.oil-btn.active')?.dataset.synth || 'SemiSynth';
+  const synthLabel = synth === 'SemiSynth' ? 'Semi-Synthetic 10W40' : (v.fuel === 'Gas' ? 'Fully Synthetic 5W30' : 'Fully Synthetic 5W40');
+  const oilKey = `${v.oilL}L_${v.fuel === 'Gas' ? 'Gas' : 'Diesel'}_${synth}`;
+  const basePrice = oilChangePricing[oilKey] || 2990;
+  const vehicleStr = `${coBrandSel.value} ${coModelSel.value} ${coYearSel.value} ${trans}`;
+
+  // Populate result panel
+  document.getElementById('result-vehicle').textContent = `${vehicleStr} · ${(odo/1000).toFixed(0)}K Oil Change`;
+  document.getElementById('breakdown-title').textContent = 'Oil Change Package Breakdown';
+
+  const coInclusions = ['Engine Oil','Oil Filter','Cabin Filter Cleaning','Air Filter Cleaning','Fluid Top-Up','Battery Check','Labor'];
+  document.getElementById('breakdown-items').innerHTML = `
+    <div class="breakdown-item">
+      <span class="name">Oil Change Package — ${v.oilL}L ${synthLabel}</span>
+      <span class="price">₱${basePrice.toLocaleString()}</span>
+    </div>
+    <div class="pkg-inclusions" style="padding:6px 0 10px;">
+      ${coInclusions.map(i => `<span class="pkg-chip">${i}</span>`).join('')}
+    </div>`;
+
+  _resultBasePrice = basePrice;
+  document.querySelectorAll('#result-addons input[type="checkbox"]').forEach(cb => cb.checked = false);
+  buildResultAddons(v, odo, trans, coInclusions);
+
+  document.getElementById('result-state').dataset.service = 'Change Oil';
+  document.getElementById('result-state').dataset.vehicle = vehicleStr;
+  document.getElementById('result-state').dataset.odo = odo;
+  document.getElementById('result-state').dataset.name = coName.value.trim();
+  document.getElementById('result-state').dataset.contact = coContact.value.trim();
+  document.getElementById('result-state').dataset.email = coEmail.value.trim();
+
+  // Record the lead + auto-email the estimate on generation (same as PMS)
+  recordLead({
+    service: 'Change Oil',
+    vehicle: vehicleStr,
+    odometer: odo + ' KM',
+    estimated_amount: '₱' + document.getElementById('result-total').textContent,
+    name: coName.value.trim(),
+    contact: coContact.value.trim(),
+    email: coEmail.value.trim() || 'Not provided',
+    breakdown: currentBreakdown(),
+    inclusions: currentInclusions(),
+    freebies: currentFreebies()
+  });
+
+  coSubmitBtn.classList.remove('loading');
+  coSubmitBtn.textContent = 'Get My Oil Change Estimate';
+  document.getElementById('co-form').style.display = 'none';
+  document.getElementById('result-state').classList.add('show');
+});
+
+// ── REPAIR FORM LOGIC ──
+const rBrand  = document.getElementById('r-brand');
+const rModel  = document.getElementById('r-model');
+const rYear   = document.getElementById('r-year');
+const rConcern = document.getElementById('r-concern');
+const repairSubmit = document.getElementById('repair-submit');
+
+Object.keys(vehicles).forEach(brand => {
+  const opt = document.createElement('option');
+  opt.value = brand; opt.textContent = brand;
+  rBrand.appendChild(opt);
+});
+const rOther = document.createElement('option');
+rOther.value = '__OTHER__'; rOther.textContent = 'Other / Not Listed';
+rBrand.appendChild(rOther);
+
+rBrand.addEventListener('change', () => {
+  rModel.innerHTML = '<option value="">Select model</option>';
+  rYear.innerHTML  = '<option value="">Select year</option>';
+  rModel.disabled  = !rBrand.value || rBrand.value === '__OTHER__';
+  rYear.disabled   = true;
+  checkRepair();
+  if (!rBrand.value || rBrand.value === '__OTHER__') return;
+  Object.keys(vehicles[rBrand.value]).forEach(model => {
+    const opt = document.createElement('option');
+    opt.value = model; opt.textContent = model;
+    rModel.appendChild(opt);
+  });
+});
+
+rModel.addEventListener('change', () => {
+  rYear.innerHTML = '<option value="">Select year</option>';
+  rYear.disabled  = !rModel.value;
+  checkRepair();
+  if (!rModel.value) return;
+  const v = vehicles[rBrand.value][rModel.value];
+  for (let y = v.years[1]; y >= v.years[0]; y--) {
+    const opt = document.createElement('option');
+    opt.value = y; opt.textContent = y;
+    rYear.appendChild(opt);
+  }
+  const rOlderOpt = document.createElement('option');
+  rOlderOpt.value = `${v.years[0] - 1} or earlier`;
+  rOlderOpt.textContent = `${v.years[0] - 1} or earlier`;
+  rYear.appendChild(rOlderOpt);
+});
+
+rYear.addEventListener('change', checkRepair);
+rConcern.addEventListener('input', checkRepair);
+rName.addEventListener('input', checkRepair);
+rContact.addEventListener('input', checkRepair);
+
+function checkRepair() {
+  const hasVehicle = rBrand.value && (rBrand.value === '__OTHER__' || (rModel.value && rYear.value));
+  const hasConcern = rConcern.value.trim().length >= 10;
+  const hasContact = rName.value.trim().length >= 2 && rContact.value.trim().length >= 10;
+  repairSubmit.disabled = !(hasVehicle && hasConcern && hasContact);
+}
+
+repairSubmit.addEventListener('click', async () => {
+  const name    = rName.value.trim();
+  const contact = rContact.value.trim();
+  const email   = rEmail.value.trim();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    rEmail.focus();
+    rEmail.style.borderColor = '#ef4444';
+    rEmail.placeholder = 'Email is required to receive your quote';
+    setTimeout(() => { rEmail.style.borderColor = ''; }, 3000);
+    return;
+  }
+  repairSubmit.classList.add('loading');
+  repairSubmit.textContent = 'Sending...';
+  const vehicle = rBrand.value === '__OTHER__'
+    ? '(Other vehicle)'
+    : `${rBrand.value} ${rModel.value} ${rYear.value}`.trim();
+  // Notify shop admin + email the customer a copy via Resend (/api/send-email)
+  await postEmail({
+    'Service': 'Repair Inquiry',
+    'Vehicle': vehicle,
+    'Concern': rConcern.value.trim(),
+    'Name': name,
+    'Contact': contact,
+    'Email': email
+  }, [], { customerOnly: false }).catch(() => {});
+  repairSubmit.classList.remove('loading');
+  repairSubmit.textContent = 'Send Repair Inquiry via Messenger';
+  const repairBooking = { n: name, u: vehicle, s: 'Repair — ' + rConcern.value.trim().substring(0, 50) };
+  showSuccess({
+    summary: {
+      'Service': 'Repair Inquiry',
+      'Vehicle': vehicle,
+      'Concern': rConcern.value.trim().substring(0,60) + (rConcern.value.length > 60 ? '...' : ''),
+      'Name': name, 'Contact': contact, 'Email': email || null
+    },
+    booking: repairBooking,
+    messenger_msg: `Hi C-Tech! Repair inquiry - ${vehicle}. Concern: ${rConcern.value.trim()}. Name: ${name} | Contact: ${contact}. Schedule please!`
+  });
+  window.open(messengerBookingUrl(repairBooking), '_blank');
+});
+</script>
+
+<!-- STICKY MOBILE BOTTOM BAR -->
+<div class="sticky-bar">
+  <a href="tel:09981516245" class="bar-call">📞 Call Us</a>
+  <a href="https://m.me/cteachautomotive" target="_blank" class="bar-msg">💬 Message Us</a>
+</div>
+
+<!-- Content-protection deterrents: disable right-click, image dragging, and
+     common view-source / DevTools shortcuts. Note: these only deter casual
+     users — they are NOT real security and can be bypassed. -->
+<script>
+(function () {
+  // Block the right-click context menu
+  document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+  // Stop images being dragged out / saved via drag
+  document.addEventListener('dragstart', function (e) {
+    if (e.target && e.target.tagName === 'IMG') e.preventDefault();
+  });
+
+  // Deter view-source (Ctrl+U) and DevTools (F12 / Ctrl+Shift+I/J/C)
+  document.addEventListener('keydown', function (e) {
+    var k = (e.key || '').toLowerCase();
+    if (e.keyCode === 123) { e.preventDefault(); return; }                 // F12
+    if (e.ctrlKey && k === 'u') { e.preventDefault(); }                    // view-source
+    if (e.ctrlKey && e.shiftKey && ['i', 'j', 'c'].indexOf(k) !== -1) {    // DevTools
+      e.preventDefault();
+    }
+  });
+})();
+</script>
+</body>
+</html>

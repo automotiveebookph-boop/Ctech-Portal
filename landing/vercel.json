@@ -1,0 +1,14 @@
+{
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "no-referrer-when-downgrade" },
+        { "key": "Permissions-Policy", "value": "geolocation=(), microphone=(), camera=()" },
+        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://connect.facebook.net https://www.googletagmanager.com https://www.google-analytics.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self'; connect-src 'self' https://azcrctokesvpwxdptatl.supabase.co https://www.facebook.com https://connect.facebook.net https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com https://api.telegram.org; frame-src https://www.google.com https://www.facebook.com https://staticxx.facebook.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" }
+      ]
+    }
+  ]
+}
