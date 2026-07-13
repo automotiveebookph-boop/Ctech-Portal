@@ -2198,8 +2198,9 @@ function recordLead(lead) {
     'Contact': lead.contact,
     'Email': lead.email
   };
+  // Estimate stage → notify the shop by Telegram only. No email here; the shop
+  // gets an email later, when the customer actually books a slot.
   notifyTelegram(summary);
-  sendEmail(summary, lead.breakdown, { inclusions: lead.inclusions, freebies: lead.freebies });
 }
 
 function showSuccess(info) {
@@ -3004,7 +3005,8 @@ document.getElementById('email-estimate-btn').addEventListener('click', async ()
   // The reservation counts as received if EITHER the slot was booked OR the
   // email went out — the shop is also notified via the pending booking + Telegram.
   if (emailed || booked) {
-    if (booked) notifyTelegram(summary);   // ensure the shop is pinged even if email failed
+    // Booking stage → the shop is notified by email (above) + the appointment
+    // record. Telegram is reserved for the earlier estimate-generated ping.
     btn.style.display = 'none';
     const confirm = document.getElementById('email-confirm');
     confirm.innerHTML = booked
