@@ -3010,10 +3010,18 @@ document.getElementById('email-estimate-btn').addEventListener('click', async ()
     btn.style.display = 'none';
     const confirm = document.getElementById('email-confirm');
     confirm.innerHTML = booked
-      ? `✅ <strong>Slot reserved!</strong> Your ${selectedTime} slot on ${selectedDay} is held. We'll call you shortly to confirm.`
-      : "✅ <strong>Slot reservation received!</strong> We've emailed your estimate and will call you shortly to confirm your preferred booking time.";
+      ? `✅ <strong>Slot reserved!</strong> Your ${selectedTime} slot on ${selectedDay} is held. We'll message you shortly to confirm.<br><span style="opacity:.75">Opening Messenger…</span>`
+      : "✅ <strong>Slot reservation received!</strong> We've emailed your estimate and will message you shortly to confirm your preferred booking time.<br><span style=\"opacity:.75\">Opening Messenger…</span>";
     confirm.classList.add('show');
     if (selectedDateISO) refreshAvailability(selectedDateISO);   // reflect the just-taken slot
+    // After a brief confirmation, hand off to C-Tech Messenger so the shop can
+    // confirm the booking there (booking details encoded in the m.me referral).
+    const messengerUrl = messengerBookingUrl({
+      n: ctx.name,
+      u: ctx.vehicle,
+      s: `${ctx.service}${selectedDay ? ' — ' + selectedDay : ''}${selectedTime ? ' ' + selectedTime : ''}`.trim()
+    });
+    setTimeout(() => { window.location.href = messengerUrl; }, 3000);
   } else {
     btn.disabled = false;
     btn.textContent = 'Could not send — tap to retry';
