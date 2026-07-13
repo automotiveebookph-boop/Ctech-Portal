@@ -48,6 +48,10 @@ rejected with a hint pointing to the correct one. (Same app, routed by hostname.
 ## 3. Booking / appointment approvals
 
 - Customers reserve a slot on the landing page's estimate tool.
+- After reserving, the customer sees a "Slot reserved!" confirmation ("we'll
+  **message** you shortly to confirm"), then is auto-redirected to **C-Tech
+  Messenger** (`m.me/cteachautomotive`) after ~3 seconds, with the booking
+  details encoded in the referral link.
 - Each reservation becomes a **pending appointment** in the portal.
 - **Approve here:** https://admin.ctechautomotiveph.com/admin/appointments
   (sidebar → **Appointments**; badge shows the pending count).
@@ -148,4 +152,8 @@ without this — it only affects the reset flow.
 - **Four login doors** — the portal now has separate, subdomain-scoped logins
   (`admin` / `fleetadmin` / `portal` / `fleet`); see §2. Wrong-door sign-ins are rejected
   with a hint. Deployed to prod via `vercel deploy --prod`.
+- **Notifications split** — estimate generated → shop pinged by **Telegram only**;
+  slot booked → shop **emailed**. Customer's estimate email now sent at booking time.
+- **Booking confirmation → Messenger** — confirmation says "we'll message you shortly"
+  and auto-redirects to C-Tech Messenger after 3s (booking details in the m.me referral).
 - **Still pending:** add the three new subdomains to the Supabase reset-URL allowlist (§6).
