@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeftRight,
   BarChart3,
@@ -13,6 +13,16 @@ import {
   X,
 } from "lucide-react";
 import { supabaseFleet } from "@/lib/supabase-fleet";
+import { STATUS_STYLES } from "@/lib/fleet-utils";
+
+type DueVehicle = {
+  id: string;
+  plate_number: string;
+  make: string;
+  model: string;
+  service_status: "OVERDUE" | "DUE NOW";
+  customer_name: string | null;
+};
 
 type NavItem = {
   to:
@@ -53,29 +63,76 @@ export function WalkinSidebar({ email }: { email?: string }) {
   const [open, setOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
   const [dueCount, setDueCount] = useState(0);
+  const [dueVehicles, setDueVehicles] = useState<DueVehicle[]>([]);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setOpen(false);
+    setNotifOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    if (!notifOpen) return;
+    function onOutsideClick(e: MouseEvent) {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setNotifOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onOutsideClick);
+    return () => document.removeEventListener("mousedown", onOutsideClick);
+  }, [notifOpen]);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [pending, due] = await Promise.all([
+      const [pending, dueRes] = await Promise.all([
         supabaseFleet
           .from("appointments")
           .select("id", { count: "exact", head: true })
           .eq("status", "pending"),
         supabaseFleet
           .from("vehicle_status_view")
-          .select("id", { count: "exact", head: true })
+          .select("id, plate_number, make, model, service_status, customer_id")
           .not("customer_id", "is", null)
           .neq("status", "archived")
           .in("service_status", ["OVERDUE", "DUE NOW"]),
       ]);
+      if (cancelled) return;
+      setPendingCount(pending.count ?? 0);
+
+      const dueRows = (dueRes.data ?? []) as {
+        id: string;
+        plate_number: string;
+        make: string;
+        model: string;
+        service_status: "OVERDUE" | "DUE NOW";
+        customer_id: string;
+      }[];
+      setDueCount(dueRows.length);
+
+      const customerIds = [...new Set(dueRows.map((v) => v.customer_id))];
+      const nameById = new Map<string, string>();
+      if (customerIds.length) {
+        const { data: custs } = await supabaseFleet
+          .from("customers")
+          .select("id, full_name")
+          .in("id", customerIds);
+        for (const c of custs ?? []) nameById.set(c.id, c.full_name);
+      }
       if (!cancelled) {
-        setPendingCount(pending.count ?? 0);
-        setDueCount(due.count ?? 0);
+        setDueVehicles(
+          dueRows
+            .sort((a, b) => (a.service_status === b.service_status ? 0 : a.service_status === "OVERDUE" ? -1 : 1))
+            .map((v) => ({
+              id: v.id,
+              plate_number: v.plate_number,
+              make: v.make,
+              model: v.model,
+              service_status: v.service_status,
+              customer_name: nameById.get(v.customer_id) ?? null,
+            })),
+        );
       }
     })();
     return () => {
@@ -122,21 +179,90 @@ export function WalkinSidebar({ email }: { email?: string }) {
           <X className="h-5 w-5" />
         </button>
 
-        <div className="flex items-center gap-3 border-b border-white/10 p-6">
-          <div
-            className="flex h-10 w-10 items-center justify-center rounded-lg"
-            style={{ backgroundColor: "#C9A227" }}
-          >
-            <Wrench className="h-5 w-5 text-white" strokeWidth={2.25} />
-          </div>
-          <div className="leading-tight">
-            <div className="text-lg font-bold text-white">C-TECH</div>
+        <div className="flex items-center justify-between gap-3 border-b border-white/10 p-6">
+          <div className="flex items-center gap-3">
             <div
-              className="text-[10px] font-medium uppercase"
-              style={{ letterSpacing: "0.3em", color: "#C9A227" }}
+              className="flex h-10 w-10 items-center justify-center rounded-lg"
+              style={{ backgroundColor: "#C9A227" }}
             >
-              Client Dashboard
+              <Wrench className="h-5 w-5 text-white" strokeWidth={2.25} />
             </div>
+            <div className="leading-tight">
+              <div className="text-lg font-bold text-white">C-TECH</div>
+              <div
+                className="text-[10px] font-medium uppercase"
+                style={{ letterSpacing: "0.3em", color: "#C9A227" }}
+              >
+                Client Dashboard
+              </div>
+            </div>
+          </div>
+
+          <div className="relative" ref={notifRef}>
+            <button
+              type="button"
+              onClick={() => setNotifOpen((o) => !o)}
+              aria-label={dueCount > 0 ? `Notifications: ${dueCount} vehicles due for service` : "Notifications"}
+              className="relative flex h-9 w-9 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
+            >
+              <Bell className="h-5 w-5" />
+              {dueCount > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                  {dueCount > 9 ? "9+" : dueCount}
+                </span>
+              )}
+            </button>
+
+            {notifOpen && (
+              <div className="absolute right-0 top-11 z-50 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-stone-200 bg-white text-left shadow-2xl">
+                <div className="border-b border-stone-100 px-4 py-3">
+                  <div className="text-sm font-bold" style={{ color: "#0F1E3A" }}>
+                    Service Due Notifications
+                  </div>
+                  <div className="text-xs text-stone-500">
+                    {dueCount === 0 ? "Nothing due right now" : `${dueCount} vehicle${dueCount === 1 ? "" : "s"} need PMS / oil change`}
+                  </div>
+                </div>
+                <div className="max-h-80 overflow-y-auto">
+                  {dueVehicles.length === 0 ? (
+                    <div className="px-4 py-6 text-center text-sm text-stone-400">
+                      All vehicles are on schedule.
+                    </div>
+                  ) : (
+                    dueVehicles.slice(0, 8).map((v) => {
+                      const s = STATUS_STYLES[v.service_status];
+                      return (
+                        <Link
+                          key={v.id}
+                          to="/admin/walkin/vehicles/$vehicleId"
+                          params={{ vehicleId: v.id }}
+                          onClick={() => setNotifOpen(false)}
+                          className="flex items-center justify-between gap-3 border-b border-stone-50 px-4 py-3 text-sm hover:bg-stone-50"
+                        >
+                          <div className="min-w-0">
+                            <div className="font-semibold" style={{ color: "#0F1E3A" }}>
+                              {v.plate_number} <span className="font-normal text-stone-500">· {v.make} {v.model}</span>
+                            </div>
+                            <div className="truncate text-xs text-stone-500">{v.customer_name ?? "—"}</div>
+                          </div>
+                          <span className={`shrink-0 rounded border px-2 py-0.5 text-[10px] font-bold ${s.bg} ${s.text} ${s.border}`}>
+                            {v.service_status}
+                          </span>
+                        </Link>
+                      );
+                    })
+                  )}
+                </div>
+                <Link
+                  to="/admin/walkin/reminders"
+                  onClick={() => setNotifOpen(false)}
+                  className="block border-t border-stone-100 px-4 py-3 text-center text-xs font-semibold hover:bg-stone-50"
+                  style={{ color: "#0F1E3A" }}
+                >
+                  View all in Service Reminders →
+                </Link>
+              </div>
+            )}
           </div>
         </div>
 
