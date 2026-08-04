@@ -1,10 +1,11 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight, Calendar, Car, CheckCircle2, ClipboardList,
-  History, MapPin, Menu, Phone, ShieldCheck, Star, Users, Wrench, X,
+  History, Loader2, MapPin, Menu, Phone, ShieldCheck, Star, Users, Wrench, X,
 } from "lucide-react";
 import { CTechLogo } from "@/components/CTechLogo";
+import { getAudience } from "@/lib/subdomain";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -22,6 +23,22 @@ export const Route = createFileRoute("/")({
 
 function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const navigate = useNavigate();
+
+  // On a scoped subdomain (admin/fleetadmin/portal/fleet), the root is a login
+  // door, not the public marketing page — send it straight to the sign-in page.
+  const scoped = useMemo(() => getAudience() !== "any", []);
+  useEffect(() => {
+    if (scoped) navigate({ to: "/login" });
+  }, [scoped, navigate]);
+
+  if (scoped) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-stone-50">
+        <Loader2 className="h-6 w-6 animate-spin text-stone-400" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white">

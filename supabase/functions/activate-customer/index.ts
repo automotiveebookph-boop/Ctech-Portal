@@ -101,13 +101,33 @@ serve(async (req) => {
   }
 
   try {
+    const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
+    // Only admins may activate a customer. verify_jwt only guarantees a
+    // validly-signed token (the public anon key qualifies) — it does not
+    // guarantee the caller is an admin, so that check has to happen here.
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const token = authHeader.replace(/^Bearer\s+/i, "");
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      return json({ error: "Unauthorized" }, 401);
+    }
+
+    const { data: adminRole } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (!adminRole) {
+      return json({ error: "Forbidden" }, 403);
+    }
+
     const { contact_request_id, email, full_name, phone } = await req.json();
 
     if (!contact_request_id || !email || !full_name) {
       return json({ error: "Missing required fields" }, 400);
     }
-
-    const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
     // 1. Check if customer already exists (fast direct lookup, no listUsers)
     const { data: existingRow } = await supabase

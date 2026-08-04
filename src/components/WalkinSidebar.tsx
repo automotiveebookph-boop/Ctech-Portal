@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import {
   ArrowLeftRight,
   BarChart3,
+  Bell,
   CalendarCheck,
   Car,
   LogOut,
@@ -19,10 +20,11 @@ type NavItem = {
     | "/admin/walkin/customers"
     | "/admin/walkin/appointments"
     | "/admin/walkin/vehicles"
-    | "/admin/schedules";
+    | "/admin/walkin/reminders"
+    | "/admin/walkin/schedules";
   label: string;
   icon: typeof BarChart3;
-  showBadge?: boolean;
+  showBadge?: "pending" | "due";
 };
 
 const NAV: NavItem[] = [
@@ -32,10 +34,16 @@ const NAV: NavItem[] = [
     to: "/admin/walkin/appointments",
     label: "Appointments",
     icon: CalendarCheck,
-    showBadge: true,
+    showBadge: "pending",
   },
-  { to: "/admin/schedules", label: "Schedules", icon: CalendarCheck },
+  { to: "/admin/walkin/schedules", label: "Schedules", icon: CalendarCheck },
   { to: "/admin/walkin/vehicles", label: "Vehicles", icon: Car },
+  {
+    to: "/admin/walkin/reminders",
+    label: "Service Reminders",
+    icon: Bell,
+    showBadge: "due",
+  },
 ];
 
 
@@ -44,6 +52,7 @@ export function WalkinSidebar({ email }: { email?: string }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
+  const [dueCount, setDueCount] = useState(0);
 
   useEffect(() => {
     setOpen(false);
@@ -52,11 +61,22 @@ export function WalkinSidebar({ email }: { email?: string }) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { count } = await supabaseFleet
-        .from("appointments")
-        .select("id", { count: "exact", head: true })
-        .eq("status", "pending");
-      if (!cancelled) setPendingCount(count ?? 0);
+      const [pending, due] = await Promise.all([
+        supabaseFleet
+          .from("appointments")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "pending"),
+        supabaseFleet
+          .from("vehicle_status_view")
+          .select("id", { count: "exact", head: true })
+          .not("customer_id", "is", null)
+          .neq("status", "archived")
+          .in("service_status", ["OVERDUE", "DUE NOW"]),
+      ]);
+      if (!cancelled) {
+        setPendingCount(pending.count ?? 0);
+        setDueCount(due.count ?? 0);
+      }
     })();
     return () => {
       cancelled = true;
@@ -115,7 +135,7 @@ export function WalkinSidebar({ email }: { email?: string }) {
               className="text-[10px] font-medium uppercase"
               style={{ letterSpacing: "0.3em", color: "#C9A227" }}
             >
-              Walk-in Panel
+              Client Dashboard
             </div>
           </div>
         </div>
@@ -137,9 +157,14 @@ export function WalkinSidebar({ email }: { email?: string }) {
                   <Icon className="h-4 w-4" />
                   {label}
                 </span>
-                {showBadge && pendingCount > 0 && (
+                {showBadge === "pending" && pendingCount > 0 && (
                   <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-amber-500 px-1.5 text-[10px] font-bold text-white">
                     {pendingCount}
+                  </span>
+                )}
+                {showBadge === "due" && dueCount > 0 && (
+                  <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
+                    {dueCount}
                   </span>
                 )}
               </Link>

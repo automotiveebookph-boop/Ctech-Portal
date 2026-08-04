@@ -1,9 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState, type FormEvent, type MouseEvent } from "react";
+import { useMemo, useState, type FormEvent, type MouseEvent } from "react";
 import { ArrowRight, Eye, EyeOff, Loader2, Lock, ShieldCheck, Users } from "lucide-react";
 import { supabaseFleet } from "@/lib/supabase-fleet";
 import { CTechLogo } from "@/components/CTechLogo";
 import { getOrCreateCustomerRole } from "@/lib/customer-role-linking";
+import { getAudience, AUDIENCE_INFO, ROLE_HOST, type Role } from "@/lib/subdomain";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -21,6 +22,11 @@ function LoginPage() {
   const [resetLoading, setResetLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  // Which "door" (subdomain) is this? Drives branding + who may sign in here.
+  const audience = useMemo(() => getAudience(), []);
+  const audienceInfo = audience === "any" ? null : AUDIENCE_INFO[audience];
+  const isAdminDoor = audienceInfo?.kind === "admin";
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -68,7 +74,26 @@ function LoginPage() {
         return;
       }
 
-      const role = linkedRoleRow.role;
+      const role = linkedRoleRow.role as Role | string;
+
+      // Subdomain door enforcement: on a scoped door, only its audience may enter.
+      if (audienceInfo) {
+        if (role === audienceInfo.allowedRole) {
+          navigate({ to: audienceInfo.landingPath });
+        } else {
+          await supabaseFleet.auth.signOut();
+          const host = ROLE_HOST[role as Role];
+          setError(
+            host
+              ? `This is the ${audienceInfo.label} sign-in. Your account isn't for this page — please sign in at ${host}.`
+              : "This account isn't activated for this sign-in page. Contact your administrator.",
+          );
+          setLoading(false);
+        }
+        return;
+      }
+
+      // Unscoped door ("any" — localhost/preview/apex): route by role as before.
       if (role === "admin") {
         navigate({ to: "/admin/select" });
       } else if (role === "fleet_manager") {
@@ -132,7 +157,7 @@ function LoginPage() {
         <div className="relative z-10 max-w-lg">
           <span className="inline-block text-[11px] font-semibold uppercase px-3 py-1.5 rounded-md mb-8"
             style={{ color: "#C9A227", backgroundColor: "rgba(201,162,39,0.12)", border: "1px solid rgba(201,162,39,0.25)", letterSpacing: "0.18em" }}>
-            Service Portal
+            {audienceInfo ? `${audienceInfo.label}${isAdminDoor ? " · Staff" : ""}` : "Service Portal"}
           </span>
           <h1 className="text-5xl xl:text-6xl font-bold leading-[1.05] tracking-tight">
             <span className="text-white">C-Tech Automotive</span><br />
@@ -158,7 +183,13 @@ function LoginPage() {
           <div className="w-full max-w-md">
             <Link to="/" className="mb-6 inline-block text-sm text-stone-500 hover:text-stone-800 transition">← Back to Home</Link>
             <h2 className="text-3xl font-bold tracking-tight" style={{ color: "#0F1E3A" }}>Welcome back</h2>
-            <p className="mt-2 text-stone-600">Sign in to your portal</p>
+            <p className="mt-2 text-stone-600">
+              {audienceInfo
+                ? isAdminDoor
+                  ? `${audienceInfo.label} — staff sign-in`
+                  : `Sign in to the ${audienceInfo.label}`
+                : "Sign in to your portal"}
+            </p>
 
             <form onSubmit={handleSubmit} className="mt-8 space-y-5">
               {error && <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
@@ -210,12 +241,14 @@ function LoginPage() {
                   : (<><span>Sign In</span><ArrowRight size={18} className="transition-transform group-hover:translate-x-0.5" /></>)}
               </button>
 
-              <p className="text-center text-sm text-stone-600 pt-2">
-                Not a client yet?{" "}
-                <Link to="/request-access" className="font-semibold hover:underline" style={{ color: "#C9A227" }}>
-                  Request access
-                </Link>
-              </p>
+              {!isAdminDoor && (
+                <p className="text-center text-sm text-stone-600 pt-2">
+                  Not a client yet?{" "}
+                  <Link to="/request-access" className="font-semibold hover:underline" style={{ color: "#C9A227" }}>
+                    Request access
+                  </Link>
+                </p>
+              )}
             </form>
 
             <div className="mt-10 flex flex-col items-center justify-center gap-1.5 text-xs text-stone-400">

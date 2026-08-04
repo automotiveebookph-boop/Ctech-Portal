@@ -5,7 +5,7 @@ import { WalkinSidebar } from "@/components/WalkinSidebar";
 
 export const Route = createFileRoute("/admin/walkin")({
   head: () => ({
-    meta: [{ title: "Walk-in Admin — C-Tech Automotive" }],
+    meta: [{ title: "Client Dashboard — C-Tech Automotive" }],
   }),
   component: WalkinLayout,
 });

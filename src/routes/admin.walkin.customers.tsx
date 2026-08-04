@@ -1,23 +1,26 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Car, Plus, Search, Trash2, X } from "lucide-react";
+import { MoreHorizontal, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 import { supabaseFleet } from "@/lib/supabase-fleet";
 import { formatDate } from "@/lib/my-car-session";
+import { CUSTOMER_TYPE_LABEL, STATUS_STYLES, type Customer } from "@/lib/fleet-utils";
+import { formatPHPhone } from "@/lib/phone";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { JobOrderModal } from "@/components/JobOrderModal";
+import { BookAppointmentModal } from "@/components/BookAppointmentModal";
+import { VehicleQuickModal } from "@/components/VehicleQuickModal";
+import { CustomerModal } from "@/components/CustomerModal";
 
 export const Route = createFileRoute("/admin/walkin/customers")({
   component: CustomersPage,
 });
-
-type Customer = {
-  id: string;
-  full_name: string;
-  email: string | null;
-  phone: string | null;
-  address: string | null;
-  notes?: string | null;
-  created_at: string;
-};
 
 type VehicleLite = {
   id: string;
@@ -26,11 +29,25 @@ type VehicleLite = {
   make: string;
   model: string;
   year: number | null;
-  color?: string | null;
-  transmission?: string | null;
+  current_km: number;
+  service_status: "OK" | "DUE SOON" | "DUE NOW" | "OVERDUE";
+  km_to_next_service: number;
 };
 
-type LastVisit = { customer_id: string; service_date: string };
+const URGENCY: Record<VehicleLite["service_status"], number> = {
+  OVERDUE: 0,
+  "DUE NOW": 1,
+  "DUE SOON": 2,
+  OK: 3,
+};
+
+type ActionState =
+  | { kind: "none" }
+  | { kind: "editCustomer"; customer: Customer | null }
+  | { kind: "addVehicle"; customer: Customer }
+  | { kind: "jobOrder"; customer: Customer }
+  | { kind: "appointment"; customer: Customer }
+  | { kind: "archive"; customer: Customer };
 
 function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -38,30 +55,23 @@ function CustomersPage() {
   const [lastVisits, setLastVisits] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [editing, setEditing] = useState<Customer | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [deleting, setDeleting] = useState<Customer | null>(null);
+  const [action, setAction] = useState<ActionState>({ kind: "none" });
 
   async function load() {
     setLoading(true);
-    const cu = await supabaseFleet.from("customers").select("*").order("created_at", { ascending: false });
-    let veRes = await supabaseFleet
-      .from("vehicles")
-      .select("id, customer_id, plate_number, make, model, year, color, transmission")
-      .not("customer_id", "is", null);
-    if (veRes.error) {
-      // Fallback for DBs without color/transmission columns
-      veRes = await supabaseFleet
-        .from("vehicles")
-        .select("id, customer_id, plate_number, make, model, year")
-        .not("customer_id", "is", null) as typeof veRes;
-    }
+    const [cu, veRes] = await Promise.all([
+      supabaseFleet.from("customers").select("*").neq("status", "archived").order("created_at", { ascending: false }),
+      supabaseFleet
+        .from("vehicle_status_view")
+        .select("id, customer_id, plate_number, make, model, year, current_km, service_status, km_to_next_service")
+        .not("customer_id", "is", null)
+        .neq("status", "archived"),
+    ]);
     const cList = (cu.data ?? []) as Customer[];
     const vList = (veRes.data ?? []) as unknown as VehicleLite[];
     setCustomers(cList);
     setVehicles(vList);
 
-    // last visit per customer (via their vehicles)
     const vIds = vList.map((v) => v.id);
     if (vIds.length) {
       const { data } = await supabaseFleet
@@ -76,6 +86,8 @@ function CustomersPage() {
         if (cId && !lv[cId]) lv[cId] = r.service_date;
       }
       setLastVisits(lv);
+    } else {
+      setLastVisits({});
     }
     setLoading(false);
   }
@@ -93,22 +105,36 @@ function CustomersPage() {
     return m;
   }, [vehicles]);
 
+  function nextServiceFor(customerId: string) {
+    const list = vehiclesByCustomer.get(customerId) ?? [];
+    if (list.length === 0) return null;
+    return [...list].sort((a, b) => URGENCY[a.service_status] - URGENCY[b.service_status])[0];
+  }
+
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
     if (!q) return customers;
-    return customers.filter((c) =>
-      c.full_name.toLowerCase().includes(q) ||
-      (c.email ?? "").toLowerCase().includes(q) ||
-      (c.phone ?? "").toLowerCase().includes(q)
-    );
-  }, [customers, search]);
+    return customers.filter((c) => {
+      const vList = vehiclesByCustomer.get(c.id) ?? [];
+      return (
+        c.full_name.toLowerCase().includes(q) ||
+        (c.email ?? "").toLowerCase().includes(q) ||
+        (c.phone ?? "").toLowerCase().includes(q) ||
+        vList.some((v) =>
+          v.plate_number.toLowerCase().includes(q) ||
+          v.make.toLowerCase().includes(q) ||
+          v.model.toLowerCase().includes(q)
+        )
+      );
+    });
+  }, [customers, search, vehiclesByCustomer]);
 
-  async function doDelete() {
-    if (!deleting) return;
-    const { error } = await supabaseFleet.from("customers").delete().eq("id", deleting.id);
+  async function doArchive() {
+    if (action.kind !== "archive") return;
+    const { error } = await supabaseFleet.from("customers").update({ status: "archived" }).eq("id", action.customer.id);
     if (error) toast.error(error.message);
-    else toast.success("Customer deleted");
-    setDeleting(null);
+    else toast.success("Customer archived");
+    setAction({ kind: "none" });
     load();
   }
 
@@ -117,7 +143,7 @@ function CustomersPage() {
       <header className="flex flex-col gap-3 border-b border-stone-200 bg-white px-4 py-4 pl-16 sm:flex-row sm:items-center sm:justify-between md:px-8 md:py-6 md:pl-8">
         <div>
           <div className="text-[10px] font-bold uppercase tracking-wider md:text-xs" style={{ color: "#C9A227" }}>
-            C-Tech Walk-in Panel
+            C-Tech Client Dashboard
           </div>
           <h1 className="text-lg font-bold md:text-2xl" style={{ color: "#0F1E3A" }}>
             Walk-in Customers
@@ -127,7 +153,7 @@ function CustomersPage() {
           </p>
         </div>
         <button
-          onClick={() => { setEditing(null); setModalOpen(true); }}
+          onClick={() => setAction({ kind: "editCustomer", customer: null })}
           className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold"
           style={{ backgroundColor: "#C9A227", color: "#0F1E3A" }}
         >
@@ -142,22 +168,22 @@ function CustomersPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name, email, phone…"
+            placeholder="Search name, mobile, email, plate, model…"
             className="w-full rounded-lg border border-stone-300 bg-white py-2 pl-10 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-stone-900"
           />
         </div>
 
         <div className="overflow-hidden rounded-xl border border-stone-200 bg-white">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[860px] text-sm">
+            <table className="w-full min-w-[900px] text-sm">
               <thead className="bg-stone-50 text-[10px] uppercase tracking-wider text-stone-500">
                 <tr>
-                  <th className="px-4 py-3 text-left font-bold">Name</th>
-                  <th className="px-4 py-3 text-left font-bold">Email</th>
-                  <th className="px-4 py-3 text-left font-bold">Phone</th>
+                  <th className="px-4 py-3 text-left font-bold">Customer</th>
+                  <th className="px-4 py-3 text-left font-bold">Contact</th>
                   <th className="px-4 py-3 text-left font-bold">Vehicle</th>
                   <th className="px-4 py-3 text-left font-bold">Last Visit</th>
-                  <th className="px-4 py-3 text-right font-bold">Actions</th>
+                  <th className="px-4 py-3 text-left font-bold">Next Service</th>
+                  <th className="px-4 py-3 text-right font-bold">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
@@ -168,43 +194,74 @@ function CustomersPage() {
                 ) : (
                   filtered.map((c) => {
                     const vList = vehiclesByCustomer.get(c.id) ?? [];
+                    const next = nextServiceFor(c.id);
                     return (
                       <tr key={c.id} className="hover:bg-stone-50">
                         <td className="px-4 py-3">
                           <div className="font-semibold" style={{ color: "#0F1E3A" }}>{c.full_name}</div>
-                          <div className="text-xs text-stone-500">{c.email}</div>
+                          <div className="text-[10px] uppercase tracking-wide text-stone-400">
+                            {CUSTOMER_TYPE_LABEL[c.customer_type] ?? "Private"}
+                          </div>
                         </td>
-                        <td className="px-4 py-3 text-stone-700">{c.email ?? "—"}</td>
-                        <td className="px-4 py-3 text-stone-700">{c.phone ?? "—"}</td>
+                        <td className="px-4 py-3">
+                          <div className="text-stone-700">{c.phone ? formatPHPhone(c.phone) : "—"}</div>
+                          {c.email && <div className="text-xs text-stone-500">{c.email}</div>}
+                        </td>
                         <td className="px-4 py-3">
                           {vList.length === 0 ? (
                             <span className="text-stone-400">—</span>
+                          ) : vList.length === 1 ? (
+                            <>
+                              <div className="font-semibold">{vList[0].plate_number}</div>
+                              <div className="text-xs text-stone-500">
+                                {vList[0].make} {vList[0].model}{vList[0].year ? ` · ${vList[0].year}` : ""}
+                              </div>
+                            </>
                           ) : (
-                            <div className="space-y-1">
-                              {vList.map((v) => (
-                                <div key={v.id}>
-                                  <div className="font-semibold">{v.plate_number}</div>
-                                  <div className="text-xs text-stone-500">
-                                    {v.make} {v.model}{v.year ? ` · ${v.year}` : ""}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
+                            <span className="font-semibold" style={{ color: "#0F1E3A" }}>{vList.length} Vehicles</span>
                           )}
                         </td>
                         <td className="px-4 py-3 text-stone-700">
                           {lastVisits[c.id] ? formatDate(lastVisits[c.id]) : <span className="text-stone-400">—</span>}
                         </td>
-                        <td className="px-4 py-3 text-right space-x-3">
-                          <button
-                            onClick={() => { setEditing(c); setModalOpen(true); }}
-                            className="text-xs font-semibold hover:underline"
-                            style={{ color: "#0F1E3A" }}
-                          >Edit</button>
-                          <button
-                            onClick={() => setDeleting(c)}
-                            className="text-xs font-semibold text-red-600 hover:underline"
-                          >Delete</button>
+                        <td className="px-4 py-3">
+                          {!next ? (
+                            <span className="text-stone-400">—</span>
+                          ) : (
+                            <span className={`inline-flex items-center gap-1.5 rounded border px-2 py-0.5 text-[10px] font-bold ${STATUS_STYLES[next.service_status].bg} ${STATUS_STYLES[next.service_status].text} ${STATUS_STYLES[next.service_status].border}`}>
+                              <span className={`h-1.5 w-1.5 rounded-full ${STATUS_STYLES[next.service_status].dot}`} />
+                              {next.service_status}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-end gap-2">
+                            <Link
+                              to="/admin/walkin/customers/$customerId"
+                              params={{ customerId: c.id }}
+                              className="rounded-lg px-3 py-1.5 text-xs font-bold"
+                              style={{ backgroundColor: "#0F1E3A", color: "white" }}
+                            >
+                              View
+                            </Link>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button className="rounded-lg border border-stone-200 p-1.5 text-stone-500 hover:bg-stone-100" aria-label="More actions">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => setAction({ kind: "jobOrder", customer: c })}>Create Job Order</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setAction({ kind: "appointment", customer: c })}>Book Appointment</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setAction({ kind: "addVehicle", customer: c })}>Add Vehicle</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setAction({ kind: "editCustomer", customer: c })}>Edit Customer</DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => setAction({ kind: "archive", customer: c })} className="text-red-600 focus:text-red-600">
+                                  Archive Customer
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -216,296 +273,59 @@ function CustomersPage() {
         </div>
       </main>
 
-      {modalOpen && (
+      {action.kind === "editCustomer" && (
         <CustomerModal
-          initial={editing}
-          initialVehicles={editing ? vehiclesByCustomer.get(editing.id) ?? [] : []}
-          onClose={() => setModalOpen(false)}
-          onSaved={() => { setModalOpen(false); load(); }}
+          initial={action.customer}
+          onClose={() => setAction({ kind: "none" })}
+          onSaved={() => { setAction({ kind: "none" }); load(); }}
         />
       )}
 
-      {deleting && (
+      {action.kind === "addVehicle" && (
+        <VehicleQuickModal
+          customerId={action.customer.id}
+          customerName={action.customer.full_name}
+          onClose={() => setAction({ kind: "none" })}
+          onSaved={() => { setAction({ kind: "none" }); load(); }}
+        />
+      )}
+
+      {action.kind === "jobOrder" && (
+        <JobOrderModal
+          vehicles={(vehiclesByCustomer.get(action.customer.id) ?? []).map((v) => ({
+            id: v.id, plate_number: v.plate_number, make: v.make, model: v.model, current_km: v.current_km,
+          }))}
+          onClose={() => setAction({ kind: "none" })}
+          onSaved={() => { setAction({ kind: "none" }); load(); }}
+        />
+      )}
+
+      {action.kind === "appointment" && (
+        <BookAppointmentModal
+          customerId={action.customer.id}
+          vehicles={(vehiclesByCustomer.get(action.customer.id) ?? []).map((v) => ({
+            id: v.id, plate_number: v.plate_number, make: v.make, model: v.model,
+          }))}
+          onClose={() => setAction({ kind: "none" })}
+          onSaved={() => { setAction({ kind: "none" }); load(); }}
+        />
+      )}
+
+      {action.kind === "archive" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-6">
-            <h2 className="text-lg font-bold mb-2" style={{ color: "#0F1E3A" }}>Delete Customer?</h2>
+            <h2 className="text-lg font-bold mb-2" style={{ color: "#0F1E3A" }}>Archive Customer?</h2>
             <p className="text-sm text-stone-600 mb-4">
-              This will permanently delete <strong>{deleting.full_name}</strong>. This cannot be undone.
+              <strong>{action.customer.full_name}</strong> and their records will be hidden from the active list.
+              Service history and vehicles are kept and can be restored later. This does not delete anything.
             </p>
             <div className="flex justify-end gap-2">
-              <button onClick={() => setDeleting(null)} className="rounded-lg px-4 py-2 text-sm text-stone-700 hover:bg-stone-100">
-                Cancel
-              </button>
-              <button onClick={doDelete} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700">
-                Delete
-              </button>
+              <button onClick={() => setAction({ kind: "none" })} className="rounded-lg px-4 py-2 text-sm text-stone-700 hover:bg-stone-100">Cancel</button>
+              <button onClick={doArchive} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700">Archive</button>
             </div>
           </div>
         </div>
       )}
     </>
-  );
-}
-
-function CustomerModal({
-  initial,
-  initialVehicles,
-  onClose,
-  onSaved,
-}: {
-  initial: Customer | null;
-  initialVehicles: VehicleLite[];
-  onClose: () => void;
-  onSaved: () => void;
-}) {
-  const [form, setForm] = useState({
-    full_name: initial?.full_name ?? "",
-    email: initial?.email ?? "",
-    phone: initial?.phone ?? "",
-    address: initial?.address ?? "",
-    notes: initial?.notes ?? "",
-  });
-  const [vehicleList, setVehicleList] = useState<VehicleLite[]>(initialVehicles);
-  const [addingVehicle, setAddingVehicle] = useState(false);
-  const [vForm, setVForm] = useState({
-    plate_number: "",
-    make: "",
-    model: "",
-    year: new Date().getFullYear(),
-    color: "",
-    transmission: "Automatic",
-  });
-  const [savingVehicle, setSavingVehicle] = useState(false);
-  const [saving, setSaving] = useState(false);
-
-  async function save() {
-    if (!form.full_name.trim() || !form.email.trim()) {
-      toast.error("Full name and email are required");
-      return;
-    }
-    setSaving(true);
-    const payload = {
-      full_name: form.full_name.trim(),
-      email: form.email.trim(),
-      phone: form.phone.trim() || null,
-      address: form.address.trim() || null,
-      notes: form.notes.trim() || null,
-    };
-    const res = initial
-      ? await supabaseFleet.from("customers").update(payload).eq("id", initial.id)
-      : await supabaseFleet.from("customers").insert([payload]);
-    setSaving(false);
-    if (res.error) { toast.error(res.error.message); return; }
-    toast.success(initial ? "Customer updated" : "Customer added");
-    onSaved();
-  }
-
-  async function addVehicle() {
-    if (!initial) {
-      toast.error("Save the customer first, then add vehicles");
-      return;
-    }
-    if (!vForm.plate_number.trim() || !vForm.make.trim() || !vForm.model.trim()) {
-      toast.error("Plate, make, and model are required");
-      return;
-    }
-    setSavingVehicle(true);
-    const plate = vForm.plate_number.trim().toUpperCase();
-    // Defaults for required NOT NULL columns on the vehicles table
-    const payload: Record<string, unknown> = {
-      customer_id: initial.id,
-      client_id: null,
-      unit_id: plate,
-      plate_number: plate,
-      make: vForm.make.trim(),
-      model: vForm.model.trim(),
-      year: Number(vForm.year) || new Date().getFullYear(),
-      color: vForm.color.trim() || null,
-      transmission: vForm.transmission,
-      vehicle_type: "Sedan",
-      engine_type: "Gas",
-      oil_type: "Fully Synth",
-      oil_liters: 4,
-      pms_interval_km: 5000,
-      current_km: 0,
-      last_service_km: 0,
-      last_service_date: new Date().toISOString().slice(0, 10),
-    };
-    let res = await supabaseFleet.from("vehicles").insert([payload]).select().single();
-    if (res.error) {
-      // Retry without color/transmission if those columns don't exist
-      delete payload.color;
-      delete payload.transmission;
-      res = await supabaseFleet.from("vehicles").insert([payload]).select().single();
-    }
-    setSavingVehicle(false);
-    if (res.error) { toast.error(res.error.message); return; }
-    const v = res.data as VehicleLite;
-    setVehicleList((prev) => [...prev, v]);
-    setVForm({
-      plate_number: "",
-      make: "",
-      model: "",
-      year: new Date().getFullYear(),
-      color: "",
-      transmission: "Automatic",
-    });
-    setAddingVehicle(false);
-    toast.success("Vehicle added");
-  }
-
-  async function removeVehicle(id: string) {
-    const { error } = await supabaseFleet.from("vehicles").delete().eq("id", id);
-    if (error) { toast.error(error.message); return; }
-    setVehicleList((prev) => prev.filter((v) => v.id !== id));
-    toast.success("Vehicle removed");
-  }
-
-  const input = "w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-stone-900";
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6">
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-xl font-bold" style={{ color: "#0F1E3A" }}>
-            {initial ? "Edit Customer" : "Add Customer"}
-          </h2>
-          <button onClick={onClose} className="rounded p-1 hover:bg-stone-100"><X className="h-5 w-5" /></button>
-        </div>
-        <div className="space-y-4">
-          <div>
-            <label className="mb-1 block text-xs font-semibold uppercase text-stone-600">Full Name *</label>
-            <input className={input} value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-semibold uppercase text-stone-600">Email *</label>
-            <input type="email" className={input} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-semibold uppercase text-stone-600">Phone</label>
-            <input className={input} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-semibold uppercase text-stone-600">Address</label>
-            <input className={input} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-semibold uppercase text-stone-600">Notes</label>
-            <textarea rows={3} className={input} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-          </div>
-
-          <div className="border-t border-stone-200 pt-4">
-            <div className="mb-3 flex items-center justify-between">
-              <label className="block text-xs font-semibold uppercase text-stone-600">Vehicles</label>
-              {initial && !addingVehicle && (
-                <button
-                  type="button"
-                  onClick={() => setAddingVehicle(true)}
-                  className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-bold"
-                  style={{ backgroundColor: "#C9A227", color: "#0F1E3A" }}
-                >
-                  <Plus className="h-3 w-3" /> Add Vehicle
-                </button>
-              )}
-            </div>
-
-            {!initial && (
-              <p className="text-xs text-stone-500">Save the customer first to add vehicles.</p>
-            )}
-
-            {initial && vehicleList.length === 0 && !addingVehicle && (
-              <p className="text-xs text-stone-500">No vehicles yet.</p>
-            )}
-
-            <div className="space-y-2">
-              {vehicleList.map((v) => (
-                <div key={v.id} className="flex items-start justify-between rounded-lg border border-stone-200 bg-stone-50 px-3 py-2">
-                  <div className="flex items-start gap-2">
-                    <Car className="mt-0.5 h-4 w-4 text-stone-500" />
-                    <div>
-                      <div className="font-semibold text-sm" style={{ color: "#0F1E3A" }}>{v.plate_number}</div>
-                      <div className="text-xs text-stone-600">
-                        {v.make} {v.model}{v.year ? ` · ${v.year}` : ""}
-                        {v.color ? ` · ${v.color}` : ""}
-                        {v.transmission ? ` · ${v.transmission}` : ""}
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => removeVehicle(v.id)}
-                    className="rounded p-1 text-red-600 hover:bg-red-50"
-                    aria-label="Remove vehicle"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            {addingVehicle && (
-              <div className="mt-3 space-y-3 rounded-lg border border-stone-300 bg-white p-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="col-span-2">
-                    <label className="mb-1 block text-[10px] font-semibold uppercase text-stone-600">Plate Number *</label>
-                    <input className={input} value={vForm.plate_number} onChange={(e) => setVForm({ ...vForm, plate_number: e.target.value })} />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-[10px] font-semibold uppercase text-stone-600">Make *</label>
-                    <input className={input} value={vForm.make} onChange={(e) => setVForm({ ...vForm, make: e.target.value })} />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-[10px] font-semibold uppercase text-stone-600">Model *</label>
-                    <input className={input} value={vForm.model} onChange={(e) => setVForm({ ...vForm, model: e.target.value })} />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-[10px] font-semibold uppercase text-stone-600">Year</label>
-                    <input type="number" className={input} value={vForm.year} onChange={(e) => setVForm({ ...vForm, year: Number(e.target.value) })} />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-[10px] font-semibold uppercase text-stone-600">Color</label>
-                    <input className={input} value={vForm.color} onChange={(e) => setVForm({ ...vForm, color: e.target.value })} />
-                  </div>
-                  <div className="col-span-2">
-                    <label className="mb-1 block text-[10px] font-semibold uppercase text-stone-600">Transmission</label>
-                    <select className={input} value={vForm.transmission} onChange={(e) => setVForm({ ...vForm, transmission: e.target.value })}>
-                      <option value="Automatic">Automatic</option>
-                      <option value="Manual">Manual</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="flex justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setAddingVehicle(false)}
-                    className="rounded-lg px-3 py-1.5 text-xs text-stone-700 hover:bg-stone-100"
-                  >Cancel</button>
-                  <button
-                    type="button"
-                    onClick={addVehicle}
-                    disabled={savingVehicle}
-                    className="rounded-lg px-3 py-1.5 text-xs font-bold disabled:opacity-60"
-                    style={{ backgroundColor: "#C9A227", color: "#0F1E3A" }}
-                  >
-                    {savingVehicle ? "Saving…" : "Save Vehicle"}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="mt-6 flex justify-end gap-2">
-          <button onClick={onClose} className="rounded-lg px-4 py-2 text-sm text-stone-700 hover:bg-stone-100">Close</button>
-          <button
-            onClick={save}
-            disabled={saving}
-            className="rounded-lg px-4 py-2 text-sm font-bold disabled:opacity-60"
-            style={{ backgroundColor: "#C9A227", color: "#0F1E3A" }}
-          >
-            {saving ? "Saving…" : initial ? "Save Changes" : "Add Customer"}
-          </button>
-        </div>
-      </div>
-    </div>
   );
 }

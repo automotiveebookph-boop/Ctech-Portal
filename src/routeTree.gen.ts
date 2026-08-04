@@ -11,10 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as VehiclesRouteImport } from './routes/vehicles'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as ReportRouteImport } from './routes/report'
 import { Route as RequestAccessRouteImport } from './routes/request-access'
-import { Route as LoginRouteImport } from './routes/login'
+import { Route as ReportRouteImport } from './routes/report'
 import { Route as MyCarRouteImport } from './routes/my-car'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -29,24 +29,19 @@ import { Route as AdminVehiclesRouteImport } from './routes/admin.vehicles'
 import { Route as AdminServiceLogRouteImport } from './routes/admin.service-log'
 import { Route as AdminSelectRouteImport } from './routes/admin.select'
 import { Route as AdminSchedulesRouteImport } from './routes/admin.schedules'
+import { Route as AdminRequestsRouteImport } from './routes/admin.requests'
 import { Route as AdminPricingRouteImport } from './routes/admin.pricing'
 import { Route as AdminClientsRouteImport } from './routes/admin.clients'
 import { Route as AdminAppointmentsRouteImport } from './routes/admin.appointments'
 import { Route as AdminWalkinIndexRouteImport } from './routes/admin.walkin.index'
 import { Route as AdminWalkinVehiclesRouteImport } from './routes/admin.walkin.vehicles'
+import { Route as AdminWalkinSchedulesRouteImport } from './routes/admin.walkin.schedules'
+import { Route as AdminWalkinRemindersRouteImport } from './routes/admin.walkin.reminders'
 import { Route as AdminWalkinCustomersRouteImport } from './routes/admin.walkin.customers'
 import { Route as AdminWalkinAppointmentsRouteImport } from './routes/admin.walkin.appointments'
+import { Route as AdminWalkinVehiclesVehicleIdRouteImport } from './routes/admin.walkin.vehicles.$vehicleId'
+import { Route as AdminWalkinCustomersCustomerIdRouteImport } from './routes/admin.walkin.customers.$customerId'
 
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RequestAccessRoute = RequestAccessRouteImport.update({
-  id: '/request-access',
-  path: '/request-access',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const VehiclesRoute = VehiclesRouteImport.update({
   id: '/vehicles',
   path: '/vehicles',
@@ -57,6 +52,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
   path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RequestAccessRoute = RequestAccessRouteImport.update({
+  id: '/request-access',
+  path: '/request-access',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReportRoute = ReportRouteImport.update({
   id: '/report',
   path: '/report',
@@ -65,6 +65,11 @@ const ReportRoute = ReportRouteImport.update({
 const MyCarRoute = MyCarRouteImport.update({
   id: '/my-car',
   path: '/my-car',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HistoryRoute = HistoryRouteImport.update({
@@ -137,6 +142,11 @@ const AdminSchedulesRoute = AdminSchedulesRouteImport.update({
   path: '/schedules',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminRequestsRoute = AdminRequestsRouteImport.update({
+  id: '/requests',
+  path: '/requests',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminPricingRoute = AdminPricingRouteImport.update({
   id: '/pricing',
   path: '/pricing',
@@ -162,6 +172,16 @@ const AdminWalkinVehiclesRoute = AdminWalkinVehiclesRouteImport.update({
   path: '/vehicles',
   getParentRoute: () => AdminWalkinRoute,
 } as any)
+const AdminWalkinSchedulesRoute = AdminWalkinSchedulesRouteImport.update({
+  id: '/schedules',
+  path: '/schedules',
+  getParentRoute: () => AdminWalkinRoute,
+} as any)
+const AdminWalkinRemindersRoute = AdminWalkinRemindersRouteImport.update({
+  id: '/reminders',
+  path: '/reminders',
+  getParentRoute: () => AdminWalkinRoute,
+} as any)
 const AdminWalkinCustomersRoute = AdminWalkinCustomersRouteImport.update({
   id: '/customers',
   path: '/customers',
@@ -172,21 +192,34 @@ const AdminWalkinAppointmentsRoute = AdminWalkinAppointmentsRouteImport.update({
   path: '/appointments',
   getParentRoute: () => AdminWalkinRoute,
 } as any)
+const AdminWalkinVehiclesVehicleIdRoute =
+  AdminWalkinVehiclesVehicleIdRouteImport.update({
+    id: '/$vehicleId',
+    path: '/$vehicleId',
+    getParentRoute: () => AdminWalkinVehiclesRoute,
+  } as any)
+const AdminWalkinCustomersCustomerIdRoute =
+  AdminWalkinCustomersCustomerIdRouteImport.update({
+    id: '/$customerId',
+    path: '/$customerId',
+    getParentRoute: () => AdminWalkinCustomersRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/login': typeof LoginRoute
-  '/request-access': typeof RequestAccessRoute
   '/admin': typeof AdminRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/history': typeof HistoryRoute
+  '/login': typeof LoginRoute
   '/my-car': typeof MyCarRouteWithChildren
   '/report': typeof ReportRoute
+  '/request-access': typeof RequestAccessRoute
   '/reset-password': typeof ResetPasswordRoute
   '/vehicles': typeof VehiclesRouteWithChildren
   '/admin/appointments': typeof AdminAppointmentsRoute
   '/admin/clients': typeof AdminClientsRoute
   '/admin/pricing': typeof AdminPricingRoute
+  '/admin/requests': typeof AdminRequestsRoute
   '/admin/schedules': typeof AdminSchedulesRoute
   '/admin/select': typeof AdminSelectRoute
   '/admin/service-log': typeof AdminServiceLogRoute
@@ -198,23 +231,28 @@ export interface FileRoutesByFullPath {
   '/vehicles/$unitId': typeof VehiclesUnitIdRoute
   '/my-car/': typeof MyCarIndexRoute
   '/admin/walkin/appointments': typeof AdminWalkinAppointmentsRoute
-  '/admin/walkin/customers': typeof AdminWalkinCustomersRoute
-  '/admin/walkin/vehicles': typeof AdminWalkinVehiclesRoute
+  '/admin/walkin/customers': typeof AdminWalkinCustomersRouteWithChildren
+  '/admin/walkin/reminders': typeof AdminWalkinRemindersRoute
+  '/admin/walkin/schedules': typeof AdminWalkinSchedulesRoute
+  '/admin/walkin/vehicles': typeof AdminWalkinVehiclesRouteWithChildren
   '/admin/walkin/': typeof AdminWalkinIndexRoute
+  '/admin/walkin/customers/$customerId': typeof AdminWalkinCustomersCustomerIdRoute
+  '/admin/walkin/vehicles/$vehicleId': typeof AdminWalkinVehiclesVehicleIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/login': typeof LoginRoute
-  '/request-access': typeof RequestAccessRoute
   '/admin': typeof AdminRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/history': typeof HistoryRoute
+  '/login': typeof LoginRoute
   '/report': typeof ReportRoute
+  '/request-access': typeof RequestAccessRoute
   '/reset-password': typeof ResetPasswordRoute
   '/vehicles': typeof VehiclesRouteWithChildren
   '/admin/appointments': typeof AdminAppointmentsRoute
   '/admin/clients': typeof AdminClientsRoute
   '/admin/pricing': typeof AdminPricingRoute
+  '/admin/requests': typeof AdminRequestsRoute
   '/admin/schedules': typeof AdminSchedulesRoute
   '/admin/select': typeof AdminSelectRoute
   '/admin/service-log': typeof AdminServiceLogRoute
@@ -225,25 +263,30 @@ export interface FileRoutesByTo {
   '/vehicles/$unitId': typeof VehiclesUnitIdRoute
   '/my-car': typeof MyCarIndexRoute
   '/admin/walkin/appointments': typeof AdminWalkinAppointmentsRoute
-  '/admin/walkin/customers': typeof AdminWalkinCustomersRoute
-  '/admin/walkin/vehicles': typeof AdminWalkinVehiclesRoute
+  '/admin/walkin/customers': typeof AdminWalkinCustomersRouteWithChildren
+  '/admin/walkin/reminders': typeof AdminWalkinRemindersRoute
+  '/admin/walkin/schedules': typeof AdminWalkinSchedulesRoute
+  '/admin/walkin/vehicles': typeof AdminWalkinVehiclesRouteWithChildren
   '/admin/walkin': typeof AdminWalkinIndexRoute
+  '/admin/walkin/customers/$customerId': typeof AdminWalkinCustomersCustomerIdRoute
+  '/admin/walkin/vehicles/$vehicleId': typeof AdminWalkinVehiclesVehicleIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/login': typeof LoginRoute
-  '/request-access': typeof RequestAccessRoute
   '/admin': typeof AdminRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/history': typeof HistoryRoute
+  '/login': typeof LoginRoute
   '/my-car': typeof MyCarRouteWithChildren
   '/report': typeof ReportRoute
+  '/request-access': typeof RequestAccessRoute
   '/reset-password': typeof ResetPasswordRoute
   '/vehicles': typeof VehiclesRouteWithChildren
   '/admin/appointments': typeof AdminAppointmentsRoute
   '/admin/clients': typeof AdminClientsRoute
   '/admin/pricing': typeof AdminPricingRoute
+  '/admin/requests': typeof AdminRequestsRoute
   '/admin/schedules': typeof AdminSchedulesRoute
   '/admin/select': typeof AdminSelectRoute
   '/admin/service-log': typeof AdminServiceLogRoute
@@ -255,26 +298,31 @@ export interface FileRoutesById {
   '/vehicles/$unitId': typeof VehiclesUnitIdRoute
   '/my-car/': typeof MyCarIndexRoute
   '/admin/walkin/appointments': typeof AdminWalkinAppointmentsRoute
-  '/admin/walkin/customers': typeof AdminWalkinCustomersRoute
-  '/admin/walkin/vehicles': typeof AdminWalkinVehiclesRoute
+  '/admin/walkin/customers': typeof AdminWalkinCustomersRouteWithChildren
+  '/admin/walkin/reminders': typeof AdminWalkinRemindersRoute
+  '/admin/walkin/schedules': typeof AdminWalkinSchedulesRoute
+  '/admin/walkin/vehicles': typeof AdminWalkinVehiclesRouteWithChildren
   '/admin/walkin/': typeof AdminWalkinIndexRoute
+  '/admin/walkin/customers/$customerId': typeof AdminWalkinCustomersCustomerIdRoute
+  '/admin/walkin/vehicles/$vehicleId': typeof AdminWalkinVehiclesVehicleIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/login'
-    | '/request-access'
     | '/admin'
     | '/dashboard'
     | '/history'
+    | '/login'
     | '/my-car'
     | '/report'
+    | '/request-access'
     | '/reset-password'
     | '/vehicles'
     | '/admin/appointments'
     | '/admin/clients'
     | '/admin/pricing'
+    | '/admin/requests'
     | '/admin/schedules'
     | '/admin/select'
     | '/admin/service-log'
@@ -287,22 +335,27 @@ export interface FileRouteTypes {
     | '/my-car/'
     | '/admin/walkin/appointments'
     | '/admin/walkin/customers'
+    | '/admin/walkin/reminders'
+    | '/admin/walkin/schedules'
     | '/admin/walkin/vehicles'
     | '/admin/walkin/'
+    | '/admin/walkin/customers/$customerId'
+    | '/admin/walkin/vehicles/$vehicleId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/login'
-    | '/request-access'
     | '/admin'
     | '/dashboard'
     | '/history'
+    | '/login'
     | '/report'
+    | '/request-access'
     | '/reset-password'
     | '/vehicles'
     | '/admin/appointments'
     | '/admin/clients'
     | '/admin/pricing'
+    | '/admin/requests'
     | '/admin/schedules'
     | '/admin/select'
     | '/admin/service-log'
@@ -314,23 +367,28 @@ export interface FileRouteTypes {
     | '/my-car'
     | '/admin/walkin/appointments'
     | '/admin/walkin/customers'
+    | '/admin/walkin/reminders'
+    | '/admin/walkin/schedules'
     | '/admin/walkin/vehicles'
     | '/admin/walkin'
+    | '/admin/walkin/customers/$customerId'
+    | '/admin/walkin/vehicles/$vehicleId'
   id:
     | '__root__'
     | '/'
-    | '/login'
-    | '/request-access'
     | '/admin'
     | '/dashboard'
     | '/history'
+    | '/login'
     | '/my-car'
     | '/report'
+    | '/request-access'
     | '/reset-password'
     | '/vehicles'
     | '/admin/appointments'
     | '/admin/clients'
     | '/admin/pricing'
+    | '/admin/requests'
     | '/admin/schedules'
     | '/admin/select'
     | '/admin/service-log'
@@ -343,19 +401,23 @@ export interface FileRouteTypes {
     | '/my-car/'
     | '/admin/walkin/appointments'
     | '/admin/walkin/customers'
+    | '/admin/walkin/reminders'
+    | '/admin/walkin/schedules'
     | '/admin/walkin/vehicles'
     | '/admin/walkin/'
+    | '/admin/walkin/customers/$customerId'
+    | '/admin/walkin/vehicles/$vehicleId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  LoginRoute: typeof LoginRoute
-  RequestAccessRoute: typeof RequestAccessRoute
   AdminRoute: typeof AdminRouteWithChildren
   DashboardRoute: typeof DashboardRoute
   HistoryRoute: typeof HistoryRoute
+  LoginRoute: typeof LoginRoute
   MyCarRoute: typeof MyCarRouteWithChildren
   ReportRoute: typeof ReportRoute
+  RequestAccessRoute: typeof RequestAccessRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   VehiclesRoute: typeof VehiclesRouteWithChildren
 }
@@ -376,6 +438,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/request-access': {
+      id: '/request-access'
+      path: '/request-access'
+      fullPath: '/request-access'
+      preLoaderRoute: typeof RequestAccessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/report': {
       id: '/report'
       path: '/report'
@@ -388,6 +457,13 @@ declare module '@tanstack/react-router' {
       path: '/my-car'
       fullPath: '/my-car'
       preLoaderRoute: typeof MyCarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/history': {
@@ -416,20 +492,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/request-access': {
-      id: '/request-access'
-      path: '/request-access'
-      fullPath: '/request-access'
-      preLoaderRoute: typeof RequestAccessRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/my-car/': {
@@ -502,6 +564,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSchedulesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/requests': {
+      id: '/admin/requests'
+      path: '/requests'
+      fullPath: '/admin/requests'
+      preLoaderRoute: typeof AdminRequestsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/pricing': {
       id: '/admin/pricing'
       path: '/pricing'
@@ -537,6 +606,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminWalkinVehiclesRouteImport
       parentRoute: typeof AdminWalkinRoute
     }
+    '/admin/walkin/schedules': {
+      id: '/admin/walkin/schedules'
+      path: '/schedules'
+      fullPath: '/admin/walkin/schedules'
+      preLoaderRoute: typeof AdminWalkinSchedulesRouteImport
+      parentRoute: typeof AdminWalkinRoute
+    }
+    '/admin/walkin/reminders': {
+      id: '/admin/walkin/reminders'
+      path: '/reminders'
+      fullPath: '/admin/walkin/reminders'
+      preLoaderRoute: typeof AdminWalkinRemindersRouteImport
+      parentRoute: typeof AdminWalkinRoute
+    }
     '/admin/walkin/customers': {
       id: '/admin/walkin/customers'
       path: '/customers'
@@ -551,20 +634,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminWalkinAppointmentsRouteImport
       parentRoute: typeof AdminWalkinRoute
     }
+    '/admin/walkin/vehicles/$vehicleId': {
+      id: '/admin/walkin/vehicles/$vehicleId'
+      path: '/$vehicleId'
+      fullPath: '/admin/walkin/vehicles/$vehicleId'
+      preLoaderRoute: typeof AdminWalkinVehiclesVehicleIdRouteImport
+      parentRoute: typeof AdminWalkinVehiclesRoute
+    }
+    '/admin/walkin/customers/$customerId': {
+      id: '/admin/walkin/customers/$customerId'
+      path: '/$customerId'
+      fullPath: '/admin/walkin/customers/$customerId'
+      preLoaderRoute: typeof AdminWalkinCustomersCustomerIdRouteImport
+      parentRoute: typeof AdminWalkinCustomersRoute
+    }
   }
 }
 
+interface AdminWalkinCustomersRouteChildren {
+  AdminWalkinCustomersCustomerIdRoute: typeof AdminWalkinCustomersCustomerIdRoute
+}
+
+const AdminWalkinCustomersRouteChildren: AdminWalkinCustomersRouteChildren = {
+  AdminWalkinCustomersCustomerIdRoute: AdminWalkinCustomersCustomerIdRoute,
+}
+
+const AdminWalkinCustomersRouteWithChildren =
+  AdminWalkinCustomersRoute._addFileChildren(AdminWalkinCustomersRouteChildren)
+
+interface AdminWalkinVehiclesRouteChildren {
+  AdminWalkinVehiclesVehicleIdRoute: typeof AdminWalkinVehiclesVehicleIdRoute
+}
+
+const AdminWalkinVehiclesRouteChildren: AdminWalkinVehiclesRouteChildren = {
+  AdminWalkinVehiclesVehicleIdRoute: AdminWalkinVehiclesVehicleIdRoute,
+}
+
+const AdminWalkinVehiclesRouteWithChildren =
+  AdminWalkinVehiclesRoute._addFileChildren(AdminWalkinVehiclesRouteChildren)
+
 interface AdminWalkinRouteChildren {
   AdminWalkinAppointmentsRoute: typeof AdminWalkinAppointmentsRoute
-  AdminWalkinCustomersRoute: typeof AdminWalkinCustomersRoute
-  AdminWalkinVehiclesRoute: typeof AdminWalkinVehiclesRoute
+  AdminWalkinCustomersRoute: typeof AdminWalkinCustomersRouteWithChildren
+  AdminWalkinRemindersRoute: typeof AdminWalkinRemindersRoute
+  AdminWalkinSchedulesRoute: typeof AdminWalkinSchedulesRoute
+  AdminWalkinVehiclesRoute: typeof AdminWalkinVehiclesRouteWithChildren
   AdminWalkinIndexRoute: typeof AdminWalkinIndexRoute
 }
 
 const AdminWalkinRouteChildren: AdminWalkinRouteChildren = {
   AdminWalkinAppointmentsRoute: AdminWalkinAppointmentsRoute,
-  AdminWalkinCustomersRoute: AdminWalkinCustomersRoute,
-  AdminWalkinVehiclesRoute: AdminWalkinVehiclesRoute,
+  AdminWalkinCustomersRoute: AdminWalkinCustomersRouteWithChildren,
+  AdminWalkinRemindersRoute: AdminWalkinRemindersRoute,
+  AdminWalkinSchedulesRoute: AdminWalkinSchedulesRoute,
+  AdminWalkinVehiclesRoute: AdminWalkinVehiclesRouteWithChildren,
   AdminWalkinIndexRoute: AdminWalkinIndexRoute,
 }
 
@@ -576,6 +699,7 @@ interface AdminRouteChildren {
   AdminAppointmentsRoute: typeof AdminAppointmentsRoute
   AdminClientsRoute: typeof AdminClientsRoute
   AdminPricingRoute: typeof AdminPricingRoute
+  AdminRequestsRoute: typeof AdminRequestsRoute
   AdminSchedulesRoute: typeof AdminSchedulesRoute
   AdminSelectRoute: typeof AdminSelectRoute
   AdminServiceLogRoute: typeof AdminServiceLogRoute
@@ -587,6 +711,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAppointmentsRoute: AdminAppointmentsRoute,
   AdminClientsRoute: AdminClientsRoute,
   AdminPricingRoute: AdminPricingRoute,
+  AdminRequestsRoute: AdminRequestsRoute,
   AdminSchedulesRoute: AdminSchedulesRoute,
   AdminSelectRoute: AdminSelectRoute,
   AdminServiceLogRoute: AdminServiceLogRoute,
@@ -626,16 +751,26 @@ const VehiclesRouteWithChildren = VehiclesRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  LoginRoute: LoginRoute,
-  RequestAccessRoute: RequestAccessRoute,
   AdminRoute: AdminRouteWithChildren,
   DashboardRoute: DashboardRoute,
   HistoryRoute: HistoryRoute,
+  LoginRoute: LoginRoute,
   MyCarRoute: MyCarRouteWithChildren,
   ReportRoute: ReportRoute,
+  RequestAccessRoute: RequestAccessRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   VehiclesRoute: VehiclesRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

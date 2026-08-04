@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Search, X } from "lucide-react";
 import { toast } from "sonner";
@@ -16,8 +16,16 @@ type CV = {
   make: string;
   model: string;
   year: number;
+  variant: string | null;
+  color: string | null;
   vehicle_type: string | null;
   engine_type: string | null;
+  engine_code: string | null;
+  transmission_type: string | null;
+  vin_number: string | null;
+  engine_number: string | null;
+  tire_size: string | null;
+  bolt_pattern: string | null;
   current_km: number;
   service_status: "OK" | "DUE SOON" | "DUE NOW" | "OVERDUE";
   customer_id: string;
@@ -32,6 +40,7 @@ type Customer = { id: string; full_name: string };
 const OIL_TYPES = ["Semi-Synth", "Fully Synth", "Fully Synth 5W30", "Fully Synth 0W20", "Mineral"];
 const VEHICLE_TYPES = ["Pickup", "Sedan", "Van", "SUV", "Truck", "Motorcycle", "Other"];
 const ENGINE_TYPES = ["Gas", "Diesel", "Hybrid", "Electric"];
+const TRANSMISSION_TYPES = ["Automatic", "Manual", "CVT"];
 
 function WalkinVehiclesPage() {
   const [vehicles, setVehicles] = useState<CV[]>([]);
@@ -40,12 +49,12 @@ function WalkinVehiclesPage() {
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<CV | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [deleting, setDeleting] = useState<CV | null>(null);
+  const [archiving, setArchiving] = useState<CV | null>(null);
 
   async function load() {
     setLoading(true);
     const [vRes, cRes] = await Promise.all([
-      supabaseFleet.from("vehicle_status_view").select("*").not("customer_id", "is", null),
+      supabaseFleet.from("vehicle_status_view").select("*").not("customer_id", "is", null).neq("status", "archived"),
       supabaseFleet.from("customers").select("id, full_name").order("full_name"),
     ]);
     setVehicles((vRes.data ?? []) as unknown as CV[]);
@@ -63,15 +72,16 @@ function WalkinVehiclesPage() {
       v.plate_number.toLowerCase().includes(q) ||
       v.make.toLowerCase().includes(q) ||
       v.model.toLowerCase().includes(q) ||
+      (v.vin_number ?? "").toLowerCase().includes(q) ||
       (customerById.get(v.customer_id)?.full_name ?? "").toLowerCase().includes(q)
     );
   }, [vehicles, search, customerById]);
 
-  async function doDelete() {
-    if (!deleting) return;
-    const { error } = await supabaseFleet.from("vehicles").delete().eq("id", deleting.id);
-    if (error) toast.error(error.message); else toast.success("Vehicle deleted");
-    setDeleting(null);
+  async function doArchive() {
+    if (!archiving) return;
+    const { error } = await supabaseFleet.from("vehicles").update({ status: "archived" }).eq("id", archiving.id);
+    if (error) toast.error(error.message); else toast.success("Vehicle archived");
+    setArchiving(null);
     load();
   }
 
@@ -80,7 +90,7 @@ function WalkinVehiclesPage() {
       <header className="flex flex-col gap-3 border-b border-stone-200 bg-white px-4 py-4 pl-16 sm:flex-row sm:items-center sm:justify-between md:px-8 md:py-6 md:pl-8">
         <div>
           <div className="text-[10px] font-bold uppercase tracking-wider md:text-xs" style={{ color: "#C9A227" }}>
-            C-Tech Walk-in Panel
+            C-Tech Client Dashboard
           </div>
           <h1 className="text-lg font-bold md:text-2xl" style={{ color: "#0F1E3A" }}>
             Customer Vehicles
@@ -102,14 +112,14 @@ function WalkinVehiclesPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search plate, make, model, customer…"
+            placeholder="Search plate, VIN, make, model, customer…"
             className="w-full rounded-lg border border-stone-300 bg-white py-2 pl-10 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-stone-900"
           />
         </div>
 
         <div className="overflow-hidden rounded-xl border border-stone-200 bg-white">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[820px] text-sm">
+            <table className="w-full min-w-[860px] text-sm">
               <thead className="bg-stone-50 text-[10px] uppercase tracking-wider text-stone-500">
                 <tr>
                   <th className="px-4 py-3 text-left font-bold">Plate</th>
@@ -148,16 +158,26 @@ function WalkinVehiclesPage() {
                             {v.service_status}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-right space-x-3">
-                          <button
-                            onClick={() => { setEditing(v); setModalOpen(true); }}
-                            className="text-xs font-semibold hover:underline"
-                            style={{ color: "#0F1E3A" }}
-                          >Edit</button>
-                          <button
-                            onClick={() => setDeleting(v)}
-                            className="text-xs font-semibold text-red-600 hover:underline"
-                          >Delete</button>
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex items-center justify-end gap-3">
+                            <Link
+                              to="/admin/walkin/vehicles/$vehicleId"
+                              params={{ vehicleId: v.id }}
+                              className="rounded-lg px-3 py-1.5 text-xs font-bold text-white"
+                              style={{ backgroundColor: "#0F1E3A" }}
+                            >
+                              View
+                            </Link>
+                            <button
+                              onClick={() => { setEditing(v); setModalOpen(true); }}
+                              className="text-xs font-semibold hover:underline"
+                              style={{ color: "#0F1E3A" }}
+                            >Edit</button>
+                            <button
+                              onClick={() => setArchiving(v)}
+                              className="text-xs font-semibold text-red-600 hover:underline"
+                            >Archive</button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -178,16 +198,16 @@ function WalkinVehiclesPage() {
         />
       )}
 
-      {deleting && (
+      {archiving && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-6">
-            <h2 className="text-lg font-bold mb-2" style={{ color: "#0F1E3A" }}>Delete Vehicle?</h2>
+            <h2 className="text-lg font-bold mb-2" style={{ color: "#0F1E3A" }}>Archive Vehicle?</h2>
             <p className="text-sm text-stone-600 mb-4">
-              Permanently delete <strong>{deleting.plate_number}</strong>?
+              <strong>{archiving.plate_number}</strong> will be hidden from the active list. Its service history is kept.
             </p>
             <div className="flex justify-end gap-2">
-              <button onClick={() => setDeleting(null)} className="rounded-lg px-4 py-2 text-sm text-stone-700 hover:bg-stone-100">Cancel</button>
-              <button onClick={doDelete} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700">Delete</button>
+              <button onClick={() => setArchiving(null)} className="rounded-lg px-4 py-2 text-sm text-stone-700 hover:bg-stone-100">Cancel</button>
+              <button onClick={doArchive} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700">Archive</button>
             </div>
           </div>
         </div>
@@ -209,8 +229,16 @@ function VehicleModal({
     make: initial?.make ?? "",
     model: initial?.model ?? "",
     year: initial?.year ?? new Date().getFullYear(),
+    variant: initial?.variant ?? "",
+    color: initial?.color ?? "",
     vehicle_type: initial?.vehicle_type ?? "Sedan",
     engine_type: initial?.engine_type ?? "Gas",
+    engine_code: initial?.engine_code ?? "",
+    transmission_type: initial?.transmission_type ?? "Automatic",
+    vin_number: initial?.vin_number ?? "",
+    engine_number: initial?.engine_number ?? "",
+    tire_size: initial?.tire_size ?? "",
+    bolt_pattern: initial?.bolt_pattern ?? "",
     oil_type: initial?.oil_type ?? "Fully Synth",
     oil_liters: initial?.oil_liters ?? 4,
     pms_interval_km: initial?.pms_interval_km ?? 5000,
@@ -225,17 +253,40 @@ function VehicleModal({
       toast.error("Please complete all required fields");
       return;
     }
+    const plate = form.plate_number.trim().toUpperCase();
+    const vin = form.vin_number.trim().toUpperCase();
+
+    let dupQuery = supabaseFleet
+      .from("vehicles")
+      .select("id, plate_number")
+      .or(`plate_number.eq.${plate}${vin ? `,vin_number.eq.${vin}` : ""}`)
+      .neq("status", "archived");
+    if (initial) dupQuery = dupQuery.neq("id", initial.id);
+    const dup = await dupQuery.maybeSingle();
+    if (dup.data) {
+      toast.error(`A vehicle with this plate/VIN already exists (${dup.data.plate_number})`);
+      return;
+    }
+
     setSaving(true);
     const payload = {
       customer_id: form.customer_id,
       client_id: null,
       unit_id: form.unit_id.toUpperCase(),
-      plate_number: form.plate_number.toUpperCase(),
+      plate_number: plate,
       make: form.make,
       model: form.model,
       year: Number(form.year),
+      variant: form.variant.trim() || null,
+      color: form.color.trim() || null,
       vehicle_type: form.vehicle_type,
       engine_type: form.engine_type,
+      engine_code: form.engine_code.trim() || null,
+      transmission_type: form.transmission_type,
+      vin_number: vin || null,
+      engine_number: form.engine_number.trim() || null,
+      tire_size: form.tire_size.trim() || null,
+      bolt_pattern: form.bolt_pattern.trim() || null,
       oil_type: form.oil_type,
       oil_liters: Number(form.oil_liters),
       pms_interval_km: Number(form.pms_interval_km),
@@ -259,7 +310,7 @@ function VehicleModal({
           <h2 className="text-xl font-bold" style={{ color: "#0F1E3A" }}>
             {initial ? "Edit Vehicle" : "Add Customer Vehicle"}
           </h2>
-          <button onClick={onClose} className="rounded p-1 hover:bg-stone-100"><X className="h-5 w-5" /></button>
+          <button type="button" onClick={onClose} aria-label="Close" className="rounded p-1 hover:bg-stone-100"><X className="h-5 w-5" /></button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -275,6 +326,7 @@ function VehicleModal({
           <div><Label>Make *</Label><input className={input} value={form.make} onChange={(e) => setForm({ ...form, make: e.target.value })} /></div>
           <div><Label>Model *</Label><input className={input} value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} /></div>
           <div><Label>Year</Label><input type="number" className={input} value={form.year} onChange={(e) => setForm({ ...form, year: Number(e.target.value) })} /></div>
+          <div><Label>Variant</Label><input className={input} value={form.variant} onChange={(e) => setForm({ ...form, variant: e.target.value })} placeholder="e.g. 2.8 V" /></div>
           <div>
             <Label>Vehicle Type</Label>
             <select className={input} value={form.vehicle_type ?? ""} onChange={(e) => setForm({ ...form, vehicle_type: e.target.value })}>
@@ -282,11 +334,23 @@ function VehicleModal({
             </select>
           </div>
           <div>
-            <Label>Engine</Label>
+            <Label>Fuel Type</Label>
             <select className={input} value={form.engine_type ?? ""} onChange={(e) => setForm({ ...form, engine_type: e.target.value })}>
               {ENGINE_TYPES.map((t) => <option key={t}>{t}</option>)}
             </select>
           </div>
+          <div>
+            <Label>Transmission</Label>
+            <select className={input} value={form.transmission_type} onChange={(e) => setForm({ ...form, transmission_type: e.target.value })}>
+              {TRANSMISSION_TYPES.map((t) => <option key={t}>{t}</option>)}
+            </select>
+          </div>
+          <div><Label>Color</Label><input className={input} value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} placeholder="Optional" /></div>
+          <div><Label>VIN / Chassis No.</Label><input className={input} value={form.vin_number} onChange={(e) => setForm({ ...form, vin_number: e.target.value })} placeholder="Optional" /></div>
+          <div><Label>Engine Number</Label><input className={input} value={form.engine_number} onChange={(e) => setForm({ ...form, engine_number: e.target.value })} placeholder="Optional" /></div>
+          <div><Label>Engine Code</Label><input className={input} value={form.engine_code} onChange={(e) => setForm({ ...form, engine_code: e.target.value })} placeholder="e.g. 1GD-FTV" /></div>
+          <div><Label>Tire Size</Label><input className={input} value={form.tire_size} onChange={(e) => setForm({ ...form, tire_size: e.target.value })} placeholder="e.g. 265/65R17" /></div>
+          <div><Label>Bolt Pattern</Label><input className={input} value={form.bolt_pattern} onChange={(e) => setForm({ ...form, bolt_pattern: e.target.value })} placeholder="e.g. 6x139.7" /></div>
           <div>
             <Label>Oil Type</Label>
             <select className={input} value={form.oil_type} onChange={(e) => setForm({ ...form, oil_type: e.target.value })}>

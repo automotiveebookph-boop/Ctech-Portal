@@ -2,10 +2,13 @@ export type Vehicle = {
   id: string;
   unit_id: string;
   client_id: string;
+  customer_id?: string | null;
   plate_number: string;
   make: string;
   model: string;
   year: number;
+  variant?: string | null;
+  color?: string | null;
   oil_type: string;
   oil_liters: number;
   current_km: number;
@@ -17,9 +20,18 @@ export type Vehicle = {
   vehicle_type?: string | null;
   engine?: string | null;
   engine_type?: string | null;
+  engine_code?: string | null;
+  transmission_type?: string | null;
+  vin_number?: string | null;
+  engine_number?: string | null;
+  tire_size?: string | null;
+  bolt_pattern?: string | null;
+  status?: "active" | "archived";
   last_service_date?: string | null;
   avg_km_per_month?: number | null;
 };
+
+export type RecommendationPriority = "Good" | "Due Soon" | "Overdue" | "Needs Inspection";
 
 export type ServiceRecord = {
   id: string;
@@ -32,7 +44,30 @@ export type ServiceRecord = {
   parts_cost?: number | null;
   labor_cost?: number | null;
   total_cost?: number | null;
+  technician?: string | null;
   notes?: string | null;
+  recommendation?: string | null;
+  recommendation_priority?: RecommendationPriority | null;
+  recommendation_due_km?: number | null;
+};
+
+export type Customer = {
+  id: string;
+  full_name: string;
+  email: string | null;
+  phone: string | null;
+  address?: string | null;
+  notes?: string | null;
+  customer_type: "private" | "company" | "fleet";
+  status: "active" | "archived";
+  outstanding_balance: number;
+  created_at: string;
+  tin?: string | null;
+  viber_whatsapp?: boolean;
+  messenger_name?: string | null;
+  barangay?: string | null;
+  city?: string | null;
+  preferred_contact_person?: string | null;
 };
 
 export type Pricing = {
@@ -85,3 +120,36 @@ export const STATUS_STYLES = {
 export function peso(n: number): string {
   return "₱" + n.toLocaleString("en-PH");
 }
+
+export const RECOMMENDATION_STYLES: Record<RecommendationPriority, { text: string; bg: string; border: string; dot: string }> = {
+  Overdue: {
+    text: "text-red-700",
+    bg: "bg-red-50",
+    border: "border-red-200",
+    dot: "bg-red-500",
+  },
+  "Needs Inspection": {
+    text: "text-amber-800",
+    bg: "bg-amber-50",
+    border: "border-amber-200",
+    dot: "bg-amber-500",
+  },
+  "Due Soon": {
+    text: "text-yellow-800",
+    bg: "bg-yellow-50",
+    border: "border-yellow-200",
+    dot: "bg-yellow-400",
+  },
+  Good: {
+    text: "text-emerald-700",
+    bg: "bg-emerald-50",
+    border: "border-emerald-200",
+    dot: "bg-emerald-500",
+  },
+};
+
+export const CUSTOMER_TYPE_LABEL: Record<Customer["customer_type"], string> = {
+  private: "Private",
+  company: "Company",
+  fleet: "Fleet",
+};

@@ -125,7 +125,7 @@ function PanelSelector() {
           </div>
         </button>
 
-        {/* Walk-in Panel */}
+        {/* Client Dashboard */}
         <button
           onClick={() => navigate({ to: "/admin/walkin" })}
           className="group bg-white rounded-2xl border-2 border-stone-200 p-8 hover:shadow-lg transition text-left cursor-pointer flex flex-col items-center"
@@ -139,7 +139,7 @@ function PanelSelector() {
             <Wrench className="w-8 h-8" style={{ color: "#0F1E3A" }} />
           </div>
           <div className="text-xl font-bold mt-4 mb-2" style={{ color: "#0F1E3A" }}>
-            Walk-in Panel
+            Client Dashboard
           </div>
           <p className="text-sm text-stone-500 mb-6 text-center">
             Manage walk-in customers, appointments, bookings and customer vehicles
@@ -155,7 +155,7 @@ function PanelSelector() {
             className="w-full py-3 rounded-xl font-bold mt-auto text-center"
             style={{ backgroundColor: "#C9A227", color: "#0F1E3A" }}
           >
-            Enter Walk-in Panel →
+            Enter Client Dashboard →
           </div>
         </button>
       </div>

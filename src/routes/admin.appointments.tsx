@@ -39,7 +39,24 @@ type ModalState =
   | { kind: "none" }
   | { kind: "confirm"; row: Row; note: string }
   | { kind: "complete"; row: Row }
-  | { kind: "cancel"; row: Row };
+  | { kind: "cancel"; row: Row }
+  | {
+      kind: "edit";
+      row: Row;
+      date: string;
+      time: string;
+      service: string;
+      notes: string;
+      status: Row["status"];
+    };
+
+// Standard shop time blocks (must match schedules.time_block + the landing RPCs).
+export const TIME_BLOCKS = [
+  "8:00 AM - 10:00 AM",
+  "10:00 AM - 12:00 PM",
+  "1:00 PM - 3:00 PM",
+  "3:00 PM - 5:00 PM",
+] as const;
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -133,6 +150,45 @@ export function AdminAppointments({
     setSaving(false);
     setModal({ kind: "none" });
     load();
+  }
+  function openEdit(r: Row) {
+    const knownTime = (TIME_BLOCKS as readonly string[]).includes(r.preferred_time)
+      ? r.preferred_time
+      : "";
+    setModal({
+      kind: "edit",
+      row: r,
+      date: r.preferred_date,
+      time: knownTime,
+      service: r.service_type ?? "",
+      notes: r.notes ?? "",
+      // Reactivate a cancelled booking to pending by default.
+      status: r.status === "cancelled" ? "pending" : r.status,
+    });
+  }
+  async function doEdit() {
+    if (modal.kind !== "edit") return;
+    if (!modal.date || !modal.time) {
+      toast.error("Please set a date and time slot");
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabaseFleet.rpc("admin_edit_appointment", {
+      p_id: modal.row.id,
+      p_date: modal.date,
+      p_time: modal.time,
+      p_service: modal.service,
+      p_notes: modal.notes,
+      p_status: modal.status,
+    });
+    setSaving(false);
+    if (error) {
+      toast.error(`Could not save changes: ${error.message}`);
+      return;
+    }
+    setModal({ kind: "none" });
+    load();
+    toast.success("Booking updated");
   }
 
   return (
@@ -303,7 +359,7 @@ export function AdminAppointments({
                         <StatusBadge status={r.status} />
                       </td>
                       <td className="px-4 py-4 align-top">
-                        <div className="flex justify-end gap-2">
+                        <div className="flex flex-wrap items-center justify-end gap-2">
                           {r.status === "pending" && (
                             <>
                               <button
@@ -339,9 +395,12 @@ export function AdminAppointments({
                               </button>
                             </>
                           )}
-                          {(r.status === "completed" || r.status === "cancelled") && (
-                            <span className="text-xs text-stone-400">—</span>
-                          )}
+                          <button
+                            onClick={() => openEdit(r)}
+                            className="rounded border border-stone-300 px-3 py-1 text-xs font-semibold text-stone-700 hover:bg-stone-100"
+                          >
+                            {r.status === "cancelled" ? "Edit / Reactivate" : "Edit"}
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -362,6 +421,10 @@ export function AdminAppointments({
                 {modal.kind === "confirm" && "Confirm Appointment"}
                 {modal.kind === "complete" && "Mark as Completed"}
                 {modal.kind === "cancel" && "Cancel Appointment"}
+                {modal.kind === "edit" &&
+                  (modal.row.status === "cancelled"
+                    ? "Edit / Reactivate Booking"
+                    : "Edit Booking")}
               </h2>
               <button
                 onClick={() => setModal({ kind: "none" })}
@@ -371,7 +434,7 @@ export function AdminAppointments({
               </button>
             </div>
 
-            {"row" in modal && (
+            {"row" in modal && modal.kind !== "edit" && (
               <div className="mb-4 rounded-lg bg-stone-50 p-4 text-sm">
                 <div>
                   <strong>{modal.row.customers?.full_name}</strong>
@@ -415,6 +478,94 @@ export function AdminAppointments({
               </p>
             )}
 
+            {modal.kind === "edit" && (
+              <div className="mb-4 space-y-3">
+                {modal.row.status === "cancelled" && (
+                  <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                    This booking is cancelled. Adjust the details below and save to
+                    reactivate it (the slot will be booked again).
+                  </p>
+                )}
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold uppercase text-stone-600">
+                      Date
+                    </label>
+                    <input
+                      type="date"
+                      value={modal.date}
+                      onChange={(e) => setModal({ ...modal, date: e.target.value })}
+                      className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-[#0F1E3A] focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold uppercase text-stone-600">
+                      Time slot
+                    </label>
+                    <select
+                      value={modal.time}
+                      onChange={(e) => setModal({ ...modal, time: e.target.value })}
+                      className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm focus:border-[#0F1E3A] focus:outline-none"
+                    >
+                      <option value="">Select a time…</option>
+                      {TIME_BLOCKS.map((t) => (
+                        <option key={t} value={t}>
+                          {t}
+                        </option>
+                      ))}
+                      {modal.time &&
+                        !(TIME_BLOCKS as readonly string[]).includes(modal.time) && (
+                          <option value={modal.time}>{modal.time} (legacy)</option>
+                        )}
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-semibold uppercase text-stone-600">
+                    Service
+                  </label>
+                  <input
+                    type="text"
+                    value={modal.service}
+                    onChange={(e) => setModal({ ...modal, service: e.target.value })}
+                    maxLength={120}
+                    className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-[#0F1E3A] focus:outline-none"
+                    placeholder="e.g. Oil Change / PMS"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-semibold uppercase text-stone-600">
+                    Status
+                  </label>
+                  <select
+                    value={modal.status}
+                    onChange={(e) =>
+                      setModal({ ...modal, status: e.target.value as Row["status"] })
+                    }
+                    className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm focus:border-[#0F1E3A] focus:outline-none"
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-semibold uppercase text-stone-600">
+                    Notes
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={modal.notes}
+                    onChange={(e) => setModal({ ...modal, notes: e.target.value })}
+                    maxLength={900}
+                    className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-[#0F1E3A] focus:outline-none"
+                    placeholder="Customer / vehicle / contact details"
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setModal({ kind: "none" })}
@@ -448,6 +599,18 @@ export function AdminAppointments({
                   className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60"
                 >
                   Cancel Appointment
+                </button>
+              )}
+              {modal.kind === "edit" && (
+                <button
+                  onClick={doEdit}
+                  disabled={saving}
+                  className="rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                  style={{ backgroundColor: "#0F1E3A" }}
+                >
+                  {modal.row.status === "cancelled"
+                    ? "Save & Reactivate"
+                    : "Save Changes"}
                 </button>
               )}
             </div>
