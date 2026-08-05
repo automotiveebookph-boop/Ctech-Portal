@@ -214,7 +214,7 @@ export function WalkinSidebar({ email }: { email?: string }) {
             </button>
 
             {notifOpen && (
-              <div className="absolute right-0 top-11 z-50 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-stone-200 bg-white text-left shadow-2xl">
+              <div className="absolute left-0 top-11 z-50 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-stone-200 bg-white text-left shadow-2xl">
                 <div className="border-b border-stone-100 px-4 py-3">
                   <div className="text-sm font-bold" style={{ color: "#0F1E3A" }}>
                     Service Due Notifications
