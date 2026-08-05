@@ -13,16 +13,23 @@ import {
   X,
 } from "lucide-react";
 import { supabaseFleet } from "@/lib/supabase-fleet";
-import { STATUS_STYLES } from "@/lib/fleet-utils";
+import { CHECKIN_DUE_STYLE, STATUS_STYLES, isCheckInDue } from "@/lib/fleet-utils";
 
 type DueVehicle = {
   id: string;
   plate_number: string;
   make: string;
   model: string;
-  service_status: "OVERDUE" | "DUE NOW";
+  service_status: "OK" | "DUE SOON" | "DUE NOW" | "OVERDUE";
+  checkInDue: boolean;
   customer_name: string | null;
 };
+
+function dueUrgency(v: { service_status: DueVehicle["service_status"] }): number {
+  if (v.service_status === "OVERDUE") return 0;
+  if (v.service_status === "DUE NOW") return 1;
+  return 2;
+}
 
 type NavItem = {
   to:
@@ -93,22 +100,27 @@ export function WalkinSidebar({ email }: { email?: string }) {
           .eq("status", "pending"),
         supabaseFleet
           .from("vehicle_status_view")
-          .select("id, plate_number, make, model, service_status, customer_id")
+          .select("id, plate_number, make, model, service_status, customer_id, last_service_date")
           .not("customer_id", "is", null)
-          .neq("status", "archived")
-          .in("service_status", ["OVERDUE", "DUE NOW"]),
+          .neq("status", "archived"),
       ]);
       if (cancelled) return;
       setPendingCount(pending.count ?? 0);
 
-      const dueRows = (dueRes.data ?? []) as {
+      const allRows = (dueRes.data ?? []) as {
         id: string;
         plate_number: string;
         make: string;
         model: string;
-        service_status: "OVERDUE" | "DUE NOW";
+        service_status: "OK" | "DUE SOON" | "DUE NOW" | "OVERDUE";
         customer_id: string;
+        last_service_date: string | null;
       }[];
+      // Due if the mileage clock says so, OR the shop's standard 3-month
+      // check-in cadence has elapsed — whichever comes first.
+      const dueRows = allRows.filter(
+        (v) => v.service_status === "OVERDUE" || v.service_status === "DUE NOW" || isCheckInDue(v.last_service_date),
+      );
       setDueCount(dueRows.length);
 
       const customerIds = [...new Set(dueRows.map((v) => v.customer_id))];
@@ -123,13 +135,14 @@ export function WalkinSidebar({ email }: { email?: string }) {
       if (!cancelled) {
         setDueVehicles(
           dueRows
-            .sort((a, b) => (a.service_status === b.service_status ? 0 : a.service_status === "OVERDUE" ? -1 : 1))
+            .sort((a, b) => dueUrgency(a) - dueUrgency(b))
             .map((v) => ({
               id: v.id,
               plate_number: v.plate_number,
               make: v.make,
               model: v.model,
               service_status: v.service_status,
+              checkInDue: isCheckInDue(v.last_service_date),
               customer_name: nameById.get(v.customer_id) ?? null,
             })),
         );
@@ -220,7 +233,7 @@ export function WalkinSidebar({ email }: { email?: string }) {
                     Service Due Notifications
                   </div>
                   <div className="text-xs text-stone-500">
-                    {dueCount === 0 ? "Nothing due right now" : `${dueCount} vehicle${dueCount === 1 ? "" : "s"} need PMS / oil change`}
+                    {dueCount === 0 ? "Nothing due right now" : `${dueCount} vehicle${dueCount === 1 ? "" : "s"} need a PMS / oil change or 3-month check-in`}
                   </div>
                 </div>
                 <div className="max-h-80 overflow-y-auto">
@@ -230,7 +243,9 @@ export function WalkinSidebar({ email }: { email?: string }) {
                     </div>
                   ) : (
                     dueVehicles.slice(0, 8).map((v) => {
-                      const s = STATUS_STYLES[v.service_status];
+                      const kmDue = v.service_status === "OVERDUE" || v.service_status === "DUE NOW";
+                      const s = kmDue ? STATUS_STYLES[v.service_status] : CHECKIN_DUE_STYLE;
+                      const label = kmDue ? v.service_status : "CHECK-IN DUE";
                       return (
                         <Link
                           key={v.id}
@@ -246,7 +261,7 @@ export function WalkinSidebar({ email }: { email?: string }) {
                             <div className="truncate text-xs text-stone-500">{v.customer_name ?? "—"}</div>
                           </div>
                           <span className={`shrink-0 rounded border px-2 py-0.5 text-[10px] font-bold ${s.bg} ${s.text} ${s.border}`}>
-                            {v.service_status}
+                            {label}
                           </span>
                         </Link>
                       );

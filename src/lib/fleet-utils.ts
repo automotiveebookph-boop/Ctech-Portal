@@ -121,6 +121,31 @@ export function peso(n: number): string {
   return "₱" + n.toLocaleString("en-PH");
 }
 
+/** Standard shop cadence: nudge a check-in every 3 months, independent of mileage. */
+export const CHECK_IN_MONTHS = 3;
+
+export function monthsSince(dateStr: string | null | undefined): number | null {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  const now = new Date();
+  let months = (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth());
+  if (now.getDate() < d.getDate()) months -= 1;
+  return Math.max(0, months);
+}
+
+/** True when a vehicle hasn't been serviced in CHECK_IN_MONTHS+ (or ever) — the "time" half of "3 months or X km, whichever comes first". */
+export function isCheckInDue(lastServiceDate: string | null | undefined): boolean {
+  const months = monthsSince(lastServiceDate);
+  return months === null || months >= CHECK_IN_MONTHS;
+}
+
+export const CHECKIN_DUE_STYLE = {
+  text: "text-sky-800",
+  bg: "bg-sky-50",
+  border: "border-sky-200",
+  dot: "bg-sky-500",
+} as const;
+
 export const RECOMMENDATION_STYLES: Record<RecommendationPriority, { text: string; bg: string; border: string; dot: string }> = {
   Overdue: {
     text: "text-red-700",

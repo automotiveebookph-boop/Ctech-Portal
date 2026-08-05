@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Mail, MessageSquare, Phone, Search } from "lucide-react";
 import { toast } from "sonner";
 import { supabaseFleet } from "@/lib/supabase-fleet";
-import { STATUS_STYLES } from "@/lib/fleet-utils";
+import { CHECKIN_DUE_STYLE, STATUS_STYLES, isCheckInDue } from "@/lib/fleet-utils";
 
 export const Route = createFileRoute("/admin/walkin/reminders")({
   component: RemindersPage,
@@ -21,10 +21,11 @@ type VSV = {
   service_status: "OK" | "DUE SOON" | "DUE NOW" | "OVERDUE";
   customer_id: string;
   avg_km_per_month: number | null;
+  last_service_date: string | null;
 };
 type Customer = { id: string; full_name: string; phone: string | null; email: string | null };
 
-type Filter = "all" | "OVERDUE" | "DUE NOW" | "DUE SOON";
+type Filter = "all" | "OVERDUE" | "DUE NOW" | "DUE SOON" | "CHECK_IN";
 
 const URGENCY: Record<VSV["service_status"], number> = {
   OVERDUE: 0,
@@ -32,6 +33,20 @@ const URGENCY: Record<VSV["service_status"], number> = {
   "DUE SOON": 2,
   OK: 3,
 };
+
+/** Which reminder bucket a vehicle belongs to — mileage-based, or a pure
+ * 3-month check-in nudge when mileage says OK but it's been a while.
+ * Returns null when the vehicle isn't due for anything. */
+function bucket(v: VSV): Exclude<Filter, "all"> | null {
+  if (v.service_status !== "OK") return v.service_status;
+  return isCheckInDue(v.last_service_date) ? "CHECK_IN" : null;
+}
+
+function statusDisplay(v: VSV) {
+  return bucket(v) === "CHECK_IN"
+    ? { label: "CHECK-IN DUE", style: CHECKIN_DUE_STYLE }
+    : { label: v.service_status, style: STATUS_STYLES[v.service_status] };
+}
 
 function estimatedDueDate(v: VSV): string | null {
   const avg = v.avg_km_per_month;
@@ -44,6 +59,9 @@ function estimatedDueDate(v: VSV): string | null {
 }
 
 function reminderMessage(firstName: string, v: VSV) {
+  if (bucket(v) === "CHECK_IN") {
+    return `Hi ${firstName}! This is C-Tech Automotive. It's been a few months since your ${v.make} ${v.model} (${v.plate_number}) was last serviced with us. Time for a quick check-up! Reply here or call us to book your slot. Thank you!`;
+  }
   const overdue = v.km_to_next_service <= 0;
   return `Hi ${firstName}! This is C-Tech Automotive. Your ${v.make} ${v.model} (${v.plate_number}) is ${
     overdue ? "now overdue" : "coming up"
@@ -65,11 +83,13 @@ function RemindersPage() {
           .from("vehicle_status_view")
           .select("*")
           .not("customer_id", "is", null)
-          .neq("status", "archived")
-          .neq("service_status", "OK"),
+          .neq("status", "archived"),
         supabaseFleet.from("customers").select("id, full_name, phone, email").neq("status", "archived"),
       ]);
-      setVehicles((vRes.data ?? []) as unknown as VSV[]);
+      // Due if the mileage clock says so, OR the shop's 3-month check-in
+      // cadence has elapsed since the last visit — whichever comes first.
+      const due = ((vRes.data ?? []) as unknown as VSV[]).filter((v) => bucket(v) !== null);
+      setVehicles(due);
       setCustomers((cRes.data ?? []) as Customer[]);
       setLoading(false);
     })();
@@ -78,15 +98,18 @@ function RemindersPage() {
   const customerById = useMemo(() => new Map(customers.map((c) => [c.id, c])), [customers]);
 
   const counts = useMemo(() => {
-    const c = { OVERDUE: 0, "DUE NOW": 0, "DUE SOON": 0 };
-    for (const v of vehicles) c[v.service_status as keyof typeof c]++;
+    const c = { OVERDUE: 0, "DUE NOW": 0, "DUE SOON": 0, CHECK_IN: 0 };
+    for (const v of vehicles) {
+      const b = bucket(v);
+      if (b) c[b]++;
+    }
     return c;
   }, [vehicles]);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
     return vehicles
-      .filter((v) => filter === "all" || v.service_status === filter)
+      .filter((v) => filter === "all" || bucket(v) === filter)
       .filter((v) => {
         if (!q) return true;
         const cust = customerById.get(v.customer_id);
@@ -118,15 +141,16 @@ function RemindersPage() {
           <h1 className="text-lg font-bold md:text-2xl" style={{ color: "#0F1E3A" }}>
             Service Reminders
           </h1>
-          <p className="mt-0.5 text-sm text-stone-500">Customers due or overdue for their next PMS</p>
+          <p className="mt-0.5 text-sm text-stone-500">Customers due or overdue for their next PMS, or for a 3-month check-in</p>
         </div>
       </header>
 
       <main className="p-4 md:p-8">
-        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard label="Overdue" value={counts.OVERDUE} tone="red" active={filter === "OVERDUE"} onClick={() => setFilter(filter === "OVERDUE" ? "all" : "OVERDUE")} />
           <StatCard label="Due Now" value={counts["DUE NOW"]} tone="amber" active={filter === "DUE NOW"} onClick={() => setFilter(filter === "DUE NOW" ? "all" : "DUE NOW")} />
           <StatCard label="Due Soon" value={counts["DUE SOON"]} tone="yellow" active={filter === "DUE SOON"} onClick={() => setFilter(filter === "DUE SOON" ? "all" : "DUE SOON")} />
+          <StatCard label="3-Month Check-In" value={counts.CHECK_IN} tone="sky" active={filter === "CHECK_IN"} onClick={() => setFilter(filter === "CHECK_IN" ? "all" : "CHECK_IN")} />
         </div>
 
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -167,7 +191,8 @@ function RemindersPage() {
                 ) : (
                   filtered.map((v) => {
                     const cust = customerById.get(v.customer_id);
-                    const s = STATUS_STYLES[v.service_status];
+                    const { label: statusLabel, style: s } = statusDisplay(v);
+                    const checkInOnly = bucket(v) === "CHECK_IN";
                     const overdue = v.km_to_next_service <= 0;
                     const due = estimatedDueDate(v);
                     const msg = reminderMessage((cust?.full_name ?? "there").split(" ")[0], v);
@@ -182,11 +207,15 @@ function RemindersPage() {
                           <div className="text-xs text-stone-500">{v.year} {v.make} {v.model}</div>
                         </td>
                         <td className="px-4 py-3">
-                          <div className={`font-semibold ${overdue ? "text-red-600" : "text-stone-700"}`}>
-                            {overdue
-                              ? `${Math.abs(v.km_to_next_service).toLocaleString()} km overdue`
-                              : `${v.km_to_next_service.toLocaleString()} km left`}
-                          </div>
+                          {checkInOnly ? (
+                            <div className="font-semibold text-sky-700">3+ months since last visit</div>
+                          ) : (
+                            <div className={`font-semibold ${overdue ? "text-red-600" : "text-stone-700"}`}>
+                              {overdue
+                                ? `${Math.abs(v.km_to_next_service).toLocaleString()} km overdue`
+                                : `${v.km_to_next_service.toLocaleString()} km left`}
+                            </div>
+                          )}
                           <div className="text-xs text-stone-500">
                             {v.current_km.toLocaleString()} / {v.next_service_km.toLocaleString()} km
                           </div>
@@ -195,7 +224,7 @@ function RemindersPage() {
                         <td className="px-4 py-3">
                           <span className={`inline-flex items-center gap-1.5 rounded border px-2 py-0.5 text-[10px] font-bold ${s.bg} ${s.text} ${s.border}`}>
                             <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
-                            {v.service_status}
+                            {statusLabel}
                           </span>
                         </td>
                         <td className="px-4 py-3">
@@ -254,11 +283,12 @@ function RemindersPage() {
 
 function StatCard({
   label, value, tone, active, onClick,
-}: { label: string; value: number; tone: "red" | "amber" | "yellow"; active: boolean; onClick: () => void }) {
+}: { label: string; value: number; tone: "red" | "amber" | "yellow" | "sky"; active: boolean; onClick: () => void }) {
   const toneMap = {
     red: { bg: "rgba(220,38,38,0.10)", text: "#B91C1C" },
     amber: { bg: "rgba(217,119,6,0.12)", text: "#B45309" },
     yellow: { bg: "rgba(202,138,4,0.12)", text: "#A16207" },
+    sky: { bg: "rgba(2,132,199,0.12)", text: "#0369A1" },
   }[tone];
   return (
     <button
