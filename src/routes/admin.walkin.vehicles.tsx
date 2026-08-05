@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Search, X } from "lucide-react";
 import { toast } from "sonner";
@@ -43,6 +43,14 @@ const ENGINE_TYPES = ["Gas", "Diesel", "Hybrid", "Electric"];
 const TRANSMISSION_TYPES = ["Automatic", "Manual", "CVT"];
 
 function WalkinVehiclesPage() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  if (pathname !== "/admin/walkin/vehicles") {
+    return <Outlet />;
+  }
+  return <WalkinVehiclesListPage />;
+}
+
+function WalkinVehiclesListPage() {
   const [vehicles, setVehicles] = useState<CV[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);

@@ -2,7 +2,8 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 import { supabaseFleet } from "@/lib/supabase-fleet";
-import type { Vehicle } from "@/lib/fleet-utils";
+import { CHECK_IN_MONTHS, type Vehicle } from "@/lib/fleet-utils";
+import { formatDate } from "@/lib/my-car-session";
 
 const input = "w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-stone-900";
 
@@ -35,8 +36,20 @@ export function VehicleQuickModal({
     engine_code: initial?.engine_code ?? "",
     tire_size: initial?.tire_size ?? "",
     bolt_pattern: initial?.bolt_pattern ?? "",
+    last_service_km: initial?.last_service_km ?? initial?.current_km ?? 0,
+    last_service_date: initial?.last_service_date?.slice(0, 10) ?? new Date().toISOString().slice(0, 10),
   });
   const [saving, setSaving] = useState(false);
+
+  const pmsInterval = initial?.pms_interval_km ?? 5000;
+  const nextServiceKm = (Number(form.last_service_km) || 0) + pmsInterval;
+  const nextCheckInDate = form.last_service_date
+    ? (() => {
+        const d = new Date(form.last_service_date);
+        d.setMonth(d.getMonth() + CHECK_IN_MONTHS);
+        return d.toISOString().slice(0, 10);
+      })()
+    : null;
 
   async function save() {
     if (!form.plate_number.trim() || !form.make.trim() || !form.model.trim()) {
@@ -73,6 +86,8 @@ export function VehicleQuickModal({
       engine_code: form.engine_code.trim() || null,
       tire_size: form.tire_size.trim() || null,
       bolt_pattern: form.bolt_pattern.trim() || null,
+      last_service_km: Number(form.last_service_km) || 0,
+      last_service_date: form.last_service_date,
     };
 
     const res = initial
@@ -87,8 +102,6 @@ export function VehicleQuickModal({
           oil_type: "Fully Synth",
           oil_liters: 4,
           pms_interval_km: 5000,
-          last_service_km: Number(form.current_km) || 0,
-          last_service_date: new Date().toISOString().slice(0, 10),
         }]).select("id").single();
     setSaving(false);
     if (res.error) { toast.error(res.error.message); return; }
@@ -157,6 +170,22 @@ export function VehicleQuickModal({
           <div className="col-span-2">
             <label className="mb-1 block text-[10px] font-semibold uppercase text-stone-600">Current Mileage (km) *</label>
             <input type="number" className={input} value={form.current_km} onChange={(e) => setForm({ ...form, current_km: Number(e.target.value) })} />
+          </div>
+        </div>
+
+        <div className="mb-2 mt-5 text-[10px] font-bold uppercase tracking-wider text-stone-400">Service History</div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="mb-1 block text-[10px] font-semibold uppercase text-stone-600">Last Visit Date</label>
+            <input type="date" className={input} value={form.last_service_date} onChange={(e) => setForm({ ...form, last_service_date: e.target.value })} />
+          </div>
+          <div>
+            <label className="mb-1 block text-[10px] font-semibold uppercase text-stone-600">Last Visit Mileage (km)</label>
+            <input type="number" className={input} value={form.last_service_km} onChange={(e) => setForm({ ...form, last_service_km: Number(e.target.value) })} />
+          </div>
+          <div className="col-span-2 rounded-lg bg-stone-50 px-3 py-2 text-xs text-stone-600">
+            <span className="font-semibold text-stone-700">Next Visit:</span>{" "}
+            due at {nextServiceKm.toLocaleString()} km or by {nextCheckInDate ? formatDate(nextCheckInDate) : "—"}, whichever comes first
           </div>
         </div>
 

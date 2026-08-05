@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { MoreHorizontal, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
@@ -50,6 +50,14 @@ type ActionState =
   | { kind: "archive"; customer: Customer };
 
 function CustomersPage() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  if (pathname !== "/admin/walkin/customers") {
+    return <Outlet />;
+  }
+  return <CustomersListPage />;
+}
+
+function CustomersListPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [vehicles, setVehicles] = useState<VehicleLite[]>([]);
   const [lastVisits, setLastVisits] = useState<Record<string, string>>({});
