@@ -64,7 +64,6 @@ export function JobOrderModal({
       return;
     }
     setSaving(true);
-    const total = Number(form.parts_cost) + Number(form.labor_cost);
     const { error: shError } = await supabaseFleet.from("service_history").insert([{
       vehicle_id: vehicleId,
       service_date: form.service_date,
@@ -73,7 +72,6 @@ export function JobOrderModal({
       service_performed: form.service_performed.trim(),
       parts_cost: Number(form.parts_cost) || 0,
       labor_cost: Number(form.labor_cost) || 0,
-      total_cost: total,
       technician: form.technician.trim() || null,
       recommendation: form.recommendation.trim() || null,
       recommendation_priority: form.recommendation_priority || null,
