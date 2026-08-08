@@ -16,6 +16,7 @@ import {
 import { formatPHPhone } from "@/lib/phone";
 import { VehicleQuickModal } from "@/components/VehicleQuickModal";
 import { JobOrderModal } from "@/components/JobOrderModal";
+import { ServiceRecordModal } from "@/components/ServiceRecordModal";
 
 export const Route = createFileRoute("/admin/walkin/vehicles/$vehicleId")({
   component: VehicleProfilePage,
@@ -34,6 +35,7 @@ function VehicleProfilePage() {
   const [modal, setModal] = useState<ModalState>({ kind: "none" });
   const [mileageInput, setMileageInput] = useState("");
   const [savingMileage, setSavingMileage] = useState(false);
+  const [viewingRecord, setViewingRecord] = useState<ServiceRecord | null>(null);
 
   async function load() {
     setLoading(true);
@@ -243,7 +245,11 @@ function VehicleProfilePage() {
                     <tr><td colSpan={6} className="px-4 py-10 text-center text-stone-500">No service records yet.</td></tr>
                   ) : (
                     history.map((r) => (
-                      <tr key={r.id} className="hover:bg-stone-50">
+                      <tr
+                        key={r.id}
+                        onClick={() => setViewingRecord(r)}
+                        className="cursor-pointer transition hover:bg-stone-50"
+                      >
                         <td className="px-4 py-3 text-xs text-stone-500">{formatDate(r.service_date)}</td>
                         <td className="px-4 py-3">{r.odometer_km.toLocaleString()} km</td>
                         <td className="px-4 py-3">{r.service_performed}</td>
@@ -281,6 +287,13 @@ function VehicleProfilePage() {
           initialVehicleId={vehicle.id}
           onClose={() => setModal({ kind: "none" })}
           onSaved={() => { setModal({ kind: "none" }); load(); }}
+        />
+      )}
+      {viewingRecord && (
+        <ServiceRecordModal
+          record={viewingRecord}
+          vehicleLabel={`${vehicle.plate_number} — ${vehicle.make} ${vehicle.model}`}
+          onClose={() => setViewingRecord(null)}
         />
       )}
       {modal.kind === "mileage" && (

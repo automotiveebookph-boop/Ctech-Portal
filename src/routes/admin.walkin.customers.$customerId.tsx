@@ -17,6 +17,7 @@ import { CustomerModal } from "@/components/CustomerModal";
 import { VehicleQuickModal } from "@/components/VehicleQuickModal";
 import { JobOrderModal } from "@/components/JobOrderModal";
 import { BookAppointmentModal } from "@/components/BookAppointmentModal";
+import { ServiceRecordModal } from "@/components/ServiceRecordModal";
 
 export const Route = createFileRoute("/admin/walkin/customers/$customerId")({
   component: CustomerProfilePage,
@@ -49,6 +50,7 @@ function CustomerProfilePage() {
   const [loading, setLoading] = useState(true);
   const [showAllHistory, setShowAllHistory] = useState(false);
   const [modal, setModal] = useState<ModalState>({ kind: "none" });
+  const [viewingRecord, setViewingRecord] = useState<ServiceRow | null>(null);
 
   async function load() {
     setLoading(true);
@@ -260,7 +262,11 @@ function CustomerProfilePage() {
                     <tr><td colSpan={6} className="px-4 py-10 text-center text-stone-500">No service records yet.</td></tr>
                   ) : (
                     visibleHistory.map((r) => (
-                      <tr key={r.id} className="hover:bg-stone-50">
+                      <tr
+                        key={r.id}
+                        onClick={() => setViewingRecord(r)}
+                        className="cursor-pointer transition hover:bg-stone-50"
+                      >
                         <td className="px-4 py-3 text-xs text-stone-500">{formatDate(r.service_date)}</td>
                         <td className="px-4 py-3 font-semibold">{r.vehicles?.plate_number ?? "—"}</td>
                         <td className="px-4 py-3">{r.odometer_km.toLocaleString()} km</td>
@@ -277,6 +283,17 @@ function CustomerProfilePage() {
         </div>
       </main>
 
+      {viewingRecord && (
+        <ServiceRecordModal
+          record={viewingRecord}
+          vehicleLabel={
+            viewingRecord.vehicles
+              ? `${viewingRecord.vehicles.plate_number} — ${viewingRecord.vehicles.make} ${viewingRecord.vehicles.model}`
+              : undefined
+          }
+          onClose={() => setViewingRecord(null)}
+        />
+      )}
       {modal.kind === "editCustomer" && (
         <CustomerModal initial={customer} onClose={() => setModal({ kind: "none" })} onSaved={() => { setModal({ kind: "none" }); load(); }} />
       )}
