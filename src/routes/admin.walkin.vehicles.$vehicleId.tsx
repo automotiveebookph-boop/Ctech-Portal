@@ -103,7 +103,7 @@ function VehicleProfilePage() {
         </Link>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-xl font-bold md:text-2xl" style={{ color: "#0F1E3A" }}>{vehicle.plate_number}</h1>
+            <h1 className="text-xl font-bold md:text-2xl" style={{ color: "#0F1E3A" }}>{vehicle.plate_number || "No Plate on File"}</h1>
             <p className="mt-1 text-sm text-stone-500">
               {vehicle.year} {vehicle.make} {vehicle.model} · {vehicle.current_km.toLocaleString()} km
             </p>
@@ -185,7 +185,7 @@ function VehicleProfilePage() {
           <div className="rounded-xl border border-stone-200 bg-white p-6 lg:col-span-1">
             <h2 className="mb-4 font-bold" style={{ color: "#0F1E3A" }}>Vehicle Information</h2>
             <dl className="space-y-3 text-sm">
-              <Field label="Plate Number" value={vehicle.plate_number} />
+              <Field label="Plate Number" value={vehicle.plate_number || "—"} />
               <Field label="VIN / Chassis No." value={vehicle.vin_number ?? "—"} />
               <Field label="Engine Number" value={vehicle.engine_number ?? "—"} />
               <Field label="Brand / Model / Variant" value={`${vehicle.make} ${vehicle.model}${vehicle.variant ? ` ${vehicle.variant}` : ""}`} />
@@ -283,7 +283,7 @@ function VehicleProfilePage() {
       )}
       {modal.kind === "jobOrder" && (
         <JobOrderModal
-          vehicles={[{ id: vehicle.id, plate_number: vehicle.plate_number, make: vehicle.make, model: vehicle.model, current_km: vehicle.current_km }]}
+          vehicles={[{ id: vehicle.id, plate_number: vehicle.plate_number || "No Plate", make: vehicle.make, model: vehicle.model, current_km: vehicle.current_km }]}
           initialVehicleId={vehicle.id}
           onClose={() => setModal({ kind: "none" })}
           onSaved={() => { setModal({ kind: "none" }); load(); }}
@@ -292,7 +292,7 @@ function VehicleProfilePage() {
       {viewingRecord && (
         <ServiceRecordModal
           record={viewingRecord}
-          vehicleLabel={`${vehicle.plate_number} — ${vehicle.make} ${vehicle.model}`}
+          vehicleLabel={`${vehicle.plate_number || "No Plate"} — ${vehicle.make} ${vehicle.model}`}
           onClose={() => setViewingRecord(null)}
         />
       )}

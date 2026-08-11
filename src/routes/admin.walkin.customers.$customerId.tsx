@@ -190,7 +190,7 @@ function CustomerProfilePage() {
                     <div className="mb-2 flex items-start justify-between">
                       <div className="flex items-center gap-2">
                         <Car className="h-4 w-4 text-stone-400" />
-                        <div className="font-bold" style={{ color: "#0F1E3A" }}>{v.plate_number}</div>
+                        <div className="font-bold" style={{ color: "#0F1E3A" }}>{v.plate_number || "No Plate on File"}</div>
                       </div>
                       <span className={`inline-flex items-center gap-1.5 rounded border px-2 py-0.5 text-[10px] font-bold ${STATUS_STYLES[v.service_status].bg} ${STATUS_STYLES[v.service_status].text} ${STATUS_STYLES[v.service_status].border}`}>
                         <span className={`h-1.5 w-1.5 rounded-full ${STATUS_STYLES[v.service_status].dot}`} />
@@ -288,7 +288,7 @@ function CustomerProfilePage() {
           record={viewingRecord}
           vehicleLabel={
             viewingRecord.vehicles
-              ? `${viewingRecord.vehicles.plate_number} — ${viewingRecord.vehicles.make} ${viewingRecord.vehicles.model}`
+              ? `${viewingRecord.vehicles.plate_number || "No Plate"} — ${viewingRecord.vehicles.make} ${viewingRecord.vehicles.model}`
               : undefined
           }
           onClose={() => setViewingRecord(null)}
@@ -305,7 +305,7 @@ function CustomerProfilePage() {
       )}
       {modal.kind === "jobOrder" && (
         <JobOrderModal
-          vehicles={vehicles.map((v) => ({ id: v.id, plate_number: v.plate_number, make: v.make, model: v.model, current_km: v.current_km }))}
+          vehicles={vehicles.map((v) => ({ id: v.id, plate_number: v.plate_number || "No Plate", make: v.make, model: v.model, current_km: v.current_km }))}
           initialVehicleId={modal.vehicleId}
           onClose={() => setModal({ kind: "none" })}
           onSaved={() => { setModal({ kind: "none" }); load(); }}
@@ -314,7 +314,7 @@ function CustomerProfilePage() {
       {modal.kind === "appointment" && (
         <BookAppointmentModal
           customerId={customer.id}
-          vehicles={vehicles.map((v) => ({ id: v.id, plate_number: v.plate_number, make: v.make, model: v.model }))}
+          vehicles={vehicles.map((v) => ({ id: v.id, plate_number: v.plate_number || "No Plate", make: v.make, model: v.model }))}
           initialVehicleId={modal.vehicleId}
           onClose={() => setModal({ kind: "none" })}
           onSaved={() => { setModal({ kind: "none" }); load(); }}

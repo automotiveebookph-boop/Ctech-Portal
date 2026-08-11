@@ -52,23 +52,26 @@ export function VehicleQuickModal({
     : null;
 
   async function save() {
-    if (!form.plate_number.trim() || !form.make.trim() || !form.model.trim()) {
-      toast.error("Plate, brand, and model are required");
+    if (!form.make.trim() || !form.model.trim()) {
+      toast.error("Brand and model are required");
       return;
     }
     const plate = form.plate_number.trim().toUpperCase();
     const vin = form.vin_number.trim().toUpperCase();
 
-    let dupQuery = supabaseFleet
-      .from("vehicles")
-      .select("id, plate_number")
-      .or(`plate_number.eq.${plate}${vin ? `,vin_number.eq.${vin}` : ""}`)
-      .neq("status", "archived");
-    if (initial) dupQuery = dupQuery.neq("id", initial.id);
-    const dupCheck = await dupQuery.maybeSingle();
-    if (dupCheck.data) {
-      toast.error(`A vehicle with this plate/VIN already exists (${dupCheck.data.plate_number})`);
-      return;
+    if (plate || vin) {
+      const orParts = [plate && `plate_number.eq.${plate}`, vin && `vin_number.eq.${vin}`].filter(Boolean);
+      let dupQuery = supabaseFleet
+        .from("vehicles")
+        .select("id, plate_number")
+        .or(orParts.join(","))
+        .neq("status", "archived");
+      if (initial) dupQuery = dupQuery.neq("id", initial.id);
+      const dupCheck = await dupQuery.maybeSingle();
+      if (dupCheck.data) {
+        toast.error(`A vehicle with this plate/VIN already exists (${dupCheck.data.plate_number || "no plate on file"})`);
+        return;
+      }
     }
 
     setSaving(true);
@@ -96,7 +99,7 @@ export function VehicleQuickModal({
           ...payload,
           customer_id: customerId,
           client_id: null,
-          unit_id: plate,
+          unit_id: plate || vin || `WI-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
           vehicle_type: "Sedan",
           engine_type: "Gas",
           oil_type: "Fully Synth",
@@ -124,8 +127,8 @@ export function VehicleQuickModal({
         <div className="mb-2 text-[10px] font-bold uppercase tracking-wider text-stone-400">Identification</div>
         <div className="grid grid-cols-2 gap-3">
           <div className="col-span-2">
-            <label className="mb-1 block text-[10px] font-semibold uppercase text-stone-600">Plate Number / Conduction Sticker *</label>
-            <input className={input} value={form.plate_number} onChange={(e) => setForm({ ...form, plate_number: e.target.value })} />
+            <label className="mb-1 block text-[10px] font-semibold uppercase text-stone-600">Plate Number / Conduction Sticker</label>
+            <input className={input} value={form.plate_number} onChange={(e) => setForm({ ...form, plate_number: e.target.value })} placeholder="Leave blank if not yet plated" />
           </div>
           <div>
             <label className="mb-1 block text-[10px] font-semibold uppercase text-stone-600">VIN / Chassis No.</label>
