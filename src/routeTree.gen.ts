@@ -37,10 +37,14 @@ import { Route as AdminWalkinIndexRouteImport } from './routes/admin.walkin.inde
 import { Route as AdminWalkinVehiclesRouteImport } from './routes/admin.walkin.vehicles'
 import { Route as AdminWalkinSchedulesRouteImport } from './routes/admin.walkin.schedules'
 import { Route as AdminWalkinRemindersRouteImport } from './routes/admin.walkin.reminders'
+import { Route as AdminWalkinQuotesRouteImport } from './routes/admin.walkin.quotes'
 import { Route as AdminWalkinCustomersRouteImport } from './routes/admin.walkin.customers'
 import { Route as AdminWalkinAppointmentsRouteImport } from './routes/admin.walkin.appointments'
 import { Route as AdminWalkinVehiclesVehicleIdRouteImport } from './routes/admin.walkin.vehicles.$vehicleId'
+import { Route as AdminWalkinQuotesNewRouteImport } from './routes/admin.walkin.quotes.new'
+import { Route as AdminWalkinQuotesQuoteIdRouteImport } from './routes/admin.walkin.quotes.$quoteId'
 import { Route as AdminWalkinCustomersCustomerIdRouteImport } from './routes/admin.walkin.customers.$customerId'
+import { Route as AdminWalkinQuotesEditQuoteIdRouteImport } from './routes/admin.walkin.quotes.edit.$quoteId'
 
 const VehiclesRoute = VehiclesRouteImport.update({
   id: '/vehicles',
@@ -182,6 +186,11 @@ const AdminWalkinRemindersRoute = AdminWalkinRemindersRouteImport.update({
   path: '/reminders',
   getParentRoute: () => AdminWalkinRoute,
 } as any)
+const AdminWalkinQuotesRoute = AdminWalkinQuotesRouteImport.update({
+  id: '/quotes',
+  path: '/quotes',
+  getParentRoute: () => AdminWalkinRoute,
+} as any)
 const AdminWalkinCustomersRoute = AdminWalkinCustomersRouteImport.update({
   id: '/customers',
   path: '/customers',
@@ -198,11 +207,28 @@ const AdminWalkinVehiclesVehicleIdRoute =
     path: '/$vehicleId',
     getParentRoute: () => AdminWalkinVehiclesRoute,
   } as any)
+const AdminWalkinQuotesNewRoute = AdminWalkinQuotesNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => AdminWalkinQuotesRoute,
+} as any)
+const AdminWalkinQuotesQuoteIdRoute =
+  AdminWalkinQuotesQuoteIdRouteImport.update({
+    id: '/$quoteId',
+    path: '/$quoteId',
+    getParentRoute: () => AdminWalkinQuotesRoute,
+  } as any)
 const AdminWalkinCustomersCustomerIdRoute =
   AdminWalkinCustomersCustomerIdRouteImport.update({
     id: '/$customerId',
     path: '/$customerId',
     getParentRoute: () => AdminWalkinCustomersRoute,
+  } as any)
+const AdminWalkinQuotesEditQuoteIdRoute =
+  AdminWalkinQuotesEditQuoteIdRouteImport.update({
+    id: '/edit/$quoteId',
+    path: '/edit/$quoteId',
+    getParentRoute: () => AdminWalkinQuotesRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -232,12 +258,16 @@ export interface FileRoutesByFullPath {
   '/my-car/': typeof MyCarIndexRoute
   '/admin/walkin/appointments': typeof AdminWalkinAppointmentsRoute
   '/admin/walkin/customers': typeof AdminWalkinCustomersRouteWithChildren
+  '/admin/walkin/quotes': typeof AdminWalkinQuotesRouteWithChildren
   '/admin/walkin/reminders': typeof AdminWalkinRemindersRoute
   '/admin/walkin/schedules': typeof AdminWalkinSchedulesRoute
   '/admin/walkin/vehicles': typeof AdminWalkinVehiclesRouteWithChildren
   '/admin/walkin/': typeof AdminWalkinIndexRoute
   '/admin/walkin/customers/$customerId': typeof AdminWalkinCustomersCustomerIdRoute
+  '/admin/walkin/quotes/$quoteId': typeof AdminWalkinQuotesQuoteIdRoute
+  '/admin/walkin/quotes/new': typeof AdminWalkinQuotesNewRoute
   '/admin/walkin/vehicles/$vehicleId': typeof AdminWalkinVehiclesVehicleIdRoute
+  '/admin/walkin/quotes/edit/$quoteId': typeof AdminWalkinQuotesEditQuoteIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -264,12 +294,16 @@ export interface FileRoutesByTo {
   '/my-car': typeof MyCarIndexRoute
   '/admin/walkin/appointments': typeof AdminWalkinAppointmentsRoute
   '/admin/walkin/customers': typeof AdminWalkinCustomersRouteWithChildren
+  '/admin/walkin/quotes': typeof AdminWalkinQuotesRouteWithChildren
   '/admin/walkin/reminders': typeof AdminWalkinRemindersRoute
   '/admin/walkin/schedules': typeof AdminWalkinSchedulesRoute
   '/admin/walkin/vehicles': typeof AdminWalkinVehiclesRouteWithChildren
   '/admin/walkin': typeof AdminWalkinIndexRoute
   '/admin/walkin/customers/$customerId': typeof AdminWalkinCustomersCustomerIdRoute
+  '/admin/walkin/quotes/$quoteId': typeof AdminWalkinQuotesQuoteIdRoute
+  '/admin/walkin/quotes/new': typeof AdminWalkinQuotesNewRoute
   '/admin/walkin/vehicles/$vehicleId': typeof AdminWalkinVehiclesVehicleIdRoute
+  '/admin/walkin/quotes/edit/$quoteId': typeof AdminWalkinQuotesEditQuoteIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -299,12 +333,16 @@ export interface FileRoutesById {
   '/my-car/': typeof MyCarIndexRoute
   '/admin/walkin/appointments': typeof AdminWalkinAppointmentsRoute
   '/admin/walkin/customers': typeof AdminWalkinCustomersRouteWithChildren
+  '/admin/walkin/quotes': typeof AdminWalkinQuotesRouteWithChildren
   '/admin/walkin/reminders': typeof AdminWalkinRemindersRoute
   '/admin/walkin/schedules': typeof AdminWalkinSchedulesRoute
   '/admin/walkin/vehicles': typeof AdminWalkinVehiclesRouteWithChildren
   '/admin/walkin/': typeof AdminWalkinIndexRoute
   '/admin/walkin/customers/$customerId': typeof AdminWalkinCustomersCustomerIdRoute
+  '/admin/walkin/quotes/$quoteId': typeof AdminWalkinQuotesQuoteIdRoute
+  '/admin/walkin/quotes/new': typeof AdminWalkinQuotesNewRoute
   '/admin/walkin/vehicles/$vehicleId': typeof AdminWalkinVehiclesVehicleIdRoute
+  '/admin/walkin/quotes/edit/$quoteId': typeof AdminWalkinQuotesEditQuoteIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -335,12 +373,16 @@ export interface FileRouteTypes {
     | '/my-car/'
     | '/admin/walkin/appointments'
     | '/admin/walkin/customers'
+    | '/admin/walkin/quotes'
     | '/admin/walkin/reminders'
     | '/admin/walkin/schedules'
     | '/admin/walkin/vehicles'
     | '/admin/walkin/'
     | '/admin/walkin/customers/$customerId'
+    | '/admin/walkin/quotes/$quoteId'
+    | '/admin/walkin/quotes/new'
     | '/admin/walkin/vehicles/$vehicleId'
+    | '/admin/walkin/quotes/edit/$quoteId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -367,12 +409,16 @@ export interface FileRouteTypes {
     | '/my-car'
     | '/admin/walkin/appointments'
     | '/admin/walkin/customers'
+    | '/admin/walkin/quotes'
     | '/admin/walkin/reminders'
     | '/admin/walkin/schedules'
     | '/admin/walkin/vehicles'
     | '/admin/walkin'
     | '/admin/walkin/customers/$customerId'
+    | '/admin/walkin/quotes/$quoteId'
+    | '/admin/walkin/quotes/new'
     | '/admin/walkin/vehicles/$vehicleId'
+    | '/admin/walkin/quotes/edit/$quoteId'
   id:
     | '__root__'
     | '/'
@@ -401,12 +447,16 @@ export interface FileRouteTypes {
     | '/my-car/'
     | '/admin/walkin/appointments'
     | '/admin/walkin/customers'
+    | '/admin/walkin/quotes'
     | '/admin/walkin/reminders'
     | '/admin/walkin/schedules'
     | '/admin/walkin/vehicles'
     | '/admin/walkin/'
     | '/admin/walkin/customers/$customerId'
+    | '/admin/walkin/quotes/$quoteId'
+    | '/admin/walkin/quotes/new'
     | '/admin/walkin/vehicles/$vehicleId'
+    | '/admin/walkin/quotes/edit/$quoteId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -620,6 +670,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminWalkinRemindersRouteImport
       parentRoute: typeof AdminWalkinRoute
     }
+    '/admin/walkin/quotes': {
+      id: '/admin/walkin/quotes'
+      path: '/quotes'
+      fullPath: '/admin/walkin/quotes'
+      preLoaderRoute: typeof AdminWalkinQuotesRouteImport
+      parentRoute: typeof AdminWalkinRoute
+    }
     '/admin/walkin/customers': {
       id: '/admin/walkin/customers'
       path: '/customers'
@@ -641,12 +698,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminWalkinVehiclesVehicleIdRouteImport
       parentRoute: typeof AdminWalkinVehiclesRoute
     }
+    '/admin/walkin/quotes/new': {
+      id: '/admin/walkin/quotes/new'
+      path: '/new'
+      fullPath: '/admin/walkin/quotes/new'
+      preLoaderRoute: typeof AdminWalkinQuotesNewRouteImport
+      parentRoute: typeof AdminWalkinQuotesRoute
+    }
+    '/admin/walkin/quotes/$quoteId': {
+      id: '/admin/walkin/quotes/$quoteId'
+      path: '/$quoteId'
+      fullPath: '/admin/walkin/quotes/$quoteId'
+      preLoaderRoute: typeof AdminWalkinQuotesQuoteIdRouteImport
+      parentRoute: typeof AdminWalkinQuotesRoute
+    }
     '/admin/walkin/customers/$customerId': {
       id: '/admin/walkin/customers/$customerId'
       path: '/$customerId'
       fullPath: '/admin/walkin/customers/$customerId'
       preLoaderRoute: typeof AdminWalkinCustomersCustomerIdRouteImport
       parentRoute: typeof AdminWalkinCustomersRoute
+    }
+    '/admin/walkin/quotes/edit/$quoteId': {
+      id: '/admin/walkin/quotes/edit/$quoteId'
+      path: '/edit/$quoteId'
+      fullPath: '/admin/walkin/quotes/edit/$quoteId'
+      preLoaderRoute: typeof AdminWalkinQuotesEditQuoteIdRouteImport
+      parentRoute: typeof AdminWalkinQuotesRoute
     }
   }
 }
@@ -662,6 +740,21 @@ const AdminWalkinCustomersRouteChildren: AdminWalkinCustomersRouteChildren = {
 const AdminWalkinCustomersRouteWithChildren =
   AdminWalkinCustomersRoute._addFileChildren(AdminWalkinCustomersRouteChildren)
 
+interface AdminWalkinQuotesRouteChildren {
+  AdminWalkinQuotesQuoteIdRoute: typeof AdminWalkinQuotesQuoteIdRoute
+  AdminWalkinQuotesNewRoute: typeof AdminWalkinQuotesNewRoute
+  AdminWalkinQuotesEditQuoteIdRoute: typeof AdminWalkinQuotesEditQuoteIdRoute
+}
+
+const AdminWalkinQuotesRouteChildren: AdminWalkinQuotesRouteChildren = {
+  AdminWalkinQuotesQuoteIdRoute: AdminWalkinQuotesQuoteIdRoute,
+  AdminWalkinQuotesNewRoute: AdminWalkinQuotesNewRoute,
+  AdminWalkinQuotesEditQuoteIdRoute: AdminWalkinQuotesEditQuoteIdRoute,
+}
+
+const AdminWalkinQuotesRouteWithChildren =
+  AdminWalkinQuotesRoute._addFileChildren(AdminWalkinQuotesRouteChildren)
+
 interface AdminWalkinVehiclesRouteChildren {
   AdminWalkinVehiclesVehicleIdRoute: typeof AdminWalkinVehiclesVehicleIdRoute
 }
@@ -676,6 +769,7 @@ const AdminWalkinVehiclesRouteWithChildren =
 interface AdminWalkinRouteChildren {
   AdminWalkinAppointmentsRoute: typeof AdminWalkinAppointmentsRoute
   AdminWalkinCustomersRoute: typeof AdminWalkinCustomersRouteWithChildren
+  AdminWalkinQuotesRoute: typeof AdminWalkinQuotesRouteWithChildren
   AdminWalkinRemindersRoute: typeof AdminWalkinRemindersRoute
   AdminWalkinSchedulesRoute: typeof AdminWalkinSchedulesRoute
   AdminWalkinVehiclesRoute: typeof AdminWalkinVehiclesRouteWithChildren
@@ -685,6 +779,7 @@ interface AdminWalkinRouteChildren {
 const AdminWalkinRouteChildren: AdminWalkinRouteChildren = {
   AdminWalkinAppointmentsRoute: AdminWalkinAppointmentsRoute,
   AdminWalkinCustomersRoute: AdminWalkinCustomersRouteWithChildren,
+  AdminWalkinQuotesRoute: AdminWalkinQuotesRouteWithChildren,
   AdminWalkinRemindersRoute: AdminWalkinRemindersRoute,
   AdminWalkinSchedulesRoute: AdminWalkinSchedulesRoute,
   AdminWalkinVehiclesRoute: AdminWalkinVehiclesRouteWithChildren,
