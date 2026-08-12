@@ -7,6 +7,7 @@
 //   fleetadmin.ctechautomotiveph.com  → fleet admin   (role: admin)         → /admin
 //   portal.ctechautomotiveph.com      → retail client (role: customer)      → /my-car
 //   fleet.ctechautomotiveph.com       → fleet client  (role: fleet_manager) → /dashboard
+//   quotation.ctechautomotiveph.com   → shop admin    (role: admin)         → /admin/walkin/quotes
 //
 // Anything else (apex, www, localhost, Vercel preview URLs) resolves to "any",
 // which keeps the original role-based routing so local dev is unchanged.
@@ -16,6 +17,7 @@ export type Audience =
   | "fleet_admin"
   | "customer"
   | "fleet_client"
+  | "quotes_admin"
   | "any";
 
 export type Role = "admin" | "customer" | "fleet_manager";
@@ -37,6 +39,7 @@ export const HOST_AUDIENCE: Record<string, Exclude<Audience, "any">> = {
   "fleetadmin.ctechautomotiveph.com": "fleet_admin",
   "portal.ctechautomotiveph.com": "customer",
   "fleet.ctechautomotiveph.com": "fleet_client",
+  "quotation.ctechautomotiveph.com": "quotes_admin",
 };
 
 export const AUDIENCE_INFO: Record<Exclude<Audience, "any">, AudienceInfo> = {
@@ -64,6 +67,12 @@ export const AUDIENCE_INFO: Record<Exclude<Audience, "any">, AudienceInfo> = {
     label: "Fleet Client",
     kind: "client",
   },
+  quotes_admin: {
+    allowedRole: "admin",
+    landingPath: "/admin/walkin/quotes",
+    label: "Quotations",
+    kind: "admin",
+  },
 };
 
 /** The correct door (hostname) for a given role — used to build "wrong door" hints. */
@@ -78,6 +87,7 @@ const OVERRIDE_KEYS: Record<string, Exclude<Audience, "any">> = {
   fleet_admin: "fleet_admin",
   customer: "customer",
   fleet_client: "fleet_client",
+  quotes_admin: "quotes_admin",
 };
 
 /**

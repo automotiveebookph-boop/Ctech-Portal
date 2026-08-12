@@ -6,6 +6,7 @@ import {
   Bell,
   CalendarCheck,
   Car,
+  FileText,
   LogOut,
   Menu,
   Users,
@@ -38,7 +39,8 @@ type NavItem = {
     | "/admin/walkin/appointments"
     | "/admin/walkin/vehicles"
     | "/admin/walkin/reminders"
-    | "/admin/walkin/schedules";
+    | "/admin/walkin/schedules"
+    | "/admin/walkin/quotes";
   label: string;
   icon: typeof BarChart3;
   showBadge?: "pending" | "due";
@@ -47,6 +49,7 @@ type NavItem = {
 const NAV: NavItem[] = [
   { to: "/admin/walkin", label: "Overview", icon: BarChart3 },
   { to: "/admin/walkin/customers", label: "Customers", icon: Users },
+  { to: "/admin/walkin/quotes", label: "Quotations", icon: FileText },
   {
     to: "/admin/walkin/appointments",
     label: "Appointments",
