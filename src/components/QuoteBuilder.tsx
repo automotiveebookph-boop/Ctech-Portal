@@ -10,11 +10,52 @@ type CustomerResult = { id: string; full_name: string; email: string | null; pho
 type VehicleResult = { id: string; plate_number: string; make: string; model: string; year: number | null; customer_id: string | null };
 type Line = { key: number; category: "service" | "part"; description: string; qty: number; unit_price: number; service_pricing_id?: string | null };
 
-const catLabel = (c: string) => ({ engine_oil: "Engine Oil", filter: "Filters", wheel_balance: "Wheel Service", add_on: "Add-ons" }[c] ?? c);
+const catLabel = (c: string) => ({ package: "PMS & Oil Change Packages", engine_oil: "Engine Oil", filter: "Filters", wheel_balance: "Wheel Service", add_on: "Add-ons" }[c] ?? c);
 const catToLineCategory = (c: string): "service" | "part" => (c === "filter" ? "part" : "service");
 const isoPlusDays = (n: number) => { const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
 const inputCls = "w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-stone-900";
 const labelCls = "mb-1 block text-xs font-semibold uppercase text-stone-600";
+
+type InclusionType = "custom" | "pms" | "oil_change";
+const INCLUSION_TABS: { value: InclusionType; label: string }[] = [
+  { value: "custom", label: "Custom / free text" },
+  { value: "pms", label: "PMS Package" },
+  { value: "oil_change", label: "Oil Change Package" },
+];
+const PMS_INCLUSIONS = [
+  "Engine Oil",
+  "Oil Filter",
+  "Cabin Filter Cleaning",
+  "Air Filter Cleaning",
+  "Fluid Top-Up",
+  "Battery Health Check-Up",
+  "Labor",
+  "Brake Cleaning",
+  "Brake Cleaner",
+  "Under Chassis Check-Up",
+  "Tire Rotation (upon request)",
+  "Windshield Washer Fluid",
+  "Engine Bay Cleaning",
+  "Car Seat Cover Kit",
+  "FREE! Full System ECU Scanning",
+  "FREE! Safety Inspection",
+];
+const OIL_CHANGE_INCLUSIONS = [
+  "Engine Oil",
+  "Oil Filter",
+  "Cabin Filter Cleaning",
+  "Air Filter Cleaning",
+  "Fluid Top-Up",
+  "Battery Health Check-Up",
+  "Labor",
+];
+
+function buildInclusionsNotes(checklist: string[], additional: string): string {
+  const bullets = checklist.length ? `Includes:\n${checklist.map((i) => `• ${i}`).join("\n")}` : "";
+  const extra = additional.trim();
+  if (bullets && extra) return `${bullets}\n\n${extra}`;
+  return bullets || extra;
+}
 
 export function QuoteBuilder({
   quoteId,
@@ -67,7 +108,12 @@ export function QuoteBuilder({
 
   const [validUntil, setValidUntil] = useState(initialValidUntil ?? isoPlusDays(7));
   const [preparedBy, setPreparedBy] = useState(initialPreparedBy);
-  const [notes, setNotes] = useState(initialNotes);
+  const [inclusionType, setInclusionType] = useState<InclusionType>("custom");
+  const [checkedInclusions, setCheckedInclusions] = useState<Record<string, boolean>>({});
+  const [additionalNotes, setAdditionalNotes] = useState(initialNotes);
+
+  const activeChecklist = inclusionType === "pms" ? PMS_INCLUSIONS : inclusionType === "oil_change" ? OIL_CHANGE_INCLUSIONS : [];
+  const checkedItems = activeChecklist.filter((item) => checkedInclusions[item] ?? true);
 
   const [lines, setLines] = useState<Line[]>(() => initialLines.map((l, i) => ({ ...l, key: i + 1 })));
   const nextKey = useRef(initialLines.length + 1);
@@ -133,7 +179,7 @@ export function QuoteBuilder({
         odometer_km: odometerKm ? Number(odometerKm) : null,
         valid_until: validUntil,
         prepared_by: preparedBy || null,
-        notes,
+        notes: buildInclusionsNotes(checkedItems, additionalNotes),
       };
 
       if (isEdit && quoteId) {
@@ -283,8 +329,40 @@ export function QuoteBuilder({
             </div>
 
             <div className="mt-4">
-              <label className={labelCls}>Inclusions / notes (prints on the quotation)</label>
-              <textarea className={inputCls} rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
+              <label className={labelCls}>Inclusions (prints on the quotation)</label>
+              <div className="mb-3 flex flex-wrap gap-2">
+                {INCLUSION_TABS.map((t) => (
+                  <button
+                    key={t.value}
+                    onClick={() => setInclusionType(t.value)}
+                    className={`rounded-full border px-3 py-1 text-xs font-semibold ${inclusionType === t.value ? "border-transparent text-white" : "border-stone-200 bg-white text-stone-600"}`}
+                    style={inclusionType === t.value ? { backgroundColor: "#0F1E3A" } : undefined}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+
+              {inclusionType !== "custom" && (
+                <div className="mb-3 grid grid-cols-1 gap-1.5 rounded-lg border border-stone-200 bg-stone-50 p-3 sm:grid-cols-2">
+                  {activeChecklist.map((item) => (
+                    <label key={item} className="flex items-center gap-2 text-sm text-stone-700">
+                      <input
+                        type="checkbox"
+                        checked={checkedInclusions[item] ?? true}
+                        onChange={(e) => setCheckedInclusions((c) => ({ ...c, [item]: e.target.checked }))}
+                        className="h-4 w-4 rounded border-stone-300"
+                      />
+                      {item}
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              <label className={labelCls}>
+                {inclusionType === "custom" ? "Notes" : "Additional notes (optional, prints below the checklist)"}
+              </label>
+              <textarea className={inputCls} rows={3} value={additionalNotes} onChange={(e) => setAdditionalNotes(e.target.value)} />
             </div>
           </section>
         </div>

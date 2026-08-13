@@ -217,7 +217,7 @@ function QuoteDetailPage() {
 
           <div className="mt-5 text-sm">
             <div className="mb-1 text-[10px] font-bold uppercase text-stone-400">Inclusions &amp; notes</div>
-            <div>{quote.notes || "—"}</div>
+            <div className="whitespace-pre-wrap">{quote.notes || "—"}</div>
           </div>
           <div className="mt-4 border-t border-stone-200 pt-3 text-xs text-stone-400">
             This quotation is an estimate and is valid until the date above. Not a job order — work begins only once this quotation is approved.
