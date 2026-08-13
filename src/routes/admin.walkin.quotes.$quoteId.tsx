@@ -76,29 +76,31 @@ function QuoteDetailPage() {
 
     // Navy header band — the logo's wordmark is white, so it needs a dark
     // background to read at all (it's invisible on plain white paper).
-    const bandH = 62;
+    const bandH = 36;
     doc.setFillColor(15, 30, 58);
     doc.rect(0, 0, pageWidth, bandH, "F");
     doc.setFillColor(201, 162, 39);
-    doc.rect(0, bandH, pageWidth, 1.5, "F");
+    doc.rect(0, bandH, pageWidth, 1, "F");
 
-    const logoY = 8;
-    const logoH = 42;
+    const logoY = 3;
+    const logoH = 30;
     const logoW = logoH * (640 / 800);
     try {
       const logoDataUrl = await loadImageAsDataUrl("/ctech-logo.png");
       doc.addImage(logoDataUrl, "PNG", marginX, logoY, logoW, logoH);
     } catch {
-      doc.setFont("helvetica", "bold"); doc.setFontSize(26); doc.setTextColor(255, 255, 255);
-      doc.text("C-TECH AUTOMOTIVE", marginX, logoY + 20);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(20); doc.setTextColor(255, 255, 255);
+      doc.text("C-TECH AUTOMOTIVE", marginX, logoY + 18);
     }
-    doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(190, 197, 212);
-    doc.text("9016 DRT Highway, Sto. Cristo, Pulilan, Bulacan  ·  0998-1516-245  ·  Mon-Sat 8AM-5PM", marginX, logoY + logoH + 7);
-    doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.setTextColor(201, 162, 39);
-    doc.text("QUOTATION", pageWidth - marginX, logoY + 12, { align: "right" });
-    doc.setFontSize(23); doc.setTextColor(255, 255, 255);
-    doc.text(quote.quote_no ?? "", pageWidth - marginX, logoY + 27, { align: "right" });
-    let y = bandH + 10;
+    const addrX = marginX + logoW + 6;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(190, 197, 212);
+    doc.text("9016 DRT Highway, Sto. Cristo, Pulilan, Bulacan", addrX, logoY + 13);
+    doc.text("0998-1516-245  ·  Mon-Sat 8AM-5PM", addrX, logoY + 19);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(201, 162, 39);
+    doc.text("QUOTATION", pageWidth - marginX, logoY + 9, { align: "right" });
+    doc.setFontSize(16); doc.setTextColor(255, 255, 255);
+    doc.text(quote.quote_no ?? "", pageWidth - marginX, logoY + 22, { align: "right" });
+    let y = bandH + 9;
 
     const colW = (pageWidth - marginX * 2) / 2;
     function metaBlock(x: number, label: string, rows: string[]) {
@@ -194,14 +196,18 @@ function QuoteDetailPage() {
         )}
 
         <div className="mx-auto max-w-3xl overflow-hidden rounded-xl border border-stone-200 bg-white">
-          <div className="flex items-start justify-between gap-4 px-10 py-10" style={{ backgroundColor: "#0F1E3A" }}>
-            <div>
-              <img src="/ctech-logo.png" alt="C-Tech Automotive" className="h-40 w-auto" />
-              <div className="mt-4 text-base" style={{ color: "rgba(255,255,255,0.65)" }}>9016 DRT Highway, Sto. Cristo, Pulilan, Bulacan · 0998-1516-245 · Mon–Sat 8AM–5PM</div>
+          <div className="flex items-center justify-between gap-4 px-5 py-4" style={{ backgroundColor: "#0F1E3A" }}>
+            <div className="flex items-center gap-3">
+              <img src="/ctech-logo.png" alt="C-Tech Automotive" className="h-20 w-auto" />
+              <div className="text-xs leading-tight" style={{ color: "rgba(255,255,255,0.65)" }}>
+                9016 DRT Highway, Sto. Cristo, Pulilan, Bulacan
+                <br />
+                0998-1516-245 · Mon–Sat 8AM–5PM
+              </div>
             </div>
             <div className="text-right">
-              <div className="text-base font-bold uppercase tracking-wider" style={{ color: "#C9A227" }}>Quotation</div>
-              <div className="font-mono text-4xl font-bold text-white">{quote.quote_no}</div>
+              <div className="text-xs font-bold uppercase tracking-wider" style={{ color: "#C9A227" }}>Quotation</div>
+              <div className="font-mono text-2xl font-bold text-white">{quote.quote_no}</div>
             </div>
           </div>
           <div className="h-1.5" style={{ backgroundColor: "#C9A227" }} />
