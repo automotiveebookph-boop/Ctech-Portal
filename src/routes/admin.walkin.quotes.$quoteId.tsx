@@ -69,7 +69,7 @@ function QuoteDetailPage() {
     if (!quote) return;
     const doc = new jsPDF({ unit: "mm", format: "letter" });
     const pageWidth = doc.internal.pageSize.getWidth();
-    const marginX = 15;
+    const marginX = 10;
     const svc = lines.filter((l) => l.category === "service");
     const parts = lines.filter((l) => l.category === "part");
     const phMoney = (n: number) => "PHP " + n.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });

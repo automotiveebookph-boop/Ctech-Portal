@@ -50,11 +50,17 @@ const OIL_CHANGE_INCLUSIONS = [
   "Labor",
 ];
 
+function listToSentence(items: string[]): string {
+  if (items.length <= 1) return items[0] ?? "";
+  if (items.length === 2) return `${items[0]} and ${items[1]}`;
+  return `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
+}
+
 function buildInclusionsNotes(checklist: string[], additional: string): string {
-  const bullets = checklist.length ? `Includes:\n${checklist.map((i) => `• ${i}`).join("\n")}` : "";
+  const sentence = checklist.length ? `Includes ${listToSentence(checklist)}.` : "";
   const extra = additional.trim();
-  if (bullets && extra) return `${bullets}\n\n${extra}`;
-  return bullets || extra;
+  if (sentence && extra) return `${sentence} ${extra}`;
+  return sentence || extra;
 }
 
 export function QuoteBuilder({
