@@ -23,6 +23,17 @@ function fmtDate(s: string | null) {
   return s ? new Date(s).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" }) : "—";
 }
 
+async function loadImageAsDataUrl(url: string): Promise<string> {
+  const res = await fetch(url);
+  const blob = await res.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
 function QuoteDetailPage() {
   const { quoteId } = Route.useParams();
   const [quote, setQuote] = useState<Quote | null>(null);
@@ -54,27 +65,40 @@ function QuoteDetailPage() {
     setQuote({ ...quote, status: "approved", effective_status: "approved", converted_job_order_id: jobOrderId as string });
   }
 
-  function downloadPdf() {
+  async function downloadPdf() {
     if (!quote) return;
     const doc = new jsPDF({ unit: "mm", format: "letter" });
     const pageWidth = doc.internal.pageSize.getWidth();
     const marginX = 15;
-    let y = 18;
     const svc = lines.filter((l) => l.category === "service");
     const parts = lines.filter((l) => l.category === "part");
     const phMoney = (n: number) => "PHP " + n.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-    doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.setTextColor(15, 30, 58);
-    doc.text("C-TECH AUTOMOTIVE", marginX, y);
-    doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(90, 100, 115);
-    doc.text("9016 DRT Highway, Sto. Cristo, Pulilan, Bulacan  ·  0998-1516-245  ·  Mon-Sat 8AM-5PM", marginX, y + 5);
-    doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(201, 162, 39);
-    doc.text("QUOTATION", pageWidth - marginX, y - 3, { align: "right" });
-    doc.setFontSize(12); doc.setTextColor(15, 30, 58);
-    doc.text(quote.quote_no ?? "", pageWidth - marginX, y + 3, { align: "right" });
-    y += 10;
-    doc.setDrawColor(15, 30, 58); doc.setLineWidth(0.6); doc.line(marginX, y, pageWidth - marginX, y);
-    y += 8;
+    // Navy header band — the logo's wordmark is white, so it needs a dark
+    // background to read at all (it's invisible on plain white paper).
+    const bandH = 62;
+    doc.setFillColor(15, 30, 58);
+    doc.rect(0, 0, pageWidth, bandH, "F");
+    doc.setFillColor(201, 162, 39);
+    doc.rect(0, bandH, pageWidth, 1.5, "F");
+
+    const logoY = 8;
+    const logoH = 42;
+    const logoW = logoH * (640 / 800);
+    try {
+      const logoDataUrl = await loadImageAsDataUrl("/ctech-logo.png");
+      doc.addImage(logoDataUrl, "PNG", marginX, logoY, logoW, logoH);
+    } catch {
+      doc.setFont("helvetica", "bold"); doc.setFontSize(26); doc.setTextColor(255, 255, 255);
+      doc.text("C-TECH AUTOMOTIVE", marginX, logoY + 20);
+    }
+    doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(190, 197, 212);
+    doc.text("9016 DRT Highway, Sto. Cristo, Pulilan, Bulacan  ·  0998-1516-245  ·  Mon-Sat 8AM-5PM", marginX, logoY + logoH + 7);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.setTextColor(201, 162, 39);
+    doc.text("QUOTATION", pageWidth - marginX, logoY + 12, { align: "right" });
+    doc.setFontSize(23); doc.setTextColor(255, 255, 255);
+    doc.text(quote.quote_no ?? "", pageWidth - marginX, logoY + 27, { align: "right" });
+    let y = bandH + 10;
 
     const colW = (pageWidth - marginX * 2) / 2;
     function metaBlock(x: number, label: string, rows: string[]) {
@@ -169,19 +193,21 @@ function QuoteDetailPage() {
           </div>
         )}
 
-        <div className="mx-auto max-w-3xl rounded-xl border border-stone-200 bg-white p-8">
-          <div className="flex items-start justify-between gap-4 border-b-4 pb-4" style={{ borderColor: "#0F1E3A" }}>
+        <div className="mx-auto max-w-3xl overflow-hidden rounded-xl border border-stone-200 bg-white">
+          <div className="flex items-start justify-between gap-4 px-10 py-10" style={{ backgroundColor: "#0F1E3A" }}>
             <div>
-              <div className="text-lg font-bold" style={{ color: "#0F1E3A" }}>C-TECH AUTOMOTIVE</div>
-              <div className="mt-1 text-xs text-stone-500">9016 DRT Highway, Sto. Cristo, Pulilan, Bulacan · 0998-1516-245 · Mon–Sat 8AM–5PM</div>
+              <img src="/ctech-logo.png" alt="C-Tech Automotive" className="h-40 w-auto" />
+              <div className="mt-4 text-base" style={{ color: "rgba(255,255,255,0.65)" }}>9016 DRT Highway, Sto. Cristo, Pulilan, Bulacan · 0998-1516-245 · Mon–Sat 8AM–5PM</div>
             </div>
             <div className="text-right">
-              <div className="text-xs font-bold uppercase tracking-wider" style={{ color: "#C9A227" }}>Quotation</div>
-              <div className="font-mono text-sm font-bold" style={{ color: "#0F1E3A" }}>{quote.quote_no}</div>
+              <div className="text-base font-bold uppercase tracking-wider" style={{ color: "#C9A227" }}>Quotation</div>
+              <div className="font-mono text-4xl font-bold text-white">{quote.quote_no}</div>
             </div>
           </div>
+          <div className="h-1.5" style={{ backgroundColor: "#C9A227" }} />
 
-          <div className="mt-4 grid grid-cols-2 border border-stone-200">
+          <div className="p-8">
+          <div className="grid grid-cols-2 border border-stone-200">
             <div className="border-r border-stone-200 p-4">
               <div className="text-[10px] font-bold uppercase text-stone-400">Prepared for</div>
               <div className="text-sm font-semibold" style={{ color: "#0F1E3A" }}>{quote.client_name || "—"}</div>
@@ -221,6 +247,7 @@ function QuoteDetailPage() {
           </div>
           <div className="mt-4 border-t border-stone-200 pt-3 text-xs text-stone-400">
             This quotation is an estimate and is valid until the date above. Not a job order — work begins only once this quotation is approved.
+          </div>
           </div>
         </div>
       </main>
