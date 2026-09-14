@@ -31,6 +31,7 @@ import { Route as AdminSelectRouteImport } from './routes/admin.select'
 import { Route as AdminSchedulesRouteImport } from './routes/admin.schedules'
 import { Route as AdminRequestsRouteImport } from './routes/admin.requests'
 import { Route as AdminPricingRouteImport } from './routes/admin.pricing'
+import { Route as AdminHomeserviceRouteImport } from './routes/admin.homeservice'
 import { Route as AdminClientsRouteImport } from './routes/admin.clients'
 import { Route as AdminAppointmentsRouteImport } from './routes/admin.appointments'
 import { Route as AdminWalkinIndexRouteImport } from './routes/admin.walkin.index'
@@ -156,6 +157,11 @@ const AdminPricingRoute = AdminPricingRouteImport.update({
   path: '/pricing',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminHomeserviceRoute = AdminHomeserviceRouteImport.update({
+  id: '/homeservice',
+  path: '/homeservice',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminClientsRoute = AdminClientsRouteImport.update({
   id: '/clients',
   path: '/clients',
@@ -244,6 +250,7 @@ export interface FileRoutesByFullPath {
   '/vehicles': typeof VehiclesRouteWithChildren
   '/admin/appointments': typeof AdminAppointmentsRoute
   '/admin/clients': typeof AdminClientsRoute
+  '/admin/homeservice': typeof AdminHomeserviceRoute
   '/admin/pricing': typeof AdminPricingRoute
   '/admin/requests': typeof AdminRequestsRoute
   '/admin/schedules': typeof AdminSchedulesRoute
@@ -281,6 +288,7 @@ export interface FileRoutesByTo {
   '/vehicles': typeof VehiclesRouteWithChildren
   '/admin/appointments': typeof AdminAppointmentsRoute
   '/admin/clients': typeof AdminClientsRoute
+  '/admin/homeservice': typeof AdminHomeserviceRoute
   '/admin/pricing': typeof AdminPricingRoute
   '/admin/requests': typeof AdminRequestsRoute
   '/admin/schedules': typeof AdminSchedulesRoute
@@ -319,6 +327,7 @@ export interface FileRoutesById {
   '/vehicles': typeof VehiclesRouteWithChildren
   '/admin/appointments': typeof AdminAppointmentsRoute
   '/admin/clients': typeof AdminClientsRoute
+  '/admin/homeservice': typeof AdminHomeserviceRoute
   '/admin/pricing': typeof AdminPricingRoute
   '/admin/requests': typeof AdminRequestsRoute
   '/admin/schedules': typeof AdminSchedulesRoute
@@ -359,6 +368,7 @@ export interface FileRouteTypes {
     | '/vehicles'
     | '/admin/appointments'
     | '/admin/clients'
+    | '/admin/homeservice'
     | '/admin/pricing'
     | '/admin/requests'
     | '/admin/schedules'
@@ -396,6 +406,7 @@ export interface FileRouteTypes {
     | '/vehicles'
     | '/admin/appointments'
     | '/admin/clients'
+    | '/admin/homeservice'
     | '/admin/pricing'
     | '/admin/requests'
     | '/admin/schedules'
@@ -433,6 +444,7 @@ export interface FileRouteTypes {
     | '/vehicles'
     | '/admin/appointments'
     | '/admin/clients'
+    | '/admin/homeservice'
     | '/admin/pricing'
     | '/admin/requests'
     | '/admin/schedules'
@@ -628,6 +640,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPricingRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/homeservice': {
+      id: '/admin/homeservice'
+      path: '/homeservice'
+      fullPath: '/admin/homeservice'
+      preLoaderRoute: typeof AdminHomeserviceRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/clients': {
       id: '/admin/clients'
       path: '/clients'
@@ -793,6 +812,7 @@ const AdminWalkinRouteWithChildren = AdminWalkinRoute._addFileChildren(
 interface AdminRouteChildren {
   AdminAppointmentsRoute: typeof AdminAppointmentsRoute
   AdminClientsRoute: typeof AdminClientsRoute
+  AdminHomeserviceRoute: typeof AdminHomeserviceRoute
   AdminPricingRoute: typeof AdminPricingRoute
   AdminRequestsRoute: typeof AdminRequestsRoute
   AdminSchedulesRoute: typeof AdminSchedulesRoute
@@ -805,6 +825,7 @@ interface AdminRouteChildren {
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAppointmentsRoute: AdminAppointmentsRoute,
   AdminClientsRoute: AdminClientsRoute,
+  AdminHomeserviceRoute: AdminHomeserviceRoute,
   AdminPricingRoute: AdminPricingRoute,
   AdminRequestsRoute: AdminRequestsRoute,
   AdminSchedulesRoute: AdminSchedulesRoute,

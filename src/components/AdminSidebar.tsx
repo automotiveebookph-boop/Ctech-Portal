@@ -6,6 +6,7 @@ import {
   CalendarCheck,
   Car,
   History,
+  Home,
   Inbox,
   LogOut,
   Menu,
@@ -25,11 +26,13 @@ type NavItem = {
     | "/admin/pricing"
     | "/admin/appointments"
     | "/admin/schedules"
+    | "/admin/homeservice"
     | "/admin/requests";
   label: string;
   icon: typeof BarChart3;
   showBadge?: boolean;
   showRequestsBadge?: boolean;
+  showHomeServiceBadge?: boolean;
   disabled?: boolean;
 };
 
@@ -40,6 +43,7 @@ const NAV: NavItem[] = [
   { to: "/admin/service-log", label: "Service Log", icon: History },
   { to: "/admin/appointments", label: "Appointments", icon: CalendarCheck, showBadge: true },
   { to: "/admin/schedules", label: "Schedules", icon: CalendarCheck },
+  { to: "/admin/homeservice", label: "Home Service", icon: Home, showHomeServiceBadge: true },
   { to: "/admin/pricing", label: "Pricing", icon: TrendingUp },
   { to: "/admin/requests", label: "Access Requests", icon: Inbox, showRequestsBadge: true },
 ];
@@ -50,6 +54,7 @@ export function AdminSidebar({ email }: { email?: string }) {
   const [open, setOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
   const [requestsCount, setRequestsCount] = useState(0);
+  const [homeServiceCount, setHomeServiceCount] = useState(0);
 
   useEffect(() => {
     setOpen(false);
@@ -58,7 +63,7 @@ export function AdminSidebar({ email }: { email?: string }) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [{ count: apptCount }, { count: reqCount }] = await Promise.all([
+      const [{ count: apptCount }, { count: reqCount }, { count: hsCount }] = await Promise.all([
         supabaseFleet
           .from("appointments")
           .select("id", { count: "exact", head: true })
@@ -67,10 +72,16 @@ export function AdminSidebar({ email }: { email?: string }) {
           .from("contact_requests")
           .select("id", { count: "exact", head: true })
           .or("status.is.null,status.eq.new"),
+        supabaseFleet
+          .from("home_service_bookings")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "pending")
+          .or("payment_reference.not.is.null,payment_proof_path.not.is.null"),
       ]);
       if (!cancelled) {
         setPendingCount(apptCount ?? 0);
         setRequestsCount(reqCount ?? 0);
+        setHomeServiceCount(hsCount ?? 0);
       }
     })();
     return () => { cancelled = true; };
@@ -134,7 +145,7 @@ export function AdminSidebar({ email }: { email?: string }) {
         </div>
 
         <nav className="flex-1 space-y-1 overflow-y-auto p-4">
-          {NAV.map(({ to, label, icon: Icon, showBadge, showRequestsBadge }) => {
+          {NAV.map(({ to, label, icon: Icon, showBadge, showRequestsBadge, showHomeServiceBadge }) => {
             const active = pathname === to;
             return (
               <Link
@@ -159,6 +170,11 @@ export function AdminSidebar({ email }: { email?: string }) {
                   <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold text-white"
                     style={{ backgroundColor: "#C9A227" }}>
                     {requestsCount}
+                  </span>
+                )}
+                {showHomeServiceBadge && homeServiceCount > 0 && (
+                  <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-blue-500 px-1.5 text-[10px] font-bold text-white">
+                    {homeServiceCount}
                   </span>
                 )}
               </Link>
