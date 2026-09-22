@@ -1,10 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { Send } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { supabaseFleet } from "@/lib/supabase-fleet";
 import { peso } from "@/lib/fleet-utils";
+import { publicQuoteUrl } from "@/lib/quotation-message";
+import { SendQuotationModal } from "@/components/SendQuotationModal";
 
 export const Route = createFileRoute("/admin/walkin/quotes/$quoteId")({
   component: QuoteDetailPage,
@@ -40,6 +43,7 @@ function QuoteDetailPage() {
   const [lines, setLines] = useState<QuoteLine[]>([]);
   const [preparerName, setPreparerName] = useState("—");
   const [busy, setBusy] = useState(false);
+  const [sendOpen, setSendOpen] = useState(false);
 
   async function load() {
     const { data: q, error } = await supabaseFleet.from("quotes_with_effective_status").select("*").eq("id", quoteId).single();
@@ -54,6 +58,12 @@ function QuoteDetailPage() {
   }
 
   useEffect(() => { load(); }, [quoteId]);
+
+  async function markSent() {
+    if (!quote || quote.status !== "draft") return;
+    const { error } = await supabaseFleet.from("quotes").update({ status: "sent" }).eq("id", quote.id).eq("status", "draft");
+    if (!error) setQuote({ ...quote, status: "sent", effective_status: "sent" });
+  }
 
   async function convert() {
     if (!quote) return;
@@ -182,11 +192,27 @@ function QuoteDetailPage() {
               {busy ? "Converting…" : "Approve & convert to job order"}
             </button>
           )}
-          <button onClick={downloadPdf} className="rounded-lg px-4 py-2 text-sm font-bold" style={{ backgroundColor: "#C9A227", color: "#0F1E3A" }}>
+          <button onClick={downloadPdf} className="rounded-lg border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 hover:bg-stone-50">
             Print / Save as PDF
+          </button>
+          <button
+            onClick={() => setSendOpen(true)}
+            className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold text-white transition hover:opacity-90"
+            style={{ backgroundColor: "#0F1E3A" }}
+          >
+            <Send className="h-4 w-4" /> Send Quotation
           </button>
         </div>
       </header>
+
+      {sendOpen && (
+        <SendQuotationModal
+          clientName={quote.client_name}
+          quotationLink={publicQuoteUrl(quote.id)}
+          onClose={() => setSendOpen(false)}
+          onSent={markSent}
+        />
+      )}
 
       <main className="p-4 md:p-8">
         {quote.converted_job_order_id && (

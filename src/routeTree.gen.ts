@@ -21,6 +21,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MyCarIndexRouteImport } from './routes/my-car.index'
 import { Route as VehiclesUnitIdRouteImport } from './routes/vehicles.$unitId'
+import { Route as QuoteQuoteIdRouteImport } from './routes/quote.$quoteId'
 import { Route as MyCarHistoryRouteImport } from './routes/my-car.history'
 import { Route as MyCarBookRouteImport } from './routes/my-car.book'
 import { Route as MyCarAppointmentsRouteImport } from './routes/my-car.appointments'
@@ -106,6 +107,11 @@ const VehiclesUnitIdRoute = VehiclesUnitIdRouteImport.update({
   id: '/$unitId',
   path: '/$unitId',
   getParentRoute: () => VehiclesRoute,
+} as any)
+const QuoteQuoteIdRoute = QuoteQuoteIdRouteImport.update({
+  id: '/quote/$quoteId',
+  path: '/quote/$quoteId',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const MyCarHistoryRoute = MyCarHistoryRouteImport.update({
   id: '/history',
@@ -261,6 +267,7 @@ export interface FileRoutesByFullPath {
   '/my-car/appointments': typeof MyCarAppointmentsRoute
   '/my-car/book': typeof MyCarBookRoute
   '/my-car/history': typeof MyCarHistoryRoute
+  '/quote/$quoteId': typeof QuoteQuoteIdRoute
   '/vehicles/$unitId': typeof VehiclesUnitIdRoute
   '/my-car/': typeof MyCarIndexRoute
   '/admin/walkin/appointments': typeof AdminWalkinAppointmentsRoute
@@ -298,6 +305,7 @@ export interface FileRoutesByTo {
   '/my-car/appointments': typeof MyCarAppointmentsRoute
   '/my-car/book': typeof MyCarBookRoute
   '/my-car/history': typeof MyCarHistoryRoute
+  '/quote/$quoteId': typeof QuoteQuoteIdRoute
   '/vehicles/$unitId': typeof VehiclesUnitIdRoute
   '/my-car': typeof MyCarIndexRoute
   '/admin/walkin/appointments': typeof AdminWalkinAppointmentsRoute
@@ -338,6 +346,7 @@ export interface FileRoutesById {
   '/my-car/appointments': typeof MyCarAppointmentsRoute
   '/my-car/book': typeof MyCarBookRoute
   '/my-car/history': typeof MyCarHistoryRoute
+  '/quote/$quoteId': typeof QuoteQuoteIdRoute
   '/vehicles/$unitId': typeof VehiclesUnitIdRoute
   '/my-car/': typeof MyCarIndexRoute
   '/admin/walkin/appointments': typeof AdminWalkinAppointmentsRoute
@@ -379,6 +388,7 @@ export interface FileRouteTypes {
     | '/my-car/appointments'
     | '/my-car/book'
     | '/my-car/history'
+    | '/quote/$quoteId'
     | '/vehicles/$unitId'
     | '/my-car/'
     | '/admin/walkin/appointments'
@@ -416,6 +426,7 @@ export interface FileRouteTypes {
     | '/my-car/appointments'
     | '/my-car/book'
     | '/my-car/history'
+    | '/quote/$quoteId'
     | '/vehicles/$unitId'
     | '/my-car'
     | '/admin/walkin/appointments'
@@ -455,6 +466,7 @@ export interface FileRouteTypes {
     | '/my-car/appointments'
     | '/my-car/book'
     | '/my-car/history'
+    | '/quote/$quoteId'
     | '/vehicles/$unitId'
     | '/my-car/'
     | '/admin/walkin/appointments'
@@ -482,6 +494,7 @@ export interface RootRouteChildren {
   RequestAccessRoute: typeof RequestAccessRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   VehiclesRoute: typeof VehiclesRouteWithChildren
+  QuoteQuoteIdRoute: typeof QuoteQuoteIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -569,6 +582,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/vehicles/$unitId'
       preLoaderRoute: typeof VehiclesUnitIdRouteImport
       parentRoute: typeof VehiclesRoute
+    }
+    '/quote/$quoteId': {
+      id: '/quote/$quoteId'
+      path: '/quote/$quoteId'
+      fullPath: '/quote/$quoteId'
+      preLoaderRoute: typeof QuoteQuoteIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/my-car/history': {
       id: '/my-car/history'
@@ -876,6 +896,7 @@ const rootRouteChildren: RootRouteChildren = {
   RequestAccessRoute: RequestAccessRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   VehiclesRoute: VehiclesRouteWithChildren,
+  QuoteQuoteIdRoute: QuoteQuoteIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
