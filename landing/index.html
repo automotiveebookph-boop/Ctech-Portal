@@ -1,8 +1,17 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Google Analytics (GA4) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0S5P0ZGQF6"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-0S5P0ZGQF6');
+</script>
 
 <!-- Auth bridge: Supabase password-reset / account-activation links fall back to
      this landing domain (the project's Site URL). Forward them to the staff
@@ -228,6 +237,30 @@
   .hero-cta span { transition: transform 0.2s; }
   .hero-cta:hover { transform: translateY(-2px); box-shadow: 0 16px 42px -10px rgba(251,192,45,0.7); }
   .hero-cta:hover span { transform: translateX(3px); }
+  /* Secondary hero CTA — Home Service. A real solid button (navy fill, yellow
+     border/text) so it's clearly clickable, but a different color from the
+     solid-yellow primary so the two never read as the same offer. A small
+     label above it ("Need Home Service?") frames it as the second path. */
+  .hero-need-tag {
+    display: block; margin-top: 22px; margin-bottom: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--gray-300);
+  }
+  .hero-cta-secondary {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: var(--navy-soft);
+    border: 1.5px solid var(--yellow);
+    color: var(--yellow);
+    font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700;
+    font-size: 15px; padding: 13px 28px; border-radius: 10px;
+    text-decoration: none;
+    box-shadow: 0 8px 22px -8px rgba(0,0,0,0.5);
+    transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+  }
+  .hero-cta-secondary span { transition: transform 0.2s; }
+  .hero-cta-secondary:hover { background: var(--navy); transform: translateY(-1px); box-shadow: 0 10px 26px -8px rgba(0,0,0,0.6); }
+  .hero-cta-secondary:hover span { transform: translateX(3px); }
 
   /* FREE ESTIMATE SECTION (calculator) */
   .estimate-section {
@@ -515,6 +548,16 @@
     transform: translateY(-1px);
     box-shadow: 0 8px 24px -6px rgba(251,192,45,0.5);
   }
+  .result-cta.is-disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    filter: grayscale(20%);
+  }
+  .result-cta.is-disabled:hover {
+    background: var(--yellow);
+    transform: none;
+    box-shadow: none;
+  }
   .result-actions {
     display: flex; flex-direction: column; gap: 10px; margin-top: 4px;
   }
@@ -655,6 +698,24 @@
     padding: 4px; margin-left: 4px;
   }
   .visit-date-display { font-size: 12.5px; font-weight: 600; color: var(--navy); margin-top: 6px; min-height: 16px; }
+  .visit-date-input.field-error {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 3px rgba(220,38,38,0.18);
+  }
+  #time-picker.field-error {
+    border: 2px solid #dc2626;
+    border-radius: 10px;
+    padding: 6px;
+    box-shadow: 0 0 0 3px rgba(220,38,38,0.12);
+  }
+  .field-error-msg {
+    display: none;
+    color: #dc2626;
+    font-size: 12px;
+    font-weight: 700;
+    margin-top: 6px;
+  }
+  .field-error-msg.show { display: block; }
 
   /* STICKY MOBILE BOTTOM BAR */
   .sticky-bar {
@@ -696,30 +757,54 @@
   /* ── SERVICE TYPE SELECTOR ── */
   .service-type-row {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 8px;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
     margin-bottom: 20px;
     padding-bottom: 20px;
     border-bottom: 1px dashed var(--gray-300);
   }
-  .svc-btn {
+  @media (max-width: 480px) {
+    .service-type-row { grid-template-columns: repeat(3, 1fr); }
+  }
+  .svc-btn, .svc-btn-home {
     background: var(--white);
     border: 1.5px solid var(--gray-300);
     border-radius: var(--radius);
-    padding: 11px 8px;
+    padding: 11px 4px;
     cursor: pointer;
     text-align: center;
+    text-decoration: none;
     transition: all 0.15s;
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: flex-start;
     gap: 5px;
   }
-  .svc-btn .icon { font-size: 20px; line-height: 1; }
-  .svc-btn .label {
+  .svc-btn .icon, .svc-btn-home .icon { font-size: 20px; line-height: 1; }
+  .svc-btn .label, .svc-btn-home .label {
     font-family: 'JetBrains Mono', monospace;
     font-size: 9px; text-transform: uppercase;
-    letter-spacing: 0.1em; color: var(--gray-500); font-weight: 600;
+    letter-spacing: 0.06em; color: var(--gray-500); font-weight: 600;
+    line-height: 1.25;
+  }
+  /* Home Service tile — navigates away rather than switching the in-page
+     calculator, so it's given a standing yellow border to read as "different
+     path" at a glance, not just another toggle among the four. */
+  .svc-btn-home {
+    border-color: rgba(217,163,0,0.5);
+    background: rgba(251,192,45,0.06);
+    position: relative;
+  }
+  .svc-btn-home .label { color: var(--yellow-deep); }
+  .svc-btn-home:hover { border-color: var(--yellow-deep); background: rgba(251,192,45,0.12); }
+  .svc-btn-home .new-badge {
+    position: absolute; top: -7px; right: -5px;
+    background: var(--yellow); color: var(--navy);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 7px; font-weight: 700; letter-spacing: 0.05em;
+    padding: 2px 4px; border-radius: 3px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
   }
   .svc-btn.active { background: var(--navy); border-color: var(--navy); }
   .svc-btn.active .label { color: var(--yellow); }
@@ -1427,7 +1512,80 @@
     font-size: 22px; font-weight: 700;
     color: var(--yellow); letter-spacing: -0.02em;
   }
+
+  /* ── OTHER SERVICES (collapsible labor menu) ── */
+  #result-other { border-top: 1px solid var(--gray-100); background: var(--white); }
+  .svc-cat { border-top: 1px solid var(--gray-100); }
+  .svc-cat:first-child { border-top: none; }
+  .svc-cat-header {
+    width: 100%; box-sizing: border-box;
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px; background: none; border: none; cursor: pointer;
+    font-family: 'Manrope', sans-serif; text-align: left;
+  }
+  .svc-cat-header:hover { background: var(--gray-100); }
+  .svc-cat-icon { font-size: 14px; flex-shrink: 0; }
+  .svc-cat-name {
+    flex: 1; font-size: 13px; font-weight: 700; color: var(--navy);
+    letter-spacing: -0.01em;
+  }
+  .svc-cat-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; color: var(--gray-500); font-weight: 600;
+  }
+  .svc-cat-chevron {
+    font-size: 10px; color: var(--gray-500);
+    transition: transform 0.2s ease; flex-shrink: 0;
+  }
+  .svc-cat.open .svc-cat-chevron { transform: rotate(180deg); }
+  .svc-cat-body { display: none; padding-bottom: 4px; }
+  .svc-cat.open .svc-cat-body { display: block; }
+  .badge-quote {
+    background: rgba(20,40,80,0.08); color: var(--navy);
+    font-weight: 700;
+  }
+  .svc-price.quote {
+    font-size: 10px; color: var(--gray-500); font-weight: 600;
+    min-width: 56px;
+  }
+  .other-intro {
+    font-size: 12.5px; line-height: 1.6; color: var(--gray-700);
+    margin-bottom: 12px;
+  }
+  #other-list {
+    border: 1.5px solid var(--gray-200);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  #other-list label::before { display: none; counter-increment: none; content: none; }
+  .other-count-note {
+    margin-top: 12px; padding: 11px 14px;
+    background: var(--gray-100); border-radius: var(--radius);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.04em;
+    color: var(--gray-500); text-align: center;
+  }
+  .other-count-note.has-picks {
+    background: rgba(20,40,80,0.06); color: var(--navy); font-weight: 600;
+  }
 </style>
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '2106681396587140');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=2106681396587140&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
 </head>
 <body>
 
@@ -1462,6 +1620,7 @@
   </div>
   <div class="nav-links">
     <a href="services.html">Services</a>
+    <a href="homeservice.html">Home Service</a>
     <a href="#how">How It Works</a>
     <a href="#shop">Our Shop</a>
     <a href="#contact">Contact</a>
@@ -1499,6 +1658,8 @@
       </div>
       <p class="hero-serving">📍 Serving Bulacan and nearby Cities</p>
       <a href="#calc" class="hero-cta">⚡ Get Free PMS & Oil Change Estimate in 30 Seconds<span>→</span></a>
+      <span class="hero-need-tag">Need Home Service?</span>
+      <a href="homeservice.html" class="hero-cta-secondary">🏠 We Come To You<span>→</span></a>
     </div>
   </div>
 </section>
@@ -1534,6 +1695,15 @@
           <span class="icon">🔩</span>
           <span class="label">Repair</span>
         </button>
+        <button class="svc-btn" data-svc="other">
+          <span class="icon">🧰</span>
+          <span class="label">Other Services</span>
+        </button>
+        <a class="svc-btn-home" href="homeservice.html" data-dl="calc_home_service_tile">
+          <span class="new-badge">NEW</span>
+          <span class="icon">🏠</span>
+          <span class="label">Home Service</span>
+        </a>
       </div>
 
       <!-- PMS FORM -->
@@ -1554,9 +1724,9 @@
             <div class="km-slider is-disabled" data-km-slider>
               <div class="km-track">
                 <div class="km-fill"></div>
-                <input type="range" class="km-range" min="0" max="150000" step="1000" value="0" disabled aria-label="Odometer quick select">
+                <input type="range" class="km-range" min="0" max="240000" step="1000" value="0" disabled aria-label="Odometer quick select">
               </div>
-              <div class="km-ticks"><span>0</span><span>50K</span><span>100K</span><span>150K</span></div>
+              <div class="km-ticks"><span>0</span><span>80K</span><span>160K</span><span>240K</span></div>
               <div class="km-hint">👆 Swipe to set your mileage — or type it above</div>
             </div>
           </div>
@@ -1611,9 +1781,9 @@
             <div class="km-slider is-disabled" data-km-slider>
               <div class="km-track">
                 <div class="km-fill"></div>
-                <input type="range" class="km-range" min="0" max="150000" step="1000" value="0" disabled aria-label="Odometer quick select">
+                <input type="range" class="km-range" min="0" max="240000" step="1000" value="0" disabled aria-label="Odometer quick select">
               </div>
-              <div class="km-ticks"><span>0</span><span>50K</span><span>100K</span><span>150K</span></div>
+              <div class="km-ticks"><span>0</span><span>80K</span><span>160K</span><span>240K</span></div>
               <div class="km-hint">👆 Swipe to set your mileage — or type it above</div>
             </div>
           </div>
@@ -1686,6 +1856,43 @@
         <div class="micro-note">We respond within 1 hour · Mon-Sat 8AM-5PM</div>
       </div>
 
+      <!-- OTHER SERVICES FORM -->
+      <div id="other-form" style="display:none">
+        <p class="other-intro">Tell us your vehicle, tick the services you need, then get your itemized labor estimate and reserve a slot. Parts are billed separately, and items marked <strong>Quote</strong> are priced after inspection.</p>
+        <div class="field-grid">
+          <div class="field"><label>Brand</label><select id="o-brand"><option value="">Select brand</option></select></div>
+          <div class="field"><label>Model</label><select id="o-model" disabled><option value="">Select model</option></select></div>
+          <div class="field full"><label>Year</label><select id="o-year" disabled><option value="">Select year</option></select></div>
+        </div>
+        <div class="date-picker-label" style="margin-top:16px;">🔧 Choose your services</div>
+        <div id="other-list"></div>
+        <div id="other-count-note" class="other-count-note">No services selected yet</div>
+        <span id="other-total" style="display:none">0</span>
+
+        <!-- Contact Details -->
+        <div class="contact-section">
+          <div class="contact-section-title">📋 Your Contact Details</div>
+          <div class="field full" style="margin-bottom:10px;">
+            <label style="counter-increment:none;">Full Name</label>
+            <input type="text" id="o-name" placeholder="e.g. Juan dela Cruz" autocomplete="name">
+          </div>
+          <div class="field-grid">
+            <div class="field">
+              <label style="counter-increment:none;">Contact Number</label>
+              <input type="tel" id="o-contact" placeholder="09XX XXX XXXX" autocomplete="tel">
+            </div>
+            <div class="field">
+              <label style="counter-increment:none;">Email</label>
+              <input type="email" id="o-email" placeholder="your@email.com" autocomplete="email" required>
+            </div>
+          </div>
+        </div>
+        <button class="submit-btn" id="other-submit" disabled style="margin-top:16px;">
+          Get My Estimate<span class="arrow">→</span>
+        </button>
+        <div class="micro-note">⚡ See your estimate, then reserve a slot</div>
+      </div>
+
       <!-- PMS RESULT PANEL -->
       <div class="result" id="result-state">
         <div class="result-header">
@@ -1714,7 +1921,7 @@
           </div>
         </div>
 
-        <div class="freebies">
+        <div class="freebies" id="result-freebies">
           <div class="freebies-title">✨ Free with your PMS</div>
           <ul>
             <li>Full ECU Scan</li><li>Safety Inspection</li>
@@ -1722,7 +1929,7 @@
             <li>Clean &amp; Adjust Brakes</li><li>Tire Rotation*</li>
           </ul>
         </div>
-        <div class="notice">
+        <div class="notice" id="result-notice">
           <strong>🔍 Diagnostic-Driven Notice</strong>
           This is your base PMS estimate. Additional services (brake pads, EGR cleaning, etc.) are inspection-based. We inform you and seek approval before any extra work. No surprises.
         </div>
@@ -1731,17 +1938,14 @@
           <div class="date-picker-label">📅 Preferred visit date</div>
           <input type="date" id="visit-date" class="visit-date-input">
           <div class="visit-date-display" id="visit-date-display"></div>
-          <div class="date-picker-label" style="margin-top:16px;">⏰ Preferred time <span class="slots-hint">· 2 slots per time</span></div>
-          <div class="day-picker time-picker" id="time-picker">
-            <button type="button" class="day-btn time-btn" data-time="8:00 AM"><span class="tb-time">8AM</span><span class="tb-slots">2 slots</span></button>
-            <button type="button" class="day-btn time-btn" data-time="10:00 AM"><span class="tb-time">10AM</span><span class="tb-slots">2 slots</span></button>
-            <button type="button" class="day-btn time-btn" data-time="1:00 PM"><span class="tb-time">1PM</span><span class="tb-slots">2 slots</span></button>
-            <button type="button" class="day-btn time-btn" data-time="3:00 PM"><span class="tb-time">3PM</span><span class="tb-slots">2 slots</span></button>
-          </div>
+          <div class="field-error-msg" id="date-error-msg">Please select a preferred date.</div>
+          <div class="date-picker-label" style="margin-top:16px;">⏰ Preferred time <span class="slots-hint" id="slots-hint">· 2 slots per time</span></div>
+          <div class="day-picker time-picker" id="time-picker"></div>
+          <div class="field-error-msg" id="time-error-msg">Please select a preferred time.</div>
           <div class="date-picker-note">Closed Sundays · Mon–Sat 8AM–5PM</div>
         </div>
         <div class="result-actions">
-          <button class="result-cta" id="email-estimate-btn">📅 Reserve my Slot<span>→</span></button>
+          <button class="result-cta is-disabled" id="email-estimate-btn">📅 Reserve my Slot<span>→</span></button>
         </div>
         <div id="email-confirm" class="email-confirm" role="status"></div>
         <button class="reset-link" id="reset-btn">← Try another vehicle</button>
@@ -2063,7 +2267,7 @@
       <div class="footer-col">
         <h4>Visit Us</h4>
         <p>9016 DRT Highway<br>Sto. Cristo, Pulilan<br>Bulacan, Philippines</p>
-        <p style="margin-top: 10px;">Mon-Sat: 8 AM – 5 PM<br>Sunday: Closed</p>
+        <p style="margin-top: 10px;">Shop: Mon-Sat 8AM–5PM<br>Home Service: Mon-Sat 8AM–6PM<br>Sunday: Closed</p>
       </div>
       <div class="footer-col">
         <h4>Get In Touch</h4>
@@ -2096,6 +2300,7 @@
   </div>
 </footer>
 
+<script src="assets/pricing-data.js"></script>
 <script>
 
 // ═══════════════════════════════════════════════
@@ -2164,7 +2369,9 @@ function currentBreakdown() {
   }));
   const addons = [...document.querySelectorAll('#result-addons input[type="checkbox"]:checked')].map(cb => ({
     name:  cb.dataset.name || '',
-    price: '₱' + parseInt(cb.dataset.price || '0').toLocaleString()
+    price: cb.dataset.quote === '1'
+      ? 'Quote on inspection'
+      : '₱' + parseInt(cb.dataset.price || '0').toLocaleString()
   }));
   return [...base, ...addons];
 }
@@ -2207,6 +2414,7 @@ function showSuccess(info) {
   document.getElementById('pms-form').style.display = 'none';
   document.getElementById('co-form').style.display = 'none';
   document.getElementById('repair-form').style.display = 'none';
+  document.getElementById('other-form').style.display = 'none';
   document.getElementById('result-state').classList.remove('show');
   const rows = document.getElementById('success-summary-rows');
   rows.innerHTML = '';
@@ -2229,249 +2437,12 @@ document.getElementById('success-reset').addEventListener('click', () => {
   const activeSvc = document.querySelector('.svc-btn.active')?.dataset.svc || 'pms';
   if (activeSvc === 'pms') document.getElementById('pms-form').style.display = 'block';
   else if (activeSvc === 'co') document.getElementById('co-form').style.display = 'block';
-  else document.getElementById('repair-form').style.display = 'block';
+  else if (activeSvc === 'repair') document.getElementById('repair-form').style.display = 'block';
+  else document.getElementById('other-form').style.display = 'block';
 });
 
-const vehicles = {
-  "Toyota": {
-    "Wigo":                            { years: [2014,2025], class: "Sedan",            fuel: "Gas",    oilL: 3, oilType: "Fully Synth 5W-30" },
-    "Vios":                            { years: [2014,2025], class: "Sedan",            fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Yaris Cross":                     { years: [2023,2025], class: "Mid SUV",          fuel: "Gas",    oilL: 4, oilType: "Fully Synth 0W-20" },
-    "Corolla Altis":                   { years: [2014,2024], class: "Sedan",            fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Corolla Cross":                   { years: [2020,2025], class: "Mid SUV",          fuel: "Gas",    oilL: 4, oilType: "Fully Synth 0W-20" },
-    "C-HR (1.8 Gas)":                  { years: [2018,2023], class: "Mid SUV",          fuel: "Gas",    oilL: 4, oilType: "Fully Synth 0W-20" },
-    "Camry":                           { years: [2018,2025], class: "Sedan",            fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
-    "Alphard / Vellfire (2.5 Gas)":    { years: [2015,2025], class: "Large SUV/Pickup", fuel: "Gas",    oilL: 5, oilType: "Fully Synth 0W-20" },
-    "Raize (1.0T)":                    { years: [2021,2025], class: "Mid SUV",          fuel: "Gas",    oilL: 3, oilType: "Fully Synth 0W-20" },
-    "Rush":                            { years: [2018,2025], class: "Mid SUV",          fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Veloz":                           { years: [2022,2025], class: "Mid SUV",          fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Avanza":                          { years: [2012,2025], class: "Sedan",            fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Tamaraw (2.8 Diesel)":            { years: [2024,2025], class: "Mid SUV",          fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
-    "86 / GR86":                       { years: [2012,2025], class: "Sedan",            fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
-    "GR Supra (2.0T / 3.0T)":         { years: [2020,2025], class: "Sedan",            fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
-    "Innova (2.8 Diesel)":             { years: [2016,2024], class: "Mid SUV",          fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
-    "Innova Cross (2.0 Gas Turbo)":    { years: [2024,2025], class: "Mid SUV",          fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
-    "Fortuner (2.4/2.8 Diesel)":       { years: [2016,2025], class: "Mid SUV",          fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
-    "Hilux (2.4/2.8 Diesel)":          { years: [2016,2025], class: "Large SUV/Pickup", fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
-    "Hiace Commuter (2.8 Diesel)":     { years: [2018,2025], class: "Large SUV/Pickup", fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
-    "Hiace Super Grandia (2.8 Diesel)":{ years: [2019,2025], class: "Large SUV/Pickup", fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
-    "Granvia (2.8 Diesel)":            { years: [2020,2025], class: "Large SUV/Pickup", fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
-    "FJ Cruiser (4.0 V6 Gas)":         { years: [2007,2014], class: "Mid SUV",          fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
-    "Land Cruiser 200 (4.5 Diesel)":   { years: [2008,2021], class: "Large SUV/Pickup", fuel: "Diesel", oilL: 8, oilType: "Fully Synth 5W-40" },
-    "Land Cruiser LC300 (3.3 Diesel)": { years: [2022,2025], class: "Large SUV/Pickup", fuel: "Diesel", oilL: 8, oilType: "Fully Synth 5W-40" },
-    "Land Cruiser Prado (2.8 Diesel)": { years: [2014,2025], class: "Mid SUV",          fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
-  },
-  "Mitsubishi": {
-    "Mirage (1.2 Gas)":              { years: [2014,2025], class: "Sedan",           fuel: "Gas",    oilL: 3, oilType: "Fully Synth 5W-30" },
-    "Mirage G4 (1.2 Gas)":           { years: [2014,2025], class: "Sedan",           fuel: "Gas",    oilL: 3, oilType: "Fully Synth 5W-30" },
-    "Lancer EX (1.5/1.6 Gas)":       { years: [2009,2017], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Galant (2.4 Gas)":              { years: [2004,2012], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Xpander (1.5 Gas)":             { years: [2018,2025], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Xpander Cross (1.5 Gas)":       { years: [2021,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "ASX (2.0 Gas)":                 { years: [2012,2022], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Eclipse Cross (1.5T Gas)":      { years: [2019,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
-    "Outlander (2.5 Gas)":           { years: [2022,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
-    "Adventure (2.5 Diesel)":        { years: [2006,2020], class: "Mid SUV",         fuel: "Diesel", oilL: 5, oilType: "Semi-Synth 15W-40" },
-    "Montero Sport (2.4 Diesel)":    { years: [2016,2025], class: "Mid SUV",         fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
-    "Strada (2.4 Diesel)":           { years: [2015,2025], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
-    "L300 (2.5 Diesel)":             { years: [2005,2025], class: "Mid SUV",         fuel: "Diesel", oilL: 6, oilType: "Semi-Synth 15W-40" },
-    "Pajero (3.2 Diesel)":           { years: [2004,2020], class: "Mid SUV",         fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
-  },
-  "Honda": {
-    "Brio (1.2 Gas)":                { years: [2012,2025], class: "Sedan",           fuel: "Gas",    oilL: 3, oilType: "Fully Synth 5W-30" },
-    "City (Older Gen 1.3/1.5)":      { years: [2009,2013], class: "Sedan",           fuel: "Gas",    oilL: 3, oilType: "Fully Synth 5W-30" },
-    "City (2014-2020)":              { years: [2014,2020], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "City (2021-present)":           { years: [2021,2025], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "City Hatchback":                { years: [2021,2025], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Jazz / Fit (Older 1.5)":        { years: [2008,2013], class: "Sedan",           fuel: "Gas",    oilL: 3, oilType: "Fully Synth 5W-30" },
-    "Jazz / Fit (2014-2020)":        { years: [2014,2020], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Freed (1.5 Gas)":               { years: [2009,2015], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Mobilio (1.5 Gas)":             { years: [2014,2019], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Civic (FD/FB 1.8)":             { years: [2006,2015], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Civic (FC/FK 1.5T 2016-2021)":  { years: [2016,2021], class: "Sedan",           fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
-    "Civic (2022-present 1.5T)":     { years: [2022,2025], class: "Sedan",           fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
-    "Integra (1.5T)":                { years: [2023,2025], class: "Sedan",           fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
-    "Accord (Older 2.4)":            { years: [2008,2017], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Accord (2018-present 1.5T)":    { years: [2018,2025], class: "Sedan",           fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
-    "BR-V (1.5 Gas)":                { years: [2016,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "HR-V (2015-2021)":              { years: [2015,2021], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "HR-V (2022-present 1.5T)":      { years: [2022,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "WR-V (1.5 Gas)":                { years: [2023,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "CR-V (Diesel 1.6 iDTEC)":       { years: [2013,2017], class: "Mid SUV",         fuel: "Diesel", oilL: 4, oilType: "Fully Synth 5W-40" },
-    "CR-V (Gas/Turbo 1.5T)":         { years: [2017,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
-    "ZR-V (1.5T)":                   { years: [2023,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Odyssey (2.4 Gas)":             { years: [2014,2021], class: "Large SUV/Pickup", fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Pilot (3.5 V6 Gas)":            { years: [2016,2025], class: "Large SUV/Pickup", fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
-  },
-  "Ford": {
-    "Fiesta (1.5 Gas)":          { years: [2010,2019], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "EcoSport (1.5 Gas)":        { years: [2014,2022], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Focus Hatchback (1.5T)":    { years: [2013,2019], class: "Sedan",           fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
-    "Focus Sedan (1.5T)":        { years: [2013,2019], class: "Sedan",           fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
-    "Ranger (2.2 Diesel)":       { years: [2012,2015], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
-    "Ranger (3.2 Diesel)":       { years: [2015,2018], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
-    "Ranger (2.0 Bi-Turbo)":     { years: [2019,2025], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 8, oilType: "Fully Synth 5W-40" },
-    "Everest (3.2 Diesel)":      { years: [2015,2018], class: "Mid SUV",         fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
-    "Everest (2.0 Bi-Turbo)":    { years: [2019,2025], class: "Mid SUV",         fuel: "Diesel", oilL: 8, oilType: "Fully Synth 5W-40" },
-    "Territory (1.5T Gas)":      { years: [2020,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
-    "Bronco Sport (1.5T Gas)":   { years: [2023,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Puma (1.0T EcoBoost)":      { years: [2024,2025], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Explorer (2.3 EcoBoost)":   { years: [2021,2025], class: "Large SUV/Pickup",fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
-    "Expedition (3.5 EcoBoost)": { years: [2018,2025], class: "Large SUV/Pickup",fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
-    "Mustang (2.3T EcoBoost)":   { years: [2016,2025], class: "Sedan",           fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
-    "Mustang (5.0 V8)":          { years: [2016,2025], class: "Sedan",           fuel: "Gas",    oilL: 8, oilType: "Fully Synth 5W-50" },
-  },
-  "Hyundai": {
-    "i10 (1.2 Gas)":                 { years: [2014,2020], class: "Sedan",           fuel: "Gas",    oilL: 3, oilType: "Fully Synth 5W-30" },
-    "Reina (1.4 Gas)":               { years: [2019,2024], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Accent (Gas 1.4/1.6)":          { years: [2011,2024], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Accent (Diesel 1.6 CRDi)":      { years: [2011,2020], class: "Sedan",           fuel: "Diesel", oilL: 4, oilType: "Fully Synth 5W-40" },
-    "Elantra (Older 1.6 Gas)":       { years: [2012,2020], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Elantra (2021-present 1.6)":    { years: [2021,2025], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Creta (1.5 Gas)":               { years: [2022,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Kona (2.0 Gas)":                { years: [2018,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Tucson (Gas 2.0)":              { years: [2016,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Tucson (Diesel 2.0 CRDi)":      { years: [2016,2022], class: "Mid SUV",         fuel: "Diesel", oilL: 5, oilType: "Fully Synth 5W-40" },
-    "Santa Fe (Older 2.2 CRDi)":     { years: [2013,2018], class: "Mid SUV",         fuel: "Diesel", oilL: 5, oilType: "Fully Synth 5W-40" },
-    "Santa Fe (2019-present 2.2)":   { years: [2019,2025], class: "Mid SUV",         fuel: "Diesel", oilL: 5, oilType: "Fully Synth 5W-40" },
-    "Palisade (2.2 CRDi)":           { years: [2020,2025], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 6, oilType: "Fully Synth 5W-40" },
-    "Starex / H-1 (2.5 CRDi)":      { years: [2007,2021], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
-    "Staria (2.2 CRDi)":             { years: [2022,2025], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 5, oilType: "Fully Synth 5W-40" },
-  },
-  "Kia": {
-    "Picanto (1.0/1.2 Gas)":         { years: [2011,2025], class: "Sedan",           fuel: "Gas",    oilL: 3, oilType: "Fully Synth 5W-30" },
-    "Rio (1.4 Gas)":                 { years: [2012,2018], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Soluto (1.4 Gas)":              { years: [2019,2024], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Forte / Cerato (Older 2.0)":    { years: [2014,2018], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Forte / Cerato (2019-present)": { years: [2019,2025], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Soul (1.6 Gas)":                { years: [2014,2020], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Stonic (1.4 Gas)":              { years: [2019,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Seltos (1.4T Gas)":             { years: [2021,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Sportage (Older 2.0 Gas)":      { years: [2015,2021], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Sportage (2022-present Gas)":   { years: [2022,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
-    "Grand Carnival (2.2 CRDi)":     { years: [2015,2020], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 6, oilType: "Fully Synth 5W-40" },
-    "Carnival (2021-present 2.2)":   { years: [2021,2025], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
-    "Sorento (Older 2.2 CRDi)":      { years: [2015,2020], class: "Mid SUV",         fuel: "Diesel", oilL: 6, oilType: "Fully Synth 5W-40" },
-    "Sorento (2021-present 2.2)":    { years: [2021,2025], class: "Mid SUV",         fuel: "Diesel", oilL: 6, oilType: "Fully Synth 5W-40" },
-    "Telluride (3.8 V6 Gas)":        { years: [2021,2025], class: "Large SUV/Pickup",fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
-  },
-  "Nissan": {
-    "Almera (1.0T Gas)":             { years: [2015,2025], class: "Sedan",           fuel: "Gas",    oilL: 3, oilType: "Fully Synth 5W-30" },
-    "Sentra (1.6 Gas)":              { years: [2005,2014], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Note (1.2 Gas)":                { years: [2013,2018], class: "Sedan",           fuel: "Gas",    oilL: 3, oilType: "Fully Synth 5W-30" },
-    "Magnite (1.0T Gas)":            { years: [2022,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 3, oilType: "Fully Synth 5W-30" },
-    "Juke (1.6T Gas)":               { years: [2012,2020], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Kicks (1.6 Gas)":               { years: [2018,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "X-Trail (2.0 Gas)":             { years: [2015,2022], class: "Mid SUV",         fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
-    "Patrol (4.0 V6 Gas)":           { years: [2010,2025], class: "Large SUV/Pickup",fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
-    "Navara (2.5 Diesel)":           { years: [2015,2025], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
-    "Terra (2.5 Diesel)":            { years: [2018,2025], class: "Mid SUV",         fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
-    "NV350 Urvan (2.5 Diesel)":      { years: [2013,2025], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
-  },
-  "Suzuki": {
-    "Multicab / Carry (0.66L F6A)":  { years: [1992,2010], class: "Sedan",           fuel: "Gas",    oilL: 3, oilType: "Semi-Synth 10W-40" },
-    "Super Carry (1.5L K15B)":       { years: [2019,2025], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "APV (1.6 Gas)":                 { years: [2005,2025], class: "Large SUV/Pickup", fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "S-Presso (1.0 Gas)":            { years: [2023,2025], class: "Sedan",           fuel: "Gas",    oilL: 3, oilType: "Fully Synth 5W-30" },
-    "Celerio (1.0 Gas)":             { years: [2015,2025], class: "Sedan",           fuel: "Gas",    oilL: 3, oilType: "Fully Synth 5W-30" },
-    "Baleno (1.4 Gas)":              { years: [2016,2022], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Swift (1.2 Gas)":               { years: [2017,2025], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Dzire (1.2 Gas)":               { years: [2020,2025], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Ciaz (1.4 Gas)":                { years: [2015,2021], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Ertiga (1.5 Gas)":              { years: [2015,2025], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "XL7 (1.5 Gas)":                 { years: [2020,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Fronx (1.5 Gas)":               { years: [2024,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Vitara (1.6 Gas)":              { years: [2015,2023], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Grand Vitara (2.4 Gas)":        { years: [2005,2015], class: "Mid SUV",         fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
-    "Jimny (1.5 Gas)":               { years: [2019,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-  },
-  "Mazda": {
-    "Mazda2 (Gas 1.5)":              { years: [2015,2025], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Mazda2 (Diesel 1.5)":           { years: [2015,2022], class: "Sedan",           fuel: "Diesel", oilL: 4, oilType: "Fully Synth 5W-40" },
-    "Mazda3 (2014-2018 2.0)":        { years: [2014,2018], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Mazda3 (2019-present 2.0)":     { years: [2019,2025], class: "Sedan",           fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
-    "Mazda6 (2.0/2.5 Gas)":          { years: [2014,2023], class: "Sedan",           fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
-    "CX-3 (Gas 2.0)":                { years: [2016,2023], class: "Mid SUV",         fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
-    "CX-3 (Diesel 1.5)":             { years: [2016,2021], class: "Mid SUV",         fuel: "Diesel", oilL: 4, oilType: "Fully Synth 5W-40" },
-    "CX-30 (Gas 2.0)":               { years: [2020,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
-    "CX-5 (Gas 2.5)":                { years: [2017,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
-    "CX-5 (Diesel 2.2)":             { years: [2017,2025], class: "Mid SUV",         fuel: "Diesel", oilL: 6, oilType: "Fully Synth 5W-40" },
-    "CX-8 (Diesel 2.2)":             { years: [2019,2025], class: "Mid SUV",         fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
-    "CX-60 (Diesel 3.3)":            { years: [2024,2025], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
-    "BT-50 (3.0 Diesel)":            { years: [2021,2025], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 8, oilType: "Fully Synth 5W-40" },
-  },
-  "Isuzu": {
-    "Crosswind (2.5 Diesel)":        { years: [2001,2015], class: "Mid SUV",         fuel: "Diesel", oilL: 7, oilType: "Semi-Synth 15W-40" },
-    "Sportivo (2.5 Diesel)":         { years: [2005,2012], class: "Mid SUV",         fuel: "Diesel", oilL: 7, oilType: "Semi-Synth 15W-40" },
-    "Trooper (3.0 Diesel)":          { years: [2000,2007], class: "Mid SUV",         fuel: "Diesel", oilL: 7, oilType: "Semi-Synth 15W-40" },
-    "D-Max (Older 2.5 Diesel)":      { years: [2004,2015], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 7, oilType: "Semi-Synth 15W-40" },
-    "D-Max (3.0 Diesel)":            { years: [2016,2025], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 8, oilType: "Fully Synth 5W-40" },
-    "mu-X (3.0 Diesel)":             { years: [2017,2025], class: "Mid SUV",         fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
-  },
-  "Geely": {
-    "Coolray (1.5T)":            { years: [2020,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Azkarra (1.8T)":            { years: [2020,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
-    "Okavango (1.5T)":           { years: [2021,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Emgrand":                   { years: [2022,2025], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-  },
-  "MG": {
-    "MG5 (1.5T)":                    { years: [2021,2025], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "MG6 (1.5T)":                    { years: [2023,2025], class: "Sedan",           fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
-    "ZS (1.5)":                      { years: [2019,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "HS (2.0T)":                     { years: [2021,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
-    "VS (1.5T)":                     { years: [2020,2023], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "One (1.5T)":                    { years: [2022,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Extender (2.0 Diesel)":         { years: [2021,2025], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 6, oilType: "Fully Synth 5W-40" },
-  },
-  "Chery / OMODA": {
-    "Tiggo 4 Pro (1.5T)":            { years: [2023,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Tiggo 5x (1.5T)":               { years: [2021,2024], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Tiggo 7 Pro (1.5T)":            { years: [2022,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
-    "Tiggo 8 Pro (1.6T)":            { years: [2022,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
-    "OMODA 5 (1.5T)":                { years: [2023,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "OMODA C5 (1.6T)":               { years: [2024,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
-  },
-  "Jetour": {
-    "Dashing (1.5T)":            { years: [2023,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "X70 (1.5T)":                { years: [2022,2025], class: "Mid SUV",         fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "X90 Plus (2.0T)":           { years: [2024,2025], class: "Large SUV/Pickup",fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
-  },
-  "Foton": {
-    "Gratour (1.0 Gas)":             { years: [2018,2025], class: "Sedan",           fuel: "Gas",    oilL: 3, oilType: "Fully Synth 5W-30" },
-    "Toano (2.8 Diesel)":            { years: [2018,2025], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
-    "Toplander (2.8 Diesel)":        { years: [2018,2025], class: "Mid SUV",         fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
-    "Thunder (2.0 Diesel)":          { years: [2020,2025], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 6, oilType: "Fully Synth 5W-40" },
-  },
-  "Chevrolet": {
-    "Spark (1.2 Gas)":               { years: [2011,2018], class: "Sedan",           fuel: "Gas",    oilL: 3, oilType: "Fully Synth 5W-30" },
-    "Sonic (1.4 Gas)":               { years: [2013,2018], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Cruze (1.8 Gas)":               { years: [2011,2015], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Orlando (1.8 Gas)":             { years: [2012,2016], class: "Sedan",           fuel: "Gas",    oilL: 4, oilType: "Fully Synth 5W-30" },
-    "Captiva (2.0 Diesel)":          { years: [2008,2018], class: "Mid SUV",         fuel: "Diesel", oilL: 5, oilType: "Fully Synth 5W-40" },
-    "Trailblazer (2.8 Diesel)":      { years: [2013,2020], class: "Mid SUV",         fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
-    "Colorado (2.8 Diesel)":         { years: [2013,2020], class: "Large SUV/Pickup",fuel: "Diesel", oilL: 7, oilType: "Fully Synth 5W-40" },
-    "Traverse (3.6 V6 Gas)":         { years: [2018,2025], class: "Large SUV/Pickup",fuel: "Gas",    oilL: 5, oilType: "Fully Synth 5W-30" },
-  },
-};
-
-const pmsPricing = {
-  "3L_Gas_SemiSynth":    2690, "3L_Gas_FullySynth":    3290,
-  "4L_Gas_SemiSynth":    3190, "4L_Gas_FullySynth":    3990,
-  "5L_Gas_SemiSynth":    3690, "5L_Gas_FullySynth":    4790,
-  "5L_Diesel_SemiSynth": 3690, "5L_Diesel_FullySynth": 4790,
-  "6L_Diesel_SemiSynth": 4390, "6L_Diesel_FullySynth": 5590,
-  "7L_Diesel_SemiSynth": 4990, "7L_Diesel_FullySynth": 6390,
-  "8L_Diesel_SemiSynth": 5590, "8L_Diesel_FullySynth": 6990,
-};
-const oilChangePricing = {
-  "3L_Gas_SemiSynth":    1990, "3L_Gas_FullySynth":    2590,
-  "4L_Gas_SemiSynth":    2490, "4L_Gas_FullySynth":    3290,
-  "5L_Gas_SemiSynth":    2990, "5L_Gas_FullySynth":    4090,
-  "5L_Diesel_SemiSynth": 2990, "5L_Diesel_FullySynth": 4090,
-  "6L_Diesel_SemiSynth": 3690, "6L_Diesel_FullySynth": 4890,
-  "7L_Diesel_SemiSynth": 4290, "7L_Diesel_FullySynth": 5690,
-  "8L_Diesel_SemiSynth": 4790, "8L_Diesel_FullySynth": 5990,
-};
+// vehicles / pmsPricing / oilChangePricing now come from assets/pricing-data.js
+// (shared with homeservice.html -- do not redefine them here).
 const airFilterPricing = { "Sedan": 700, "Mid SUV": 1000, "Large SUV/Pickup": 1500 };
 const cabinFilterPrice = 500;
 
@@ -2523,6 +2494,310 @@ const addonCatalog = [
     fuel: ['Gas','Diesel'], recommendAt: [40000,80000], note: 'For manual transmission vehicles' },
 ];
 
+// ── OTHER SERVICES (full labor price list, grouped by category) ──
+// p = labor price (₱). u = unit note. q:true = quote on inspection (no price).
+// Prices are labor only; parts billed separately. Source: C-Tech labor price list.
+const otherServicesCatalog = [
+  { cat: 'Brakes', icon: '🛑', items: [
+    { n: 'Clean & Adjust Brakes (Sedan/SUV)', p: 1600 },
+    { n: 'Reface Disc Rotor (Small)',         p: 800,  u: 'per rotor' },
+    { n: 'Reface Disc Rotor (Big)',           p: 1300, u: 'per rotor' },
+    { n: 'Reface Brake Drum',                 p: 1500, u: 'per drum' },
+    { n: 'Overhaul Brake Caliper',            p: 750,  u: 'each side' },
+    { n: 'Overhaul Brake Wheel Cylinder',     p: 400,  u: 'each side' },
+    { n: 'Change Brake Master (Standard)',    p: 1000 },
+    { n: 'Change Brake Master (Complex)',     p: 1500 },
+    { n: 'Replace Brake Pads',                p: 650,  u: 'per axle' },
+    { n: 'Replace Brake Shoes',               p: 900 },
+    { n: 'Brake Fluid Flushing',              p: 1500 },
+    { n: 'Hand Brake Cable Replace (Standard)', p: 2500 },
+    { n: 'Hand Brake Cable Replace (Complex)',  p: 3500 },
+    { n: 'Brake Drum Paint',                  p: 200 },
+    { n: 'Brake Caliper Paint',               p: 200 },
+    { n: 'ABS Sensor Replace / Cleaning',     p: 1500 },
+  ]},
+  { cat: 'Tires & Alignment', icon: '🛞', items: [
+    { n: 'Wheel Alignment (Complete)',        q: true },
+    { n: 'Alignment — Toe (Front)',           q: true },
+    { n: 'Alignment — 4 Wheel',               q: true },
+    { n: 'Camber Correction',                 q: true },
+    { n: 'Wheel Balancing (Rim 12–16)',       p: 300, u: 'per tire' },
+    { n: 'Wheel Balancing (Rim 17–20)',       p: 300, u: 'per tire' },
+    { n: 'Tire Mounting (Rim 12–16)',         p: 350, u: 'per tire' },
+    { n: 'Tire Mounting (Rim 17–20)',         p: 350, u: 'per tire' },
+    { n: 'Nitrogen Air',                      q: true },
+  ]},
+  { cat: 'Engine & Transmission', icon: '⚙️', items: [
+    { n: 'Change Oil Labor (Gas)',            p: 750 },
+    { n: 'Change Oil Labor (Diesel)',         p: 750 },
+    { n: 'EGR Cleaning (Standard)',           p: 5500 },
+    { n: 'EGR Cleaning (Medium)',             p: 7000 },
+    { n: 'EGR Cleaning (Complex)',            p: 10500 },
+    { n: 'Throttle Body Cleaning',            p: 1500 },
+    { n: 'Replace Spark Plugs (Standard)',    p: 450 },
+    { n: 'Replace Spark Plugs (Complex)',     p: 1500 },
+    { n: 'Replace Valve Cover Gasket (Standard)', p: 1500 },
+    { n: 'Replace Valve Cover Gasket (Complex)',  p: 4500 },
+    { n: 'Replace Fuel Filter — Gas (Standard)',  p: 1500 },
+    { n: 'Replace Fuel Filter — Gas (Complex)',   p: 5000 },
+    { n: 'Replace Fuel Filter — Diesel',      p: 750 },
+    { n: 'Diagnostic Scanning',               p: 1000 },
+    { n: 'ATF Drain & Fill',                  p: 750 },
+    { n: 'ATF Pull Down Pan (Standard)',      p: 2000 },
+    { n: 'ATF Pull Down (Complex)',           p: 2500 },
+    { n: 'Transmission Dialysis',             p: 3500 },
+    { n: 'Replace Glow Plug',                 q: true },
+  ]},
+  { cat: 'Underchassis & Clutch', icon: '🔩', items: [
+    { n: 'Replace Clutch Lining, Bearing & Disc (Standard)', p: 5500 },
+    { n: 'Replace Clutch Lining, Release Bearing & Disc (Complex)', p: 10000 },
+    { n: 'Replace Axle Bearing',              p: 2000 },
+    { n: 'Replace Axle Oil Seal',             p: 2000 },
+    { n: 'Replace Ball Joint (Standard)',     p: 750 },
+    { n: 'Replace Ball Joint (Complex)',      p: 1250 },
+    { n: 'Replace Lower Ball Joint (Pajero / Pickup 4WD)', p: 600 },
+    { n: 'Replace Center Bearing',            p: 1500 },
+    { n: 'Replace Clutch Cable',              p: 750 },
+    { n: 'Replace Suspension Lower Bushing',  p: 1000 },
+    { n: 'Replace Suspension Upper Bushing',  p: 1000 },
+    { n: 'Replace Tensioner Pulley',          p: 1500 },
+    { n: 'Replace Tie Rod',                   p: 650 },
+    { n: 'Replace Timing Belt — Cars (Standard)', p: 1500 },
+    { n: 'Replace Timing Belt (Semi Standard)',   p: 3500 },
+    { n: 'Replace Timing Belt (Complex)',     p: 7000 },
+    { n: 'Replace Engine Support',            p: 900 },
+    { n: 'Replace Trans Support',             p: 900 },
+    { n: 'Replace Transmission Oil Seal',     p: 3000 },
+    { n: 'Replace Center Link',               q: true },
+    { n: 'Replace Center Post',               q: true },
+    { n: 'Replace Clutch Cover',              q: true },
+    { n: 'Replace Clutch Lining (Nissan Safari)', q: true },
+    { n: 'Replace Strut Rod Bushing',         q: true },
+    { n: 'Replace Stud & Nut',                q: true },
+    { n: 'Replace Suspension Upper Bushing (Pajero)', q: true },
+    { n: 'Replace Suspension — Centric Type',  q: true },
+    { n: 'Replace Lateral Link',              q: true },
+    { n: 'Replace Idler Bearing',             q: true },
+    { n: 'Replace Idler Bushing',             q: true },
+    { n: 'Replace Liftspring Bushing',        q: true },
+    { n: 'Replace McPherson Strut',           q: true },
+  ]},
+  { cat: 'Other Repairs', icon: '🔧', items: [
+    { n: 'Overhaul / Replace Rack & Pinion Bushing', p: 8000 },
+    { n: 'Replace Wheel Bearing (Standard)',  p: 1200 },
+    { n: 'Replace Wheel Bearing (Complex)',   p: 1750 },
+    { n: 'Repack Bearing + Grease',           p: 2000 },
+    { n: 'Replace Accelerator Cable',         p: 1500 },
+    { n: 'Replace Auto Tensioner',            p: 1000 },
+    { n: 'Replace Cylinder Head Gasket',      p: 15000, u: '≈ 3 days' },
+    { n: 'Replace Hand Brake Cable',          p: 2000 },
+    { n: 'Replace Hydro Vac',                 p: 800 },
+    { n: 'Replace Idler Arm',                 p: 750 },
+    { n: 'Replace Oil Fan Gasket',            p: 1000 },
+    { n: 'Replace Pilot Bearing',             p: 2750 },
+    { n: 'Replace Pitman Arm',                p: 700 },
+    { n: 'Replace Primary Clutch Master',     p: 1050 },
+    { n: 'Replace Radiator Assembly',         p: 800 },
+    { n: 'Replace Secondary Clutch Master',   p: 500 },
+    { n: 'Replace Serpentine Belt',           p: 700 },
+    { n: 'Replace Shock — Ordinary (2 screws)', p: 550, u: 'each' },
+    { n: 'Replace Shock — with Screw & Spring', p: 700, u: 'each' },
+    { n: 'Replace Shock — with Suspension Removal', p: 900, u: 'each' },
+    { n: 'Replace Shock Mounting',            p: 650, u: 'each' },
+    { n: 'Replace Solenoid Gasket (VTEC)',    p: 950 },
+    { n: 'Replace Spark Plug Seal',           p: 500 },
+    { n: 'Replace Speedometer Cable',         p: 650 },
+    { n: "Replace Stabilizer Bar Bushing (Lancer '94+)", p: 1050 },
+  ]},
+];
+
+// Renders the collapsible "Other Services" menu into the Other Services tab.
+function buildOtherServices() {
+  const wrap = document.getElementById('other-list');
+  if (!wrap) return;
+  wrap.innerHTML = otherServicesCatalog.map((cat, ci) => {
+    const rows = cat.items.map((it, ii) => {
+      const id = `os-${ci}-${ii}`;
+      const note = it.u ? `<span class="svc-item-note">${it.u}</span>` : '';
+      // Amounts stay hidden while picking — revealed only in the estimate on submit.
+      const meta = it.q
+        ? `<span class="svc-badge badge-quote">Quote</span>`
+        : '';
+      return `
+        <div class="svc-item">
+          <input type="checkbox" id="${id}" data-price="${it.q ? 0 : it.p}" data-name="${it.n}"${it.q ? ' data-quote="1"' : ''} onchange="updateOtherTotal()">
+          <label for="${id}">
+            <span class="svc-item-name">${it.n}${note}</span>
+            <span class="svc-item-meta">${meta}</span>
+          </label>
+        </div>`;
+    }).join('');
+    return `
+      <div class="svc-cat" id="svc-cat-${ci}">
+        <button type="button" class="svc-cat-header" onclick="toggleServiceCat(${ci})">
+          <span class="svc-cat-icon">${cat.icon}</span>
+          <span class="svc-cat-name">${cat.cat}</span>
+          <span class="svc-cat-count">${cat.items.length}</span>
+          <span class="svc-cat-chevron">▼</span>
+        </button>
+        <div class="svc-cat-body">${rows}</div>
+      </div>`;
+  }).join('');
+}
+
+function toggleServiceCat(ci) {
+  document.getElementById(`svc-cat-${ci}`)?.classList.toggle('open');
+}
+
+// ── OTHER SERVICES TAB: total, validation, submit ──
+function otherSelected() {
+  return [...document.querySelectorAll('#other-list input[type="checkbox"]:checked')].map(cb => ({
+    name:  cb.dataset.name || '',
+    quote: cb.dataset.quote === '1',
+    price: parseInt(cb.dataset.price || '0')
+  }));
+}
+
+function updateOtherTotal() {
+  const picks = otherSelected();
+  const total = picks.reduce((s, x) => s + x.price, 0);
+  const el = document.getElementById('other-total');
+  if (el) el.textContent = total.toLocaleString();
+  // Show a count only — the peso amount stays hidden until they get their estimate.
+  const note = document.getElementById('other-count-note');
+  if (note) {
+    note.textContent = picks.length === 0
+      ? 'No services selected yet'
+      : `${picks.length} service${picks.length > 1 ? 's' : ''} selected · get your estimate below`;
+    note.classList.toggle('has-picks', picks.length > 0);
+  }
+  checkOther();
+}
+
+function checkOther() {
+  const btn = document.getElementById('other-submit');
+  if (!btn) return;
+  const oBrand = document.getElementById('o-brand');
+  const oModel = document.getElementById('o-model');
+  const oYear  = document.getElementById('o-year');
+  const hasVehicle = oBrand.value && (oBrand.value === '__OTHER__' || (oModel.value && oYear.value));
+  const hasService = otherSelected().length > 0;
+  const hasContact = document.getElementById('o-name').value.trim().length >= 2
+                  && document.getElementById('o-contact').value.trim().length >= 10;
+  btn.disabled = !(hasVehicle && hasService && hasContact);
+}
+
+// ── OTHER SERVICES: vehicle picker cascade (Brand → Model → Year) ──
+const oBrandSel = document.getElementById('o-brand');
+const oModelSel = document.getElementById('o-model');
+const oYearSel  = document.getElementById('o-year');
+Object.keys(vehicles).forEach(brand => {
+  const opt = document.createElement('option');
+  opt.value = brand; opt.textContent = brand;
+  oBrandSel.appendChild(opt);
+});
+const oOtherOpt = document.createElement('option');
+oOtherOpt.value = '__OTHER__'; oOtherOpt.textContent = 'Other / Not Listed';
+oBrandSel.appendChild(oOtherOpt);
+
+oBrandSel.addEventListener('change', () => {
+  oModelSel.innerHTML = '<option value="">Select model</option>';
+  oYearSel.innerHTML  = '<option value="">Select year</option>';
+  oModelSel.disabled  = !oBrandSel.value || oBrandSel.value === '__OTHER__';
+  oYearSel.disabled   = true;
+  checkOther();
+  if (!oBrandSel.value || oBrandSel.value === '__OTHER__') return;
+  Object.keys(vehicles[oBrandSel.value]).forEach(model => {
+    const opt = document.createElement('option');
+    opt.value = model; opt.textContent = model;
+    oModelSel.appendChild(opt);
+  });
+});
+oModelSel.addEventListener('change', () => {
+  oYearSel.innerHTML = '<option value="">Select year</option>';
+  oYearSel.disabled  = !oModelSel.value;
+  checkOther();
+  if (!oModelSel.value) return;
+  const v = vehicles[oBrandSel.value][oModelSel.value];
+  for (let y = v.years[1]; y >= v.years[0]; y--) {
+    const opt = document.createElement('option');
+    opt.value = y; opt.textContent = y;
+    oYearSel.appendChild(opt);
+  }
+  const olderOpt = document.createElement('option');
+  olderOpt.value = `${v.years[0] - 1} or earlier`;
+  olderOpt.textContent = `${v.years[0] - 1} or earlier`;
+  oYearSel.appendChild(olderOpt);
+});
+oYearSel.addEventListener('change', checkOther);
+
+// Build the menu once on load and wire up the contact fields.
+buildOtherServices();
+['o-name', 'o-contact', 'o-email'].forEach(id => {
+  document.getElementById(id)?.addEventListener('input', checkOther);
+});
+
+// Estimate button → populate the shared result panel (calendar + slot booking).
+// Reserving the slot (and the Messenger hand-off) happens on "Reserve my Slot",
+// exactly like the PMS and Change Oil flows.
+document.getElementById('other-submit')?.addEventListener('click', () => {
+  const picks = otherSelected();
+  if (!picks.length) return;
+  const name    = document.getElementById('o-name').value.trim();
+  const contact = document.getElementById('o-contact').value.trim();
+  const email   = document.getElementById('o-email').value.trim();
+  const vehicleStr = oBrandSel.value === '__OTHER__'
+    ? '(Other vehicle)'
+    : `${oBrandSel.value} ${oModelSel.value} ${oYearSel.value}`.trim();
+
+  const total = picks.reduce((s, x) => s + x.price, 0);
+  const hasQuote = picks.some(p => p.quote);
+
+  // Populate the shared result panel with the selected services.
+  document.getElementById('result-vehicle').textContent = `${vehicleStr} · Other Services`;
+  document.getElementById('breakdown-title').textContent = 'Selected Services';
+  document.getElementById('breakdown-items').innerHTML = picks.map(p => `
+    <div class="breakdown-item">
+      <span class="name">${p.name}</span>
+      <span class="price">${p.quote ? 'Quote on inspection' : '₱' + p.price.toLocaleString()}</span>
+    </div>`).join('') + (hasQuote ? `
+    <div class="pkg-inclusions" style="padding:6px 0 0;">
+      <span class="pkg-chip">Quote items are priced after inspection</span>
+    </div>` : '');
+
+  // Hide PMS-only extras — Other Services shows just the selected-service estimate.
+  document.getElementById('result-addons').style.display = 'none';
+  document.getElementById('result-freebies').style.display = 'none';
+  document.getElementById('result-notice').style.display = 'none';
+  document.querySelectorAll('#result-addons input[type="checkbox"]').forEach(cb => cb.checked = false);
+
+  _resultBasePrice = total;
+  updateResultTotal();
+
+  const rs = document.getElementById('result-state');
+  rs.dataset.service = 'Other Services';
+  rs.dataset.vehicle = vehicleStr;
+  rs.dataset.odo = '';
+  rs.dataset.name = name;
+  rs.dataset.contact = contact;
+  rs.dataset.email = email;
+
+  recordLead({
+    service: 'Other Services',
+    vehicle: vehicleStr,
+    estimated_amount: '₱' + total.toLocaleString(),
+    name, contact,
+    email: email || 'Not provided',
+    breakdown: currentBreakdown(),
+    inclusions: [],
+    freebies: []
+  });
+
+  renderTimePicker('other');
+  document.getElementById('other-form').style.display = 'none';
+  rs.classList.add('show');
+});
+
 const brandSelect = document.getElementById('brand');
 const modelSelect = document.getElementById('model');
 const yearSelect  = document.getElementById('year');
@@ -2541,6 +2816,17 @@ const rContact   = document.getElementById('r-contact');
 const rEmail     = document.getElementById('r-email');
 
 // ── SHARED: build add-ons in result panel ──
+// Recommendation intervals repeat every 80,000 KM past their first listed
+// occurrence (so e.g. an item due at 40K also recommends at 120K, 200K...).
+const REC_CYCLE_KM = 80000;
+const REC_TOLERANCE_KM = 5000;
+function isDueAt(recommendAt, odo) {
+  return recommendAt.some(m => {
+    const cyclesElapsed = Math.max(0, Math.round((odo - m) / REC_CYCLE_KM));
+    const nearestOccurrence = m + cyclesElapsed * REC_CYCLE_KM;
+    return Math.abs(odo - nearestOccurrence) <= REC_TOLERANCE_KM;
+  });
+}
 let _resultBasePrice = 0;
 function buildResultAddons(v, odo, trans, inclusions) {
   const recAddons = [], optAddons = [];
@@ -2555,7 +2841,7 @@ function buildResultAddons(v, odo, trans, inclusions) {
       ? (trans === 'AT' ? 'ATF Fluid Change (Automatic)' : 'MTF Fluid Change (Manual)')
       : a.name;
     const entry = { ...a, name: displayName, resolvedPrice: price };
-    if (a.recommendAt.some(m => Math.abs(m - odo) <= 5000)) recAddons.push(entry);
+    if (isDueAt(a.recommendAt, odo)) recAddons.push(entry);
     else optAddons.push(entry);
   });
 
@@ -2590,6 +2876,9 @@ function buildResultAddons(v, odo, trans, inclusions) {
     </div>`).join('');
 
   document.getElementById('result-addons').style.display = 'block';
+  // Restore PMS-only blocks (Other Services hides them).
+  document.getElementById('result-freebies').style.display = '';
+  document.getElementById('result-notice').style.display = '';
   updateResultTotal();
 }
 
@@ -2706,7 +2995,7 @@ submitBtn.addEventListener('click', async () => {
   document.getElementById('breakdown-title').textContent = 'PMS Package Breakdown';
 
   const bdEl = document.getElementById('breakdown-items');
-  const pmsInclusions = ['Engine Oil','Oil Filter','Cabin Filter Cleaning','Air Filter Cleaning','Brake Cleaning','Fluid Top-Up','Battery Check','Under Chassis Check','Labor'];
+  const pmsInclusions = ['Engine Oil','Oil Filter','Cabin Filter Cleaning','Air Filter Cleaning','Brake Cleaning','Fluid Top-Up','Battery Check','Under Chassis Check','Engine Bay Cleaning','Car Seat Cover Kit','Labor'];
   bdEl.innerHTML = `
     <div class="breakdown-item">
       <span class="name">PMS Package — ${v.oilL}L ${synthLabel}</span>
@@ -2744,6 +3033,7 @@ submitBtn.addEventListener('click', async () => {
     freebies: currentFreebies()
   });
 
+  renderTimePicker('full');
   submitBtn.classList.remove('loading');
   submitBtn.textContent = 'Get My Free Estimate';
   document.getElementById('pms-form').style.display = 'none';
@@ -2758,7 +3048,18 @@ document.getElementById('reset-btn').addEventListener('click', () => {
   if (visitDateDisplay) { visitDateDisplay.textContent = ''; }
   document.querySelectorAll('#time-picker .time-btn').forEach(b => b.classList.remove('selected'));
   const activeSvc = document.querySelector('.svc-btn.active')?.dataset.svc || 'pms';
-  if (activeSvc === 'co') {
+  if (activeSvc === 'other') {
+    document.getElementById('other-form').style.display = 'block';
+    oBrandSel.value = '';
+    oModelSel.innerHTML = '<option value="">Select model</option>';
+    oYearSel.innerHTML  = '<option value="">Select year</option>';
+    oModelSel.disabled = true; oYearSel.disabled = true;
+    document.querySelectorAll('#other-list input[type="checkbox"]').forEach(cb => cb.checked = false);
+    document.getElementById('o-name').value = '';
+    document.getElementById('o-contact').value = '';
+    document.getElementById('o-email').value = '';
+    updateOtherTotal();
+  } else if (activeSvc === 'co') {
     document.getElementById('co-form').style.display = 'block';
     coBrandSel.value = '';
     coModelSel.innerHTML = '<option value="">Select model</option>';
@@ -2820,14 +3121,64 @@ async function sbRpc(fn, args) {
 
 let selectedTime = '';
 
-// Paint the four time buttons with live remaining-slot counts.
+// ── TIME PICKER MODES ──
+// 'full'  → PMS & Change Oil: 8AM/10AM/1PM/3PM, up to 2 slots each.
+// 'other' → Other Services:   8AM/1PM only, presented as 1 slot each.
+let slotMode = 'full';
+const TIME_PICKERS = {
+  full: {
+    hint: '· 2 slots per time', cap: 2, defLabel: '2 slots',
+    times: [['8:00 AM','8AM'], ['10:00 AM','10AM'], ['1:00 PM','1PM'], ['3:00 PM','3PM']]
+  },
+  other: {
+    hint: '· 1 slot per time', cap: 1, defLabel: '1 slot',
+    times: [['8:00 AM','8AM'], ['1:00 PM','1PM']]
+  }
+};
+
+// Toggle the Reserve button's enabled look and clear red error states for
+// whichever field just got filled. The button stays visually (and
+// functionally, via the click-guard below) disabled until both are set.
+function updateReserveReadiness() {
+  const rBtn = document.getElementById('email-estimate-btn');
+  if (rBtn) rBtn.classList.toggle('is-disabled', !(selectedDateISO && selectedTime));
+  if (selectedDateISO) {
+    document.getElementById('visit-date')?.classList.remove('field-error');
+    document.getElementById('date-error-msg')?.classList.remove('show');
+  }
+  if (selectedTime) {
+    document.getElementById('time-picker')?.classList.remove('field-error');
+    document.getElementById('time-error-msg')?.classList.remove('show');
+  }
+}
+
+// Rebuild the shared time picker for the given flow and reset any selection.
+function renderTimePicker(mode) {
+  slotMode = TIME_PICKERS[mode] ? mode : 'full';
+  const cfg = TIME_PICKERS[slotMode];
+  selectedTime = '';
+  const hint = document.getElementById('slots-hint');
+  if (hint) hint.textContent = cfg.hint;
+  const picker = document.getElementById('time-picker');
+  if (picker) {
+    picker.innerHTML = cfg.times.map(([val, lbl]) =>
+      `<button type="button" class="day-btn time-btn" data-time="${val}"><span class="tb-time">${lbl}</span><span class="tb-slots">${cfg.defLabel}</span></button>`
+    ).join('');
+  }
+  if (selectedDateISO) refreshAvailability(selectedDateISO); else paintSlots(null);
+  updateReserveReadiness();
+}
+
+// Paint the time buttons with live remaining-slot counts (capped by the mode).
 function paintSlots(slots) {
+  const cfg = TIME_PICKERS[slotMode] || TIME_PICKERS.full;
   document.querySelectorAll('#time-picker .time-btn').forEach(btn => {
     const t = btn.dataset.time;
     const label = btn.querySelector('.tb-slots');
     btn.classList.remove('slot-full', 'slot-low');
-    const rem = (slots && Object.prototype.hasOwnProperty.call(slots, t)) ? slots[t] : null;
-    if (rem === null) { if (label) label.textContent = '2 slots'; return; }
+    let rem = (slots && Object.prototype.hasOwnProperty.call(slots, t)) ? slots[t] : null;
+    if (rem === null) { if (label) label.textContent = cfg.defLabel; return; }
+    rem = Math.min(rem, cfg.cap);   // never show more than this flow allows
     if (rem <= 0) {
       btn.classList.add('slot-full');
       btn.classList.remove('selected');
@@ -2864,11 +3215,12 @@ if (visitDateInput) {
     // Reset the time selection whenever the date changes.
     selectedTime = '';
     document.querySelectorAll('#time-picker .time-btn').forEach(b => b.classList.remove('selected'));
-    if (!visitDateInput.value) { selectedDay = ''; selectedDateISO = ''; visitDateDisplay.textContent = ''; paintSlots(null); return; }
+    if (!visitDateInput.value) { selectedDay = ''; selectedDateISO = ''; visitDateDisplay.textContent = ''; paintSlots(null); updateReserveReadiness(); return; }
     const d = new Date(visitDateInput.value + 'T00:00:00');
     if (d.getDay() === 0) {
       alert("We're closed on Sundays. Please pick a day from Monday to Saturday.");
       visitDateInput.value = ''; selectedDay = ''; selectedDateISO = ''; visitDateDisplay.textContent = ''; paintSlots(null);
+      updateReserveReadiness();
       return;
     }
     selectedDateISO = visitDateInput.value;
@@ -2880,6 +3232,7 @@ if (visitDateInput) {
       visitDateDisplay.textContent = "⚠ Sorry, we're closed on " + selectedDay + '. Please pick another date.';
       visitDateInput.value = ''; selectedDay = ''; selectedDateISO = '';
     }
+    updateReserveReadiness();
   });
 }
 
@@ -2888,7 +3241,7 @@ document.querySelectorAll('[data-km-slider]').forEach(wrap => {
   const input = wrap.parentElement.querySelector('input[type="number"]');
   const range = wrap.querySelector('.km-range');
   const fill = wrap.querySelector('.km-fill');
-  const max = parseInt(range.max) || 150000;
+  const max = parseInt(range.max) || 240000;
   const setFill = () => {
     const pct = Math.max(0, Math.min(100, (parseInt(range.value) || 0) / max * 100));
     fill.style.width = pct + '%';
@@ -2917,14 +3270,18 @@ document.querySelectorAll('[data-km-slider]').forEach(wrap => {
 });
 
 // ── TIME PICKER (live slot availability) ──
-document.querySelectorAll('#time-picker .time-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    if (btn.classList.contains('slot-full')) return;   // can't pick a fully-booked slot
-    document.querySelectorAll('#time-picker .time-btn').forEach(b => b.classList.remove('selected'));
-    btn.classList.add('selected');
-    selectedTime = btn.dataset.time;
-  });
+// Delegated — the buttons are rebuilt per flow by renderTimePicker().
+document.getElementById('time-picker').addEventListener('click', (e) => {
+  const btn = e.target.closest('.time-btn');
+  if (!btn || btn.classList.contains('slot-full')) return;   // can't pick a fully-booked slot
+  document.querySelectorAll('#time-picker .time-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedTime = btn.dataset.time;
+  updateReserveReadiness();
 });
+
+// Default picker (PMS/Change Oil). Other Services re-renders it on estimate.
+renderTimePicker('full');
 
 function getResultContext() {
   const rs = document.getElementById('result-state');
@@ -2934,7 +3291,7 @@ function getResultContext() {
   const addonRows = [...document.querySelectorAll('#result-addons input[type="checkbox"]:checked')];
   const lines = [
     ...baseRows.map(r => `  • ${r.querySelector('.name')?.textContent}: ${r.querySelector('.price')?.textContent}`),
-    ...addonRows.map(cb => `  • ${cb.dataset.name}: ₱${parseInt(cb.dataset.price).toLocaleString()}`)
+    ...addonRows.map(cb => `  • ${cb.dataset.name}: ${cb.dataset.quote === '1' ? 'Quote on inspection' : '₱' + parseInt(cb.dataset.price).toLocaleString()}`)
   ].join('\n');
   return {
     service:  rs.dataset.service  || '',
@@ -2957,6 +3314,18 @@ document.getElementById('email-estimate-btn').addEventListener('click', async ()
   const btn = document.getElementById('email-estimate-btn');
   if (!ctx.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ctx.email)) {
     alert('Please enter a valid email in the form above so we can send your estimate.');
+    return;
+  }
+  if (!selectedDateISO || !selectedTime) {
+    if (!selectedDateISO) {
+      document.getElementById('visit-date')?.classList.add('field-error');
+      document.getElementById('date-error-msg')?.classList.add('show');
+    }
+    if (!selectedTime) {
+      document.getElementById('time-picker')?.classList.add('field-error');
+      document.getElementById('time-error-msg')?.classList.add('show');
+    }
+    document.getElementById('visit-date')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     return;
   }
 
@@ -3036,10 +3405,13 @@ const coFormEl   = document.getElementById('co-form');
 const repairFormEl = document.getElementById('repair-form');
 const resultEl   = document.getElementById('result-state');
 
+const otherFormEl = document.getElementById('other-form');
+
 const svcTitles = {
   pms:    'Get your free PMS estimate',
   co:     'Get a Change Oil quote',
-  repair: 'Describe your repair concern'
+  repair: 'Describe your repair concern',
+  other:  'Pick services & get an estimate'
 };
 
 svcBtns.forEach(btn => {
@@ -3051,6 +3423,7 @@ svcBtns.forEach(btn => {
     pmsFormEl.style.display    = svc === 'pms'    ? 'block' : 'none';
     coFormEl.style.display     = svc === 'co'     ? 'block' : 'none';
     repairFormEl.style.display = svc === 'repair' ? 'block' : 'none';
+    otherFormEl.style.display  = svc === 'other'  ? 'block' : 'none';
     resultEl.classList.remove('show');
   });
 });
@@ -3203,6 +3576,7 @@ coSubmitBtn.addEventListener('click', async () => {
     freebies: currentFreebies()
   });
 
+  renderTimePicker('full');
   coSubmitBtn.classList.remove('loading');
   coSubmitBtn.textContent = 'Get My Oil Change Estimate';
   document.getElementById('co-form').style.display = 'none';
