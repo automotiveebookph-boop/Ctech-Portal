@@ -12,6 +12,13 @@ type Line = { key: number; category: "service" | "part"; description: string; qt
 
 const catLabel = (c: string) => ({ package: "PMS & Oil Change Packages", engine_oil: "Engine Oil", filter: "Filters", wheel_balance: "Wheel Service", add_on: "Add-ons" }[c] ?? c);
 const catToLineCategory = (c: string): "service" | "part" => (c === "filter" ? "part" : "service");
+const packageBadge = (item: CatalogItem): { label: string; color: string } => {
+  if (item.category === "package") {
+    if (item.name.startsWith("PMS")) return { label: "PMS", color: "#C9A227" };
+    if (item.name.startsWith("Oil Change")) return { label: "OIL CHANGE", color: "#2563EB" };
+  }
+  return { label: catLabel(item.category), color: "#C9A227" };
+};
 const isoPlusDays = (n: number) => { const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
 const inputCls = "w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-stone-900";
 const labelCls = "mb-1 block text-xs font-semibold uppercase text-stone-600";
@@ -49,6 +56,13 @@ const OIL_CHANGE_INCLUSIONS = [
   "Battery Health Check-Up",
   "Labor",
 ];
+
+// Sub-inclusions of a custom line are stored inside the description itself:
+// first line is the service name, each following line is a "• item" (no price).
+function buildLineDescription(title: string, inclusions: string): string {
+  const items = inclusions.split("\n").map((s) => s.replace(/^\s*[-*•]\s*/, "").trim()).filter(Boolean);
+  return [title.trim(), ...items.map((i) => `• ${i}`)].join("\n");
+}
 
 function listToSentence(items: string[]): string {
   if (items.length <= 1) return items[0] ?? "";
@@ -127,6 +141,7 @@ export function QuoteBuilder({
   const [customCat, setCustomCat] = useState<"service" | "part">("service");
   const [customQty, setCustomQty] = useState("1");
   const [customPrice, setCustomPrice] = useState("");
+  const [customInclusions, setCustomInclusions] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -305,17 +320,21 @@ export function QuoteBuilder({
               ))}
             </div>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
-              {filteredCatalog.map((item) => (
-                <button key={item.id} onClick={() => addLine({ category: catToLineCategory(item.category), description: item.name, qty: 1, unit_price: item.price, service_pricing_id: item.id })} className="rounded-lg border border-stone-200 bg-stone-50 p-3 text-left hover:border-amber-400">
-                  <div className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "#C9A227" }}>{catLabel(item.category)}</div>
-                  <div className="text-sm font-semibold" style={{ color: "#0F1E3A" }}>{item.name}</div>
-                  <div className="font-mono text-xs text-stone-500">{peso(item.price)}</div>
-                </button>
-              ))}
+              {filteredCatalog.map((item) => {
+                const badge = packageBadge(item);
+                return (
+                  <button key={item.id} onClick={() => addLine({ category: catToLineCategory(item.category), description: item.name, qty: 1, unit_price: item.price, service_pricing_id: item.id })} className="rounded-lg border border-stone-200 bg-stone-50 p-3 text-left hover:border-amber-400" style={{ borderLeft: `3px solid ${badge.color}` }}>
+                    <div className="text-[10px] font-bold uppercase tracking-wide" style={{ color: badge.color }}>{badge.label}</div>
+                    <div className="text-sm font-semibold" style={{ color: "#0F1E3A" }}>{item.name}</div>
+                    <div className="font-mono text-xs text-stone-500">{peso(item.price)}</div>
+                  </button>
+                );
+              })}
               {!filteredCatalog.length && <div className="text-sm text-stone-400">No catalog items in this category.</div>}
             </div>
 
-            <div className="mt-4 grid grid-cols-1 gap-2 border-t border-dashed border-stone-200 pt-4 sm:grid-cols-[1fr_80px_80px_100px_auto]">
+            <div className="mt-4 border-t border-dashed border-stone-200 pt-4">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_80px_80px_100px_auto]">
               <div><label className={labelCls}>Custom line description</label><input className={inputCls} value={customDesc} onChange={(e) => setCustomDesc(e.target.value)} /></div>
               <div><label className={labelCls}>Type</label><select className={inputCls} value={customCat} onChange={(e) => setCustomCat(e.target.value as "service" | "part")}><option value="service">Service</option><option value="part">Part</option></select></div>
               <div><label className={labelCls}>Qty</label><input type="number" min="1" className={inputCls} value={customQty} onChange={(e) => setCustomQty(e.target.value)} /></div>
@@ -324,14 +343,19 @@ export function QuoteBuilder({
                 onClick={() => {
                   const price = Number(customPrice); const qty = Number(customQty) || 1;
                   if (!customDesc.trim() || Number.isNaN(price)) return;
-                  addLine({ category: customCat, description: customDesc.trim(), qty, unit_price: price });
-                  setCustomDesc(""); setCustomPrice(""); setCustomQty("1");
+                  addLine({ category: customCat, description: buildLineDescription(customDesc, customInclusions), qty, unit_price: price });
+                  setCustomDesc(""); setCustomPrice(""); setCustomQty("1"); setCustomInclusions("");
                 }}
                 className="self-end rounded-lg px-4 py-2 text-sm font-bold text-white"
                 style={{ backgroundColor: "#0F1E3A" }}
               >
                 Add line
               </button>
+            </div>
+            <div className="mt-2">
+              <label className={labelCls}>Service inclusions (optional, no price, one per line)</label>
+              <textarea className={inputCls} rows={3} value={customInclusions} onChange={(e) => setCustomInclusions(e.target.value)} placeholder={"Intake manifold cleaning\nThrottle body cleaning"} />
+            </div>
             </div>
 
             <div className="mt-4">
@@ -384,7 +408,8 @@ export function QuoteBuilder({
               <div key={l.key} className="flex items-start justify-between gap-2 border-b border-stone-100 py-2 text-sm">
                 <div className="min-w-0">
                   <div className="text-[10px] uppercase text-stone-400">{l.category} · qty {l.qty}</div>
-                  <div className="truncate">{l.description}</div>
+                  <div className="truncate">{l.description.split("\n")[0]}</div>
+                  {l.description.includes("\n") && <div className="whitespace-pre-line pl-2 text-xs text-stone-500">{l.description.split("\n").slice(1).join("\n")}</div>}
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   <div className="font-mono">{peso(l.qty * l.unit_price)}</div>

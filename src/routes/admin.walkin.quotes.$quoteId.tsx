@@ -302,7 +302,7 @@ function LinesTable({ title, lines }: { title: string; lines: QuoteLine[] }) {
       <tbody>
         {lines.length ? lines.map((l) => (
           <tr key={l.id}>
-            <td className="border-b border-stone-100 py-1.5">{l.description}</td>
+            <td className="whitespace-pre-line border-b border-stone-100 py-1.5">{l.description}</td>
             <td className="border-b border-stone-100 py-1.5 text-right font-mono">{l.qty}</td>
             <td className="border-b border-stone-100 py-1.5 text-right font-mono">{peso(l.unit_price)}</td>
             <td className="border-b border-stone-100 py-1.5 text-right font-mono">{peso(l.qty * l.unit_price)}</td>

@@ -179,7 +179,7 @@ function LinesTable({ title, lines }: { title: string; lines: Line[] }) {
         <tbody>
           {lines.length ? lines.map((l) => (
             <tr key={l.id}>
-              <td className="border-b border-stone-100 py-1.5 pr-2">
+              <td className="whitespace-pre-line border-b border-stone-100 py-1.5 pr-2">
                 {l.description}
                 <span className="block text-[11px] text-stone-400 sm:hidden">Qty {l.qty} · {peso(l.unit_price)} each</span>
               </td>
