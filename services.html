@@ -4,6 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<!-- Google Analytics (GA4) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0S5P0ZGQF6"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-0S5P0ZGQF6');
+</script>
+
 <!-- ===== SEO / META ===== -->
 <title>Services | C-Tech Automotive — PMS, Oil Change &amp; Auto Care in Bulacan</title>
 <meta name="description" content="Complete vehicle care & maintenance services at C-Tech Automotive, Pulilan, Bulacan — PMS, premium oil change, turbo & EGR cleaning, cooling system refresh, ATF dialysis, suspension and full-system diagnostics." />
@@ -227,8 +236,14 @@
   }
   .svc-cta:hover { background: var(--yellow-bright); transform: translateY(-2px); }
 
+  /* HOME SERVICE TEASER */
+  .hs-teaser { background: var(--cream); padding: 56px 24px; border-bottom: 1px solid var(--line-dark); }
+  .hs-teaser-inner { display: flex; align-items: center; justify-content: space-between; gap: 28px; flex-wrap: wrap; }
+  .hs-teaser-sub { font-size: 14.5px; color: var(--gray-500); max-width: 520px; line-height: 1.6; margin-top: 6px; }
+  .hs-teaser-cta { flex-shrink: 0; }
+
   /* FOOTER */
-  footer { background: var(--navy-deep); color: var(--gray-300); padding: 32px 24px; text-align: center; font-size: 13px; border-top: 1px solid rgba(255,255,255,0.06); }
+  footer { background: var(--navy-deep); color: var(--gray-300); padding: 32px 24px; text-align: center; font-size: 13px; border-top: 1px solid rgba(255,255,255,0.06); line-height: 1.8; }
   footer a { color: var(--yellow); text-decoration: none; }
   footer a:hover { text-decoration: underline; }
 </style>
@@ -247,6 +262,7 @@
   </a>
   <div class="nav-links">
     <a href="services.html" class="active">Services</a>
+    <a href="homeservice.html">Home Service</a>
     <a href="/#how">How It Works</a>
     <a href="/#shop">Our Shop</a>
     <a href="/#contact">Contact</a>
@@ -309,11 +325,24 @@
   </div>
 </section>
 
+<section class="hs-teaser">
+  <div class="svc-container hs-teaser-inner">
+    <div>
+      <div class="section-tag">🏠 New</div>
+      <h2 class="section-h2" style="color: var(--navy); font-size: clamp(22px,2.8vw,30px);">Can't come to us? <span class="accent" style="color: var(--yellow-deep);">We'll come to you.</span></h2>
+      <p class="hs-teaser-sub">Home service PMS &amp; change oil, Mon–Sat 6–9PM, in Pulilan, Calumpit, Malolos, Baliuag, Guiguinto &amp; Plaridel. Same transparent pricing.</p>
+    </div>
+    <a href="homeservice.html" class="svc-cta hs-teaser-cta">🏠 See Home Service <span>→</span></a>
+  </div>
+</section>
+
 <footer>
   © 2026 C-Tech Automotive · 9016 DRT Highway, Sto. Cristo, Pulilan, Bulacan ·
   <a href="tel:09981516245">0998-1516-245</a> ·
   <a href="https://www.facebook.com/cteachautomotive" target="_blank" rel="noopener">Facebook Page</a> ·
   <a href="/">Back to Home</a>
+  <br>
+  Shop: Mon–Sat 8AM–5PM &nbsp;|&nbsp; Home Service: Mon–Sat 6PM–9PM &nbsp;|&nbsp; Sunday: Closed
 </footer>
 
 </body>
