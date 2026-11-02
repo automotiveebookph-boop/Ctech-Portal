@@ -3,6 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { supabaseFleet } from "@/lib/supabase-fleet";
 import { peso } from "@/lib/fleet-utils";
+import { isDeduction, pesoSigned, quoteTotals } from "@/lib/quote-lines";
 
 type CatalogItem = { id: string; category: string; name: string; price: number };
 type StaffOption = { id: string; full_name: string };
@@ -142,6 +143,11 @@ export function QuoteBuilder({
   const [customQty, setCustomQty] = useState("1");
   const [customPrice, setCustomPrice] = useState("");
   const [customInclusions, setCustomInclusions] = useState("");
+  const [dedKind, setDedKind] = useState<"discount" | "less">("discount");
+  const [dedReason, setDedReason] = useState("");
+  const [dedCat, setDedCat] = useState<"service" | "part">("service");
+  const [dedAmount, setDedAmount] = useState("");
+  const [dedUnit, setDedUnit] = useState<"peso" | "percent">("peso");
 
   useEffect(() => {
     (async () => {
@@ -179,13 +185,31 @@ export function QuoteBuilder({
   function addLine(line: Omit<Line, "key">) { setLines((c) => [...c, { ...line, key: nextKey.current++ }]); }
   function removeLine(key: number) { setLines((c) => c.filter((l) => l.key !== key)); }
 
-  const totals = lines.reduce((acc, l) => { const amt = l.qty * l.unit_price; if (l.category === "service") acc.services += amt; else acc.parts += amt; return acc; }, { services: 0, parts: 0 });
-  const grand = totals.services + totals.parts;
+  const totals = quoteTotals(lines);
+  const grand = totals.total;
+
+  function addDeduction() {
+    const value = Number(dedAmount);
+    const reason = dedReason.trim();
+    if (!value || value <= 0) { toast.error("Enter a discount / less amount greater than 0"); return; }
+    if (dedKind === "less" && !reason) { toast.error("Say which part of the service was not done"); return; }
+    // Percent is taken off the gross (pre-deduction) subtotal of the chosen type.
+    const base = dedCat === "service" ? totals.services : totals.parts;
+    const amount = dedUnit === "percent" ? Math.round((base * value) / 100 * 100) / 100 : value;
+    // Never let a type's net go below zero (it becomes the job order's labor/parts cost).
+    const netForCat = lines.filter((l) => l.category === dedCat).reduce((s, l) => s + l.qty * l.unit_price, 0);
+    if (amount <= 0 || amount > netForCat) { toast.error(`That is more than the remaining ${dedCat === "service" ? "services" : "parts"} total (${peso(netForCat)})`); return; }
+    const label = dedKind === "discount" ? `Discount${dedUnit === "percent" ? ` (${value}%)` : ""}` : "Less";
+    addLine({ category: dedCat, description: reason ? `${label}: ${reason}` : label, qty: 1, unit_price: -amount });
+    setDedReason(""); setDedAmount("");
+  }
   const categories = ["all", ...Array.from(new Set(catalog.map((c) => c.category)))];
   const filteredCatalog = catalog.filter((c) => activeCat === "all" || c.category === activeCat);
 
   async function save() {
     if (!lines.length) { toast.error("Add at least one line item before saving"); return; }
+    const netOf = (cat: "service" | "part") => lines.filter((l) => l.category === cat).reduce((s, l) => s + l.qty * l.unit_price, 0);
+    if (netOf("service") < 0 || netOf("part") < 0) { toast.error("Discounts / less are bigger than the items they apply to — remove one first"); return; }
     if (!customer && !clientName.trim()) { toast.error("A customer or client name is required"); return; }
     if (!vehicle && !vehicleDescription.trim()) { toast.error("A vehicle or vehicle description is required"); return; }
     setSaving(true);
@@ -358,6 +382,37 @@ export function QuoteBuilder({
             </div>
             </div>
 
+            <div className="mt-4 border-t border-dashed border-stone-200 pt-4">
+              <label className={labelCls}>Discount / less</label>
+              <div className="mb-2 flex w-fit overflow-hidden rounded-lg border border-stone-300">
+                {([["discount", "Discount"], ["less", "Less (part not done)"]] as const).map(([v, label]) => (
+                  <button key={v} onClick={() => setDedKind(v)} className={`px-3 py-1.5 text-xs font-semibold ${dedKind === v ? "text-white" : "bg-white text-stone-500"}`} style={dedKind === v ? { backgroundColor: "#0F1E3A" } : undefined}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_100px_150px_auto]">
+                <div>
+                  <label className={labelCls}>{dedKind === "discount" ? "Reason (optional)" : "What was not done"}</label>
+                  <input className={inputCls} value={dedReason} onChange={(e) => setDedReason(e.target.value)} placeholder={dedKind === "discount" ? "e.g. Suki discount" : "e.g. Throttle body cleaning (already clean)"} />
+                </div>
+                <div><label className={labelCls}>Applies to</label><select className={inputCls} value={dedCat} onChange={(e) => setDedCat(e.target.value as "service" | "part")}><option value="service">Service</option><option value="part">Part</option></select></div>
+                <div>
+                  <label className={labelCls}>Amount</label>
+                  <div className="flex">
+                    <input type="number" min="0" className={`${inputCls} rounded-r-none`} value={dedAmount} onChange={(e) => setDedAmount(e.target.value)} />
+                    <select className="rounded-r-lg border border-l-0 border-stone-300 bg-stone-50 px-2 text-sm" value={dedUnit} onChange={(e) => setDedUnit(e.target.value as "peso" | "percent")} aria-label="Amount unit">
+                      <option value="peso">₱</option>
+                      <option value="percent">%</option>
+                    </select>
+                  </div>
+                </div>
+                <button onClick={addDeduction} className="self-end rounded-lg border-2 px-4 py-2 text-sm font-bold" style={{ borderColor: "#0F1E3A", color: "#0F1E3A" }}>
+                  Add {dedKind === "discount" ? "discount" : "less"}
+                </button>
+              </div>
+            </div>
+
             <div className="mt-4">
               <label className={labelCls}>Inclusions (prints on the quotation)</label>
               <div className="mb-3 flex flex-wrap gap-2">
@@ -407,12 +462,12 @@ export function QuoteBuilder({
             {lines.map((l) => (
               <div key={l.key} className="flex items-start justify-between gap-2 border-b border-stone-100 py-2 text-sm">
                 <div className="min-w-0">
-                  <div className="text-[10px] uppercase text-stone-400">{l.category} · qty {l.qty}</div>
-                  <div className="truncate">{l.description.split("\n")[0]}</div>
+                  <div className="text-[10px] uppercase text-stone-400">{isDeduction(l) ? `deduction · ${l.category}` : `${l.category} · qty ${l.qty}`}</div>
+                  <div className={`truncate ${isDeduction(l) ? "text-red-600" : ""}`}>{l.description.split("\n")[0]}</div>
                   {l.description.includes("\n") && <div className="whitespace-pre-line pl-2 text-xs text-stone-500">{l.description.split("\n").slice(1).join("\n")}</div>}
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  <div className="font-mono">{peso(l.qty * l.unit_price)}</div>
+                  <div className={`font-mono ${isDeduction(l) ? "text-red-600" : ""}`}>{pesoSigned(l.qty * l.unit_price)}</div>
                   <button onClick={() => removeLine(l.key)} className="text-red-500" aria-label="Remove">×</button>
                 </div>
               </div>
@@ -421,6 +476,7 @@ export function QuoteBuilder({
           <div className="space-y-1 border-t border-stone-200 p-4 text-sm">
             <div className="flex justify-between text-stone-500"><span>Services</span><span className="font-mono">{peso(totals.services)}</span></div>
             <div className="flex justify-between text-stone-500"><span>Parts</span><span className="font-mono">{peso(totals.parts)}</span></div>
+            {totals.deductions > 0 && <div className="flex justify-between text-red-600"><span>Less &amp; discounts</span><span className="font-mono">{pesoSigned(-totals.deductions)}</span></div>}
             <div className="flex justify-between border-t border-stone-200 pt-2 text-base font-bold" style={{ color: "#0F1E3A" }}><span>Total</span><span className="font-mono">{peso(grand)}</span></div>
           </div>
           <div className="p-4">

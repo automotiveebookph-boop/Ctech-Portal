@@ -6,6 +6,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { supabaseFleet } from "@/lib/supabase-fleet";
 import { peso } from "@/lib/fleet-utils";
+import { isDeduction, pesoSigned, quoteTotals } from "@/lib/quote-lines";
 import { publicQuoteUrl } from "@/lib/quotation-message";
 import { SendQuotationModal } from "@/components/SendQuotationModal";
 
@@ -80,9 +81,11 @@ function QuoteDetailPage() {
     const doc = new jsPDF({ unit: "mm", format: "letter" });
     const pageWidth = doc.internal.pageSize.getWidth();
     const marginX = 10;
-    const svc = lines.filter((l) => l.category === "service");
-    const parts = lines.filter((l) => l.category === "part");
-    const phMoney = (n: number) => "PHP " + n.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const svc = lines.filter((l) => l.category === "service" && !isDeduction(l));
+    const parts = lines.filter((l) => l.category === "part" && !isDeduction(l));
+    const deductions = lines.filter(isDeduction);
+    const totals = quoteTotals(lines);
+    const phMoney = (n: number) => (n < 0 ? "- " : "") + "PHP " + Math.abs(n).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
     // Navy header band — the logo's wordmark is white, so it needs a dark
     // background to read at all (it's invisible on plain white paper).
@@ -137,15 +140,27 @@ function QuoteDetailPage() {
     autoTable(doc, { ...tableOpts, startY: y + 1, head: [["Description", "Qty", "Unit price", "Amount"]], body: parts.length ? parts.map(lineRow) : [["No part lines", "", "", ""]] });
     y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 6;
 
+    if (deductions.length) {
+      y += 2;
+      doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(201, 162, 39); doc.text("LESS & DISCOUNTS", marginX, y - 2);
+      autoTable(doc, { ...tableOpts, startY: y + 1, head: [["Description", "Qty", "Unit price", "Amount"]], body: deductions.map(lineRow), bodyStyles: { textColor: [185, 28, 28] } });
+      y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 6;
+    }
+
+    const extra = totals.deductions > 0 ? 5 : 0;
     const boxW = 70, boxX = pageWidth - marginX - boxW;
-    doc.setDrawColor(15, 30, 58); doc.setLineWidth(0.3); doc.rect(boxX, y, boxW, 22);
+    doc.setDrawColor(15, 30, 58); doc.setLineWidth(0.3); doc.rect(boxX, y, boxW, 22 + extra);
     doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(90, 100, 115);
-    doc.text("Subtotal, services", boxX + 3, y + 6); doc.text(phMoney(quote.subtotal_services ?? 0), boxX + boxW - 3, y + 6, { align: "right" });
-    doc.text("Subtotal, parts", boxX + 3, y + 11); doc.text(phMoney(quote.subtotal_parts ?? 0), boxX + boxW - 3, y + 11, { align: "right" });
-    doc.setFillColor(15, 30, 58); doc.rect(boxX, y + 14, boxW, 8, "F");
+    doc.text("Subtotal, services", boxX + 3, y + 6); doc.text(phMoney(totals.services), boxX + boxW - 3, y + 6, { align: "right" });
+    doc.text("Subtotal, parts", boxX + 3, y + 11); doc.text(phMoney(totals.parts), boxX + boxW - 3, y + 11, { align: "right" });
+    if (extra) {
+      doc.setTextColor(185, 28, 28);
+      doc.text("Less & discounts", boxX + 3, y + 16); doc.text(phMoney(-totals.deductions), boxX + boxW - 3, y + 16, { align: "right" });
+    }
+    doc.setFillColor(15, 30, 58); doc.rect(boxX, y + 14 + extra, boxW, 8, "F");
     doc.setFont("helvetica", "bold"); doc.setFontSize(10.5); doc.setTextColor(255, 255, 255);
-    doc.text("Grand total", boxX + 3, y + 19.5); doc.text(phMoney(quote.total_amount ?? 0), boxX + boxW - 3, y + 19.5, { align: "right" });
-    y += 30;
+    doc.text("Grand total", boxX + 3, y + 19.5 + extra); doc.text(phMoney(quote.total_amount ?? 0), boxX + boxW - 3, y + 19.5 + extra, { align: "right" });
+    y += 30 + extra;
 
     doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(120, 128, 140);
     doc.text("INCLUSIONS & NOTES", marginX, y);
@@ -174,8 +189,10 @@ function QuoteDetailPage() {
 
   if (!quote) return <main className="p-8 text-stone-500">Loading…</main>;
 
-  const svc = lines.filter((l) => l.category === "service");
-  const parts = lines.filter((l) => l.category === "part");
+  const svc = lines.filter((l) => l.category === "service" && !isDeduction(l));
+  const parts = lines.filter((l) => l.category === "part" && !isDeduction(l));
+  const deductions = lines.filter(isDeduction);
+  const totals = quoteTotals(lines);
   const canConvert = quote.effective_status === "draft" || quote.effective_status === "sent";
 
   return (
@@ -264,11 +281,13 @@ function QuoteDetailPage() {
 
           <LinesTable title="Services" lines={svc} />
           <LinesTable title="Parts" lines={parts} />
+          {deductions.length > 0 && <LinesTable title="Less & discounts" lines={deductions} />}
 
           <div className="mt-4 flex justify-end">
             <div className="w-64 border" style={{ borderColor: "#0F1E3A" }}>
-              <div className="flex justify-between px-3 py-1.5 text-sm text-stone-500"><span>Subtotal, services</span><span className="font-mono">{peso(quote.subtotal_services ?? 0)}</span></div>
-              <div className="flex justify-between px-3 py-1.5 text-sm text-stone-500"><span>Subtotal, parts</span><span className="font-mono">{peso(quote.subtotal_parts ?? 0)}</span></div>
+              <div className="flex justify-between px-3 py-1.5 text-sm text-stone-500"><span>Subtotal, services</span><span className="font-mono">{peso(totals.services)}</span></div>
+              <div className="flex justify-between px-3 py-1.5 text-sm text-stone-500"><span>Subtotal, parts</span><span className="font-mono">{peso(totals.parts)}</span></div>
+              {totals.deductions > 0 && <div className="flex justify-between px-3 py-1.5 text-sm text-red-600"><span>Less &amp; discounts</span><span className="font-mono">{pesoSigned(-totals.deductions)}</span></div>}
               <div className="flex justify-between px-3 py-2 text-base font-bold text-white" style={{ backgroundColor: "#0F1E3A" }}><span>Grand total</span><span className="font-mono">{peso(quote.total_amount ?? 0)}</span></div>
             </div>
           </div>
@@ -301,11 +320,11 @@ function LinesTable({ title, lines }: { title: string; lines: QuoteLine[] }) {
       </thead>
       <tbody>
         {lines.length ? lines.map((l) => (
-          <tr key={l.id}>
+          <tr key={l.id} className={isDeduction(l) ? "text-red-600" : undefined}>
             <td className="whitespace-pre-line border-b border-stone-100 py-1.5">{l.description}</td>
             <td className="border-b border-stone-100 py-1.5 text-right font-mono">{l.qty}</td>
-            <td className="border-b border-stone-100 py-1.5 text-right font-mono">{peso(l.unit_price)}</td>
-            <td className="border-b border-stone-100 py-1.5 text-right font-mono">{peso(l.qty * l.unit_price)}</td>
+            <td className="border-b border-stone-100 py-1.5 text-right font-mono">{pesoSigned(l.unit_price)}</td>
+            <td className="border-b border-stone-100 py-1.5 text-right font-mono">{pesoSigned(l.qty * l.unit_price)}</td>
           </tr>
         )) : (
           <tr><td colSpan={4} className="py-2 italic text-stone-400">No {title.toLowerCase()}</td></tr>

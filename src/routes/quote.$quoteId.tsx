@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabaseFleet } from "@/lib/supabase-fleet";
 import { peso } from "@/lib/fleet-utils";
+import { isDeduction, pesoSigned, quoteTotals } from "@/lib/quote-lines";
 
 export const Route = createFileRoute("/quote/$quoteId")({
   head: () => ({ meta: [{ title: "Your Quotation — C-Tech Automotive" }] }),
@@ -76,8 +77,10 @@ function PublicQuotePage() {
     );
   }
 
-  const svc = lines.filter((l) => l.category === "service");
-  const parts = lines.filter((l) => l.category === "part");
+  const svc = lines.filter((l) => l.category === "service" && !isDeduction(l));
+  const parts = lines.filter((l) => l.category === "part" && !isDeduction(l));
+  const deductions = lines.filter(isDeduction);
+  const totals = quoteTotals(lines);
   const isExpired = quote.effective_status === "expired";
 
   return (
@@ -133,11 +136,13 @@ function PublicQuotePage() {
 
           <LinesTable title="Services" lines={svc} />
           <LinesTable title="Parts" lines={parts} />
+          {deductions.length > 0 && <LinesTable title="Less & discounts" lines={deductions} />}
 
           <div className="mt-4 flex justify-end">
             <div className="w-full border sm:w-64" style={{ borderColor: "#0F1E3A" }}>
-              <div className="flex justify-between px-3 py-1.5 text-sm text-stone-500"><span>Subtotal, services</span><span className="font-mono">{peso(quote.subtotal_services ?? 0)}</span></div>
-              <div className="flex justify-between px-3 py-1.5 text-sm text-stone-500"><span>Subtotal, parts</span><span className="font-mono">{peso(quote.subtotal_parts ?? 0)}</span></div>
+              <div className="flex justify-between px-3 py-1.5 text-sm text-stone-500"><span>Subtotal, services</span><span className="font-mono">{peso(totals.services)}</span></div>
+              <div className="flex justify-between px-3 py-1.5 text-sm text-stone-500"><span>Subtotal, parts</span><span className="font-mono">{peso(totals.parts)}</span></div>
+              {totals.deductions > 0 && <div className="flex justify-between px-3 py-1.5 text-sm text-red-600"><span>Less &amp; discounts</span><span className="font-mono">{pesoSigned(-totals.deductions)}</span></div>}
               <div className="flex justify-between px-3 py-2 text-base font-bold text-white" style={{ backgroundColor: "#0F1E3A" }}><span>Grand total</span><span className="font-mono">{peso(quote.total_amount ?? 0)}</span></div>
             </div>
           </div>
@@ -178,14 +183,14 @@ function LinesTable({ title, lines }: { title: string; lines: Line[] }) {
         </thead>
         <tbody>
           {lines.length ? lines.map((l) => (
-            <tr key={l.id}>
+            <tr key={l.id} className={isDeduction(l) ? "text-red-600" : undefined}>
               <td className="whitespace-pre-line border-b border-stone-100 py-1.5 pr-2">
                 {l.description}
-                <span className="block text-[11px] text-stone-400 sm:hidden">Qty {l.qty} · {peso(l.unit_price)} each</span>
+                <span className="block text-[11px] text-stone-400 sm:hidden">Qty {l.qty} · {pesoSigned(l.unit_price)} each</span>
               </td>
               <td className="hidden border-b border-stone-100 py-1.5 text-right font-mono sm:table-cell">{l.qty}</td>
-              <td className="hidden border-b border-stone-100 py-1.5 text-right font-mono sm:table-cell">{peso(l.unit_price)}</td>
-              <td className="whitespace-nowrap border-b border-stone-100 py-1.5 text-right font-mono">{peso(l.qty * l.unit_price)}</td>
+              <td className="hidden border-b border-stone-100 py-1.5 text-right font-mono sm:table-cell">{pesoSigned(l.unit_price)}</td>
+              <td className="whitespace-nowrap border-b border-stone-100 py-1.5 text-right font-mono">{pesoSigned(l.qty * l.unit_price)}</td>
             </tr>
           )) : (
             <tr><td colSpan={4} className="py-2 italic text-stone-400">No {title.toLowerCase()}</td></tr>
