@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useBlocker, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { supabaseFleet } from "@/lib/supabase-fleet";
 import { peso } from "@/lib/fleet-utils";
@@ -21,7 +21,14 @@ const packageBadge = (item: CatalogItem): { label: string; color: string } => {
   }
   return { label: catLabel(item.category), color: "#C9A227" };
 };
-const isoPlusDays = (n: number) => { const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
+// "PMS Package — 4L Gas · Fully Synthetic (5W-30)" → { type, size: "4L Gas", liters: 4, grade }
+type PackageInfo = { type: "PMS" | "Oil Change"; size: string; liters: number; grade: string };
+function parsePackage(name: string): PackageInfo | null {
+  const m = name.match(/^(PMS|Oil Change) Package\s+—\s+((\d+)L\s+[^·]+?)\s+·\s+([^(]+?)\s*(\(|$)/);
+  return m ? { type: m[1] as PackageInfo["type"], size: m[2].trim(), liters: Number(m[3]), grade: m[4].trim() } : null;
+}
+
+const isoPlusDays =(n: number) => { const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
 const inputCls = "w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-stone-900";
 const labelCls = "mb-1 block text-xs font-semibold uppercase text-stone-600";
 
@@ -266,7 +273,8 @@ export function QuoteBuilder({
       setDedCat(l.category);
       setDedUnit("peso");
       setDedAmount(String(-(l.qty * l.unit_price)));
-      dedFormRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      setShowDiscount(true);
+      setTimeout(() => dedFormRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 0);
     } else {
       const [title, ...items] = l.description.split("\n");
       setCustomDesc(title);
@@ -274,7 +282,8 @@ export function QuoteBuilder({
       setCustomCat(l.category);
       setCustomQty(String(l.qty));
       setCustomPrice(String(l.unit_price));
-      customFormRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      if (items.length) setShowSubItems(true);
+      setTimeout(() => customFormRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 0);
     }
   }
 
@@ -309,8 +318,41 @@ export function QuoteBuilder({
     putLine({ category: dedCat, description: reason ? `${label}: ${reason}` : label, qty: 1, unit_price: -amount });
     setDedReason(""); setDedAmount("");
   }
-  const categories = ["all", ...Array.from(new Set(catalog.map((c) => c.category)))];
-  const filteredCatalog = catalog.filter((c) => activeCat === "all" || c.category === activeCat);
+  // Packages get their own picker (type → oil size → grade); the rest of the
+  // catalog sits behind "Browse catalog" since most lines are typed by hand.
+  const packages = catalog.map((item) => ({ item, pkg: parsePackage(item.name) })).filter((p): p is { item: CatalogItem; pkg: PackageInfo } => p.pkg !== null);
+  const otherCatalog = catalog.filter((c) => !parsePackage(c.name));
+  const categories = ["all", ...Array.from(new Set(otherCatalog.map((c) => c.category)))];
+  const filteredCatalog = otherCatalog.filter((c) => activeCat === "all" || c.category === activeCat);
+  const [pkgType, setPkgType] = useState<PackageInfo["type"]>("PMS");
+  const [pkgSize, setPkgSize] = useState<string | null>(null);
+  const [pkgGrade, setPkgGrade] = useState("Fully Synthetic");
+  const pkgSizes = Array.from(new Map(packages.filter((p) => p.pkg.type === pkgType).map((p) => [p.pkg.size, p.pkg.liters])).entries())
+    .sort((a, b) => a[1] - b[1]).map(([size]) => size);
+  const pkgGrades = Array.from(new Set(packages.map((p) => p.pkg.grade))).sort();
+  const pkgMatch = packages.find((p) => p.pkg.type === pkgType && p.pkg.size === pkgSize && p.pkg.grade === pkgGrade) ?? null;
+  const [lastPkgType, setLastPkgType] = useState<PackageInfo["type"] | null>(null);
+  const [showCatalog, setShowCatalog] = useState(false);
+  const [showSubItems, setShowSubItems] = useState(false);
+  const [showDiscount, setShowDiscount] = useState(false);
+
+  function updateLine(key: number, patch: Partial<Pick<Line, "qty" | "unit_price">>) {
+    setLines((c) => c.map((l) => (l.key === key ? { ...l, ...patch } : l)));
+  }
+
+  // Unsaved-changes guard: warn before leaving a quote with edits (in-app links and tab close).
+  const initialSig = useRef(JSON.stringify(initialLines.map((l) => [l.description, l.qty, l.unit_price])));
+  const savedRef = useRef(false);
+  const isDirty = () =>
+    !savedRef.current &&
+    (JSON.stringify(lines.map((l) => [l.description, l.qty, l.unit_price])) !== initialSig.current ||
+      customDesc.trim() !== "" ||
+      clientName !== initialClientName ||
+      vehicleDescription !== initialVehicleDescription);
+  useBlocker({
+    shouldBlockFn: () => isDirty() && !window.confirm(`Leave without saving? Your changes to this ${cfg.noun} will be lost.`),
+    enableBeforeUnload: isDirty,
+  });
 
   async function save() {
     if (!lines.length) { toast.error("Add at least one line item before saving"); return; }
@@ -351,6 +393,7 @@ export function QuoteBuilder({
         if (linesError) throw linesError;
 
         toast.success(`${Noun} updated`);
+        savedRef.current = true;
         goTo(quoteId);
       } else {
         const { data: created, error } = await supabaseFleet
@@ -364,6 +407,7 @@ export function QuoteBuilder({
         if (linesError) throw linesError;
 
         toast.success(`${Noun} saved`);
+        savedRef.current = true;
         goTo(created.id);
       }
     } catch (err) {
@@ -381,7 +425,7 @@ export function QuoteBuilder({
         </div>
       </header>
 
-      <main className="grid grid-cols-1 gap-6 p-4 md:p-8 lg:grid-cols-[1fr_360px]">
+      <main className="grid grid-cols-1 gap-6 p-4 pb-28 md:p-8 md:pb-28 lg:grid-cols-[1fr_360px] lg:items-start lg:pb-8">
         <div className="space-y-6">
           <section className="rounded-xl border border-stone-200 bg-white p-5">
             <h2 className="mb-3 text-sm font-bold" style={{ color: "#0F1E3A" }}>Client &amp; vehicle</h2>
@@ -455,38 +499,18 @@ export function QuoteBuilder({
           </section>
 
           <section className="rounded-xl border border-stone-200 bg-white p-5">
-            <h2 className="mb-3 text-sm font-bold" style={{ color: "#0F1E3A" }}>Price catalog</h2>
-            <div className="mb-3 flex flex-wrap gap-2">
-              {categories.map((c) => (
-                <button key={c} onClick={() => setActiveCat(c)} className={`rounded-full border px-3 py-1 text-xs font-semibold ${activeCat === c ? "border-transparent text-white" : "border-stone-200 bg-white text-stone-600"}`} style={activeCat === c ? { backgroundColor: "#0F1E3A" } : undefined}>
-                  {c === "all" ? "All categories" : catLabel(c)}
-                </button>
-              ))}
-            </div>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
-              {filteredCatalog.map((item) => {
-                const badge = packageBadge(item);
-                return (
-                  <button key={item.id} onClick={() => addLine({ category: catToLineCategory(item.category), description: item.name, qty: 1, unit_price: item.price, service_pricing_id: item.id })} className="rounded-lg border border-stone-200 bg-stone-50 p-3 text-left hover:border-amber-400" style={{ borderLeft: `3px solid ${badge.color}` }}>
-                    <div className="text-[10px] font-bold uppercase tracking-wide" style={{ color: badge.color }}>{badge.label}</div>
-                    <div className="text-sm font-semibold" style={{ color: "#0F1E3A" }}>{item.name}</div>
-                    <div className="font-mono text-xs text-stone-500">{peso(item.price)}</div>
-                  </button>
-                );
-              })}
-              {!filteredCatalog.length && <div className="text-sm text-stone-400">No catalog items in this category.</div>}
-            </div>
+            <h2 className="mb-3 text-sm font-bold" style={{ color: "#0F1E3A" }}>Add items</h2>
 
-            <div ref={customFormRef} className={`mt-4 border-t border-dashed border-stone-200 pt-4 ${editingLine && !editingDeduction ? "-mx-2 rounded-lg bg-amber-50 px-2 pb-2 ring-2 ring-amber-400" : ""}`}>
+            <div ref={customFormRef} className={editingLine && !editingDeduction ? "-mx-2 rounded-lg bg-amber-50 px-2 py-2 ring-2 ring-amber-400" : ""}>
             {editingLine && !editingDeduction && <EditingBanner onCancel={cancelEdit} />}
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_80px_80px_100px_auto]">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_90px_70px_110px_auto]">
               <div>
-                <label className={labelCls}>Custom line description</label>
-                <input className={inputCls} list="saved-line-items" value={customDesc} onChange={(e) => onCustomDescChange(e.target.value)} placeholder="Start typing — past items appear" />
+                <label className={labelCls}>Item / service</label>
+                <input className={inputCls} list="saved-line-items" value={customDesc} onChange={(e) => onCustomDescChange(e.target.value)} placeholder="Type an item — e.g. Brake Fluid, Coolant…" />
                 <datalist id="saved-line-items">
                   {savedItems.map((s) => <option key={s.title} value={s.title}>{`${peso(s.price)} · ${s.category}`}</option>)}
                 </datalist>
-                {savedMatch && <div className="mt-1 text-[11px] text-stone-500">Last quoted at {peso(savedMatch.price)} · used {savedMatch.count}×</div>}
+                {savedMatch && <div className="mt-1 text-xs text-stone-500">Last quoted at {peso(savedMatch.price)} · used {savedMatch.count}×</div>}
               </div>
               <div><label className={labelCls}>Type</label><select className={inputCls} value={customCat} onChange={(e) => setCustomCat(e.target.value as "service" | "part")}><option value="service">Service</option><option value="part">Part</option></select></div>
               <div><label className={labelCls}>Qty</label><input type="number" min="1" className={inputCls} value={customQty} onChange={(e) => setCustomQty(e.target.value)} /></div>
@@ -494,22 +518,117 @@ export function QuoteBuilder({
               <button
                 onClick={() => {
                   const price = Number(customPrice); const qty = Number(customQty) || 1;
-                  if (!customDesc.trim() || Number.isNaN(price)) return;
+                  if (!customDesc.trim() || Number.isNaN(price)) { toast.error("Type the item and its price"); return; }
                   putLine({ category: customCat, description: buildLineDescription(customDesc, customInclusions), qty, unit_price: price });
-                  setCustomDesc(""); setCustomPrice(""); setCustomQty("1"); setCustomInclusions("");
+                  setCustomDesc(""); setCustomPrice(""); setCustomQty("1"); setCustomInclusions(""); setShowSubItems(false);
                 }}
-                className="self-end rounded-lg px-4 py-2 text-sm font-bold text-white"
-                style={{ backgroundColor: "#0F1E3A" }}
+                className="self-end rounded-lg px-5 py-2 text-sm font-bold"
+                style={{ backgroundColor: "#C9A227", color: "#0F1E3A" }}
               >
-                {editingLine && !editingDeduction ? "Update line" : "Add line"}
+                {editingLine && !editingDeduction ? "Update" : "Add"}
               </button>
             </div>
-            <div className="mt-2">
-              <label className={labelCls}>Service inclusions (optional, no price, one per line)</label>
-              <textarea className={inputCls} rows={3} value={customInclusions} onChange={(e) => setCustomInclusions(e.target.value)} placeholder={"Intake manifold cleaning\nThrottle body cleaning"} />
-            </div>
+            {showSubItems || customInclusions ? (
+              <div className="mt-2">
+                <label className={labelCls}>Sub-items (no price, one per line)</label>
+                <textarea className={inputCls} rows={3} value={customInclusions} onChange={(e) => setCustomInclusions(e.target.value)} placeholder={"Intake manifold cleaning\nThrottle body cleaning"} />
+              </div>
+            ) : (
+              <button type="button" onClick={() => setShowSubItems(true)} className="mt-2 text-xs font-semibold text-stone-500 hover:underline">+ Add sub-items under this line (no price)</button>
+            )}
             </div>
 
+            <div className="mt-5 rounded-lg border border-stone-200 bg-stone-50 p-3">
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <span className="text-xs font-bold uppercase text-stone-600">Package</span>
+                {(["PMS", "Oil Change"] as const).map((t) => (
+                  <button key={t} type="button" onClick={() => { setPkgType(t); setPkgSize(null); }} className={`rounded-full border px-3 py-1 text-xs font-semibold ${pkgType === t ? "border-transparent text-white" : "border-stone-300 bg-white text-stone-600"}`} style={pkgType === t ? { backgroundColor: t === "PMS" ? "#C9A227" : "#2563EB" } : undefined}>
+                    {t}
+                  </button>
+                ))}
+              </div>
+              <div className="mb-2 flex flex-wrap gap-1.5">
+                {pkgSizes.map((s) => (
+                  <button key={s} type="button" onClick={() => setPkgSize(s)} className={`rounded-lg border px-2.5 py-1.5 text-xs font-semibold ${pkgSize === s ? "border-transparent text-white" : "border-stone-300 bg-white text-stone-700"}`} style={pkgSize === s ? { backgroundColor: "#0F1E3A" } : undefined}>
+                    {s}
+                  </button>
+                ))}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {pkgGrades.map((g) => {
+                  const available = !pkgSize || packages.some((p) => p.pkg.type === pkgType && p.pkg.size === pkgSize && p.pkg.grade === g);
+                  return (
+                    <button key={g} type="button" disabled={!available} onClick={() => setPkgGrade(g)} className={`rounded-lg border px-2.5 py-1.5 text-xs font-semibold disabled:opacity-40 ${pkgGrade === g ? "border-transparent text-white" : "border-stone-300 bg-white text-stone-700"}`} style={pkgGrade === g ? { backgroundColor: "#0F1E3A" } : undefined}>
+                      {g}
+                    </button>
+                  );
+                })}
+                <div className="ml-auto flex items-center gap-2">
+                  {pkgMatch ? (
+                    <>
+                      <span className="font-mono text-sm font-bold" style={{ color: "#0F1E3A" }}>{peso(pkgMatch.item.price)}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          addLine({ category: "service", description: pkgMatch.item.name, qty: 1, unit_price: pkgMatch.item.price, service_pricing_id: pkgMatch.item.id });
+                          setLastPkgType(pkgType);
+                          toast.success(`Added ${pkgType} package ${pkgMatch.pkg.size}`);
+                        }}
+                        className="rounded-lg px-4 py-1.5 text-xs font-bold"
+                        style={{ backgroundColor: "#C9A227", color: "#0F1E3A" }}
+                      >
+                        Add package
+                      </button>
+                    </>
+                  ) : (
+                    <span className="text-xs text-stone-400">{pkgSize ? "Not offered in this grade" : "Pick the oil size"}</span>
+                  )}
+                </div>
+              </div>
+              {lastPkgType && inclusionType === "custom" && (
+                <button type="button" onClick={() => setInclusionType(lastPkgType === "PMS" ? "pms" : "oil_change")} className="mt-2 text-xs font-semibold text-amber-700 hover:underline">
+                  Print the {lastPkgType} inclusions checklist on the quotation →
+                </button>
+              )}
+            </div>
+
+            <div className="mt-3 flex flex-wrap gap-4">
+              <button type="button" onClick={() => setShowCatalog((s) => !s)} className="text-xs font-semibold hover:underline" style={{ color: "#0F1E3A" }}>
+                {showCatalog ? "− Hide catalog" : `+ Browse catalog (${otherCatalog.length} add-ons & filters)`}
+              </button>
+              {!(showDiscount || editingDeduction) && (
+                <button type="button" onClick={() => setShowDiscount(true)} className="text-xs font-semibold text-red-600 hover:underline">+ Discount / less</button>
+              )}
+            </div>
+
+            {showCatalog && (
+              <div className="mt-3">
+                <div className="mb-3 flex flex-wrap gap-2">
+                  {categories.map((c) => (
+                    <button key={c} onClick={() => setActiveCat(c)} className={`rounded-full border px-3 py-1 text-xs font-semibold ${activeCat === c ? "border-transparent text-white" : "border-stone-200 bg-white text-stone-600"}`} style={activeCat === c ? { backgroundColor: "#0F1E3A" } : undefined}>
+                      {c === "all" ? "All" : catLabel(c)}
+                    </button>
+                  ))}
+                </div>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                  {filteredCatalog.map((item) => {
+                    const badge = packageBadge(item);
+                    return (
+                      <button key={item.id} onClick={() => { addLine({ category: catToLineCategory(item.category), description: item.name, qty: 1, unit_price: item.price, service_pricing_id: item.id }); toast.success(`Added ${item.name}`); }} className="flex items-center justify-between gap-2 rounded-lg border border-stone-200 bg-white px-3 py-2 text-left hover:border-amber-400" style={{ borderLeft: `3px solid ${badge.color}` }}>
+                        <div className="min-w-0">
+                          <div className="text-[11px] font-bold uppercase tracking-wide" style={{ color: badge.color }}>{badge.label}</div>
+                          <div className="text-sm font-semibold" style={{ color: "#0F1E3A" }}>{item.name}</div>
+                        </div>
+                        <div className="shrink-0 font-mono text-sm text-stone-600">{peso(item.price)}</div>
+                      </button>
+                    );
+                  })}
+                  {!filteredCatalog.length && <div className="text-sm text-stone-400">No catalog items in this category.</div>}
+                </div>
+              </div>
+            )}
+
+            {(showDiscount || editingDeduction) && (
             <div ref={dedFormRef} className={`mt-4 border-t border-dashed border-stone-200 pt-4 ${editingDeduction ? "-mx-2 rounded-lg bg-amber-50 px-2 pb-2 ring-2 ring-amber-400" : ""}`}>
               {editingDeduction && <EditingBanner onCancel={cancelEdit} />}
               <label className={labelCls}>Discount / less</label>
@@ -541,9 +660,11 @@ export function QuoteBuilder({
                 </button>
               </div>
             </div>
+            )}
+          </section>
 
-            <div className="mt-4">
-              <label className={labelCls}>Inclusions (prints on the quotation)</label>
+          <section className="rounded-xl border border-stone-200 bg-white p-5">
+            <h2 className="mb-3 text-sm font-bold" style={{ color: "#0F1E3A" }}>Inclusions &amp; notes</h2>
               <div className="mb-3 flex flex-wrap gap-2">
                 {INCLUSION_TABS.map((t) => (
                   <button
@@ -577,31 +698,43 @@ export function QuoteBuilder({
                 {inclusionType === "custom" ? "Notes" : "Additional notes (optional, prints below the checklist)"}
               </label>
               <textarea className={inputCls} rows={3} value={additionalNotes} onChange={(e) => setAdditionalNotes(e.target.value)} />
-            </div>
           </section>
         </div>
 
-        <aside className="h-fit rounded-xl border border-stone-200 bg-white">
+        <aside id="builder-summary" className="flex h-fit flex-col rounded-xl border border-stone-200 bg-white lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)]">
           <div className="border-b border-dashed border-stone-200 p-4">
             <div className="font-mono text-sm font-bold" style={{ color: "#0F1E3A" }}>{isEdit ? `Editing ${cfg.noun}` : `New ${cfg.noun}`}</div>
-            <div className="text-xs text-stone-500">{cfg.dateLabel} {validUntil}</div>
+            <div className="text-xs text-stone-500">{cfg.dateLabel} {validUntil} · {lines.length} item{lines.length === 1 ? "" : "s"}</div>
           </div>
-          <div className="max-h-80 overflow-y-auto p-4">
-            {!lines.length && <div className="py-6 text-center text-sm text-stone-400">No line items yet.</div>}
-            {lines.map((l) => (
-              <div key={l.key} className={`flex items-start justify-between gap-2 border-b border-stone-100 py-2 text-sm ${editingKey === l.key ? "-mx-2 rounded bg-amber-50 px-2" : ""}`}>
-                <button type="button" onClick={() => startEdit(l)} title="Click to edit" className="min-w-0 flex-1 text-left hover:opacity-70">
-                  <div className="text-[10px] uppercase text-stone-400">{isDeduction(l) ? `deduction · ${l.category}` : `${l.category} · qty ${l.qty}`}</div>
-                  <div className={`truncate ${isDeduction(l) ? "text-red-600" : ""}`}>{l.description.split("\n")[0]}</div>
-                  {l.description.includes("\n") && <div className="whitespace-pre-line pl-2 text-xs text-stone-500">{l.description.split("\n").slice(1).join("\n")}</div>}
-                  <div className="text-[10px] font-semibold text-amber-600">{editingKey === l.key ? "Editing…" : "Tap to edit"}</div>
-                </button>
-                <div className="flex shrink-0 items-center gap-2">
-                  <div className={`font-mono ${isDeduction(l) ? "text-red-600" : ""}`}>{pesoSigned(l.qty * l.unit_price)}</div>
-                  <button onClick={() => removeLine(l.key)} className="text-red-500" aria-label="Remove">×</button>
+          <div className="min-h-0 flex-1 overflow-y-auto p-4">
+            {!lines.length && <div className="py-6 text-center text-sm text-stone-400">No items yet — add one on the left.</div>}
+            {lines.map((l) => {
+              const ded = isDeduction(l);
+              return (
+                <div key={l.key} className={`border-b border-stone-100 py-2 text-sm ${editingKey === l.key ? "-mx-2 rounded bg-amber-50 px-2" : ""}`}>
+                  <div className="flex items-start justify-between gap-2">
+                    <button type="button" onClick={() => startEdit(l)} title="Edit details" className="min-w-0 flex-1 text-left hover:opacity-70">
+                      <div className={`font-medium ${ded ? "text-red-600" : ""}`}>{l.description.split("\n")[0]}</div>
+                      {l.description.includes("\n") && <div className="whitespace-pre-line pl-2 text-xs text-stone-500">{l.description.split("\n").slice(1).join("\n")}</div>}
+                    </button>
+                    <button onClick={() => removeLine(l.key)} className="-mr-1 px-1 text-lg leading-none text-red-500" aria-label="Remove">×</button>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between gap-2">
+                    {ded ? (
+                      <span className="text-xs uppercase text-stone-400">deduction · {l.category}</span>
+                    ) : (
+                      <div className="flex items-center gap-1 text-xs text-stone-500">
+                        <input type="number" min="1" aria-label="Quantity" className="w-12 rounded border border-stone-300 px-1.5 py-1 text-center text-sm" value={l.qty} onChange={(e) => updateLine(l.key, { qty: Math.max(1, Number(e.target.value) || 1) })} />
+                        <span>×</span>
+                        <input type="number" min="0" aria-label="Unit price" className="w-24 rounded border border-stone-300 px-1.5 py-1 text-right text-sm" value={l.unit_price} onChange={(e) => updateLine(l.key, { unit_price: Math.max(0, Number(e.target.value) || 0) })} />
+                      </div>
+                    )}
+                    <div className={`font-mono font-semibold ${ded ? "text-red-600" : ""}`}>{pesoSigned(l.qty * l.unit_price)}</div>
+                  </div>
+                  {editingKey === l.key && <div className="mt-1 text-xs font-semibold text-amber-600">Editing on the left…</div>}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
           <div className="space-y-1 border-t border-stone-200 p-4 text-sm">
             <div className="flex justify-between text-stone-500"><span>Services</span><span className="font-mono">{peso(totals.services)}</span></div>
@@ -609,13 +742,24 @@ export function QuoteBuilder({
             {totals.deductions > 0 && <div className="flex justify-between text-red-600"><span>Less &amp; discounts</span><span className="font-mono">{pesoSigned(-totals.deductions)}</span></div>}
             <div className="flex justify-between border-t border-stone-200 pt-2 text-base font-bold" style={{ color: "#0F1E3A" }}><span>Total</span><span className="font-mono">{peso(grand)}</span></div>
           </div>
-          <div className="p-4">
-            <button disabled={saving} onClick={() => void save()} className="w-full rounded-lg py-2.5 text-sm font-bold disabled:opacity-50" style={{ backgroundColor: "#C9A227", color: "#0F1E3A" }}>
+          <div className="p-4 pt-0">
+            <button disabled={saving} onClick={() => void save()} className="w-full rounded-lg py-3 text-sm font-bold disabled:opacity-50" style={{ backgroundColor: "#C9A227", color: "#0F1E3A" }}>
               {saving ? "Saving…" : isEdit ? "Save changes" : `Save ${cfg.noun}`}
             </button>
           </div>
         </aside>
       </main>
+
+      {/* Phone / small tablet: total + Save always reachable at the bottom. */}
+      <div className="fixed inset-x-0 bottom-0 z-30 flex items-center gap-3 border-t border-stone-200 bg-white px-4 py-3 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] md:left-64 lg:hidden">
+        <button type="button" onClick={() => document.getElementById("builder-summary")?.scrollIntoView({ behavior: "smooth" })} className="min-w-0 flex-1 text-left">
+          <div className="text-xs text-stone-500">{lines.length} item{lines.length === 1 ? "" : "s"} · view list</div>
+          <div className="font-mono text-lg font-bold" style={{ color: "#0F1E3A" }}>{peso(grand)}</div>
+        </button>
+        <button disabled={saving} onClick={() => void save()} className="rounded-lg px-5 py-3 text-sm font-bold disabled:opacity-50" style={{ backgroundColor: "#C9A227", color: "#0F1E3A" }}>
+          {saving ? "Saving…" : "Save"}
+        </button>
+      </div>
     </>
   );
 }
