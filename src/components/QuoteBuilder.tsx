@@ -420,7 +420,7 @@ export function QuoteBuilder({
     <>
       <header className="flex flex-col gap-3 border-b border-stone-200 bg-white px-4 py-4 pl-16 sm:flex-row sm:items-center sm:justify-between md:px-8 md:py-6 md:pl-8">
         <div>
-          <div className="text-[10px] font-bold uppercase tracking-wider md:text-xs" style={{ color: "#C9A227" }}>C-Tech Client Dashboard</div>
+          <div className="text-xs font-bold uppercase tracking-wider md:text-xs" style={{ color: "#C9A227" }}>C-Tech Client Dashboard</div>
           <h1 className="text-lg font-bold md:text-2xl" style={{ color: "#0F1E3A" }}>{isEdit ? `Edit ${cfg.noun}` : `Build a ${cfg.noun}`}</h1>
         </div>
       </header>
@@ -439,7 +439,7 @@ export function QuoteBuilder({
                   <div className="absolute z-10 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-stone-200 bg-white shadow-lg">
                     {customerResults.map((c) => (
                       <button key={c.id} onClick={() => { setCustomer(c); setCustomerResults([]); }} className="block w-full px-3 py-2 text-left text-sm hover:bg-stone-50">
-                        {c.full_name} <span className="text-stone-400">· {c.email}</span>
+                        {c.full_name} <span className="text-stone-500">· {c.email}</span>
                       </button>
                     ))}
                   </div>
@@ -581,7 +581,7 @@ export function QuoteBuilder({
                       </button>
                     </>
                   ) : (
-                    <span className="text-xs text-stone-400">{pkgSize ? "Not offered in this grade" : "Pick the oil size"}</span>
+                    <span className="text-xs text-stone-500">{pkgSize ? "Not offered in this grade" : "Pick the oil size"}</span>
                   )}
                 </div>
               </div>
@@ -616,14 +616,14 @@ export function QuoteBuilder({
                     return (
                       <button key={item.id} onClick={() => { addLine({ category: catToLineCategory(item.category), description: item.name, qty: 1, unit_price: item.price, service_pricing_id: item.id }); toast.success(`Added ${item.name}`); }} className="flex items-center justify-between gap-2 rounded-lg border border-stone-200 bg-white px-3 py-2 text-left hover:border-amber-400" style={{ borderLeft: `3px solid ${badge.color}` }}>
                         <div className="min-w-0">
-                          <div className="text-[11px] font-bold uppercase tracking-wide" style={{ color: badge.color }}>{badge.label}</div>
+                          <div className="text-xs font-bold uppercase tracking-wide" style={{ color: badge.color }}>{badge.label}</div>
                           <div className="text-sm font-semibold" style={{ color: "#0F1E3A" }}>{item.name}</div>
                         </div>
                         <div className="shrink-0 font-mono text-sm text-stone-600">{peso(item.price)}</div>
                       </button>
                     );
                   })}
-                  {!filteredCatalog.length && <div className="text-sm text-stone-400">No catalog items in this category.</div>}
+                  {!filteredCatalog.length && <div className="text-sm text-stone-500">No catalog items in this category.</div>}
                 </div>
               </div>
             )}
@@ -707,7 +707,7 @@ export function QuoteBuilder({
             <div className="text-xs text-stone-500">{cfg.dateLabel} {validUntil} · {lines.length} item{lines.length === 1 ? "" : "s"}</div>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto p-4">
-            {!lines.length && <div className="py-6 text-center text-sm text-stone-400">No items yet — add one on the left.</div>}
+            {!lines.length && <div className="py-6 text-center text-sm text-stone-500">No items yet — add one on the left.</div>}
             {lines.map((l) => {
               const ded = isDeduction(l);
               return (
@@ -721,7 +721,7 @@ export function QuoteBuilder({
                   </div>
                   <div className="mt-1 flex items-center justify-between gap-2">
                     {ded ? (
-                      <span className="text-xs uppercase text-stone-400">deduction · {l.category}</span>
+                      <span className="text-xs uppercase text-stone-500">deduction · {l.category}</span>
                     ) : (
                       <div className="flex items-center gap-1 text-xs text-stone-500">
                         <input type="number" min="1" aria-label="Quantity" className="w-12 rounded border border-stone-300 px-1.5 py-1 text-center text-sm" value={l.qty} onChange={(e) => updateLine(l.key, { qty: Math.max(1, Number(e.target.value) || 1) })} />

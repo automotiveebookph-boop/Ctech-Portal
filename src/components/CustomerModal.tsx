@@ -114,7 +114,7 @@ export function CustomerModal({
           )}
 
           <div className="border-t border-stone-200 pt-4">
-            <div className="mb-3 text-[10px] font-bold uppercase tracking-wider text-stone-400">Contact Channels</div>
+            <div className="mb-3 text-xs font-bold uppercase tracking-wider text-stone-400">Contact Channels</div>
             <div className="space-y-3">
               <div>
                 <label className="mb-1 block text-xs font-semibold uppercase text-stone-600">Email</label>
@@ -137,7 +137,7 @@ export function CustomerModal({
           </div>
 
           <div className="border-t border-stone-200 pt-4">
-            <div className="mb-3 text-[10px] font-bold uppercase tracking-wider text-stone-400">Location</div>
+            <div className="mb-3 text-xs font-bold uppercase tracking-wider text-stone-400">Location</div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="mb-1 block text-xs font-semibold uppercase text-stone-600">Barangay</label>

@@ -80,7 +80,7 @@ function BillsListPage() {
     <>
       <header className="flex flex-col gap-3 border-b border-stone-200 bg-white px-4 py-4 pl-16 sm:flex-row sm:items-center sm:justify-between md:px-8 md:py-6 md:pl-8">
         <div>
-          <div className="text-[10px] font-bold uppercase tracking-wider md:text-xs" style={{ color: "#C9A227" }}>C-Tech Client Dashboard</div>
+          <div className="text-xs font-bold uppercase tracking-wider md:text-xs" style={{ color: "#C9A227" }}>C-Tech Client Dashboard</div>
           <h1 className="text-lg font-bold md:text-2xl" style={{ color: "#0F1E3A" }}>Billing</h1>
           <p className="mt-0.5 text-sm text-stone-500">{bills.length} billing statements</p>
         </div>
@@ -93,12 +93,12 @@ function BillsListPage() {
       <main className="p-4 md:p-8">
         <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3">
           <div className="rounded-xl border p-4" style={{ borderColor: "#C9A227" }}>
-            <div className="text-[10px] font-bold uppercase tracking-wider text-stone-500">To collect</div>
+            <div className="text-xs font-bold uppercase tracking-wider text-stone-500">To collect</div>
             <div className="mt-1 text-2xl font-bold text-red-600">{peso(stats.receivable)}</div>
             <div className="text-xs text-stone-500">{stats.openCount} unpaid / partial bills</div>
           </div>
           <div className="rounded-xl border border-stone-200 p-4">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-stone-500">Billed this month</div>
+            <div className="text-xs font-bold uppercase tracking-wider text-stone-500">Billed this month</div>
             <div className="mt-1 text-2xl font-bold" style={{ color: "#0F1E3A" }}>{peso(stats.billedThisMonth)}</div>
           </div>
         </div>
@@ -113,10 +113,38 @@ function BillsListPage() {
           ))}
         </div>
 
-        <div className="overflow-hidden rounded-xl border border-stone-200 bg-white">
+        {/* Phone: one card per bill instead of a wide table. */}
+        <div className="space-y-2 sm:hidden">
+          {loading ? (
+            <div className="rounded-xl border border-stone-200 bg-white px-4 py-8 text-center text-stone-500">Loading…</div>
+          ) : filtered.length === 0 ? (
+            <div className="rounded-xl border border-stone-200 bg-white px-4 py-8 text-center text-stone-500">No billing statements found.</div>
+          ) : (
+            filtered.map((b) => (
+              <div key={b.id} onClick={() => navigate({ to: "/admin/walkin/bills/$billId", params: { billId: b.id } })} className="cursor-pointer rounded-xl border border-stone-200 bg-white p-3 active:bg-stone-50">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="font-semibold" style={{ color: "#0F1E3A" }}>{b.client_name || "—"}</div>
+                    <div className="truncate text-sm text-stone-600">{b.vehicle_description || b.plate_number || "—"}</div>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <div className="font-semibold">{peso(b.total_amount ?? 0)}</div>
+                    {(b.balance ?? 0) > 0 && b.status !== "void" && <div className="text-xs font-semibold text-red-600">Bal {peso(b.balance ?? 0)}</div>}
+                  </div>
+                </div>
+                <div className="mt-2 flex items-center justify-between text-xs text-stone-500">
+                  <span className={`rounded border px-1.5 py-0.5 font-bold ${BILL_STATUS_STYLE[b.status]}`}>{STATUS_LABEL[b.status]}</span>
+                  <span className="font-mono">{b.bill_no} · due {fmtDate(b.due_date)}</span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="hidden overflow-hidden rounded-xl border border-stone-200 bg-white sm:block">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[880px] text-sm">
-              <thead className="bg-stone-50 text-[10px] uppercase tracking-wider text-stone-500">
+              <thead className="bg-stone-50 text-xs uppercase tracking-wider text-stone-500">
                 <tr>
                   <th className="px-4 py-3 text-left font-bold">Bill no.</th>
                   <th className="px-4 py-3 text-left font-bold">Client</th>
@@ -140,9 +168,9 @@ function BillsListPage() {
                       <td className="px-4 py-3 font-semibold" style={{ color: "#0F1E3A" }}>{b.client_name || "—"}</td>
                       <td className="px-4 py-3 text-stone-600">{b.vehicle_description || b.plate_number || "—"}</td>
                       <td className="px-4 py-3 text-right font-semibold">{peso(b.total_amount ?? 0)}</td>
-                      <td className={`px-4 py-3 text-right font-semibold ${(b.balance ?? 0) > 0 && b.status !== "void" ? "text-red-600" : "text-stone-400"}`}>{peso(b.balance ?? 0)}</td>
+                      <td className={`px-4 py-3 text-right font-semibold ${(b.balance ?? 0) > 0 && b.status !== "void" ? "text-red-600" : "text-stone-500"}`}>{peso(b.balance ?? 0)}</td>
                       <td className="px-4 py-3">
-                        <span className={`rounded border px-2 py-0.5 text-[10px] font-bold ${BILL_STATUS_STYLE[b.status]}`}>{STATUS_LABEL[b.status]}</span>
+                        <span className={`rounded border px-2 py-0.5 text-xs font-bold ${BILL_STATUS_STYLE[b.status]}`}>{STATUS_LABEL[b.status]}</span>
                       </td>
                       <td className="px-4 py-3 text-stone-600">{fmtDate(b.due_date)}</td>
                       <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>

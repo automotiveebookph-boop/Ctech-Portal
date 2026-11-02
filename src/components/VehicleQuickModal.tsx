@@ -124,42 +124,42 @@ export function VehicleQuickModal({
           </div>
           <button type="button" onClick={onClose} aria-label="Close" className="rounded p-1 hover:bg-stone-100"><X className="h-5 w-5" /></button>
         </div>
-        <div className="mb-2 text-[10px] font-bold uppercase tracking-wider text-stone-400">Identification</div>
+        <div className="mb-2 text-xs font-bold uppercase tracking-wider text-stone-400">Identification</div>
         <div className="grid grid-cols-2 gap-3">
           <div className="col-span-2">
-            <label className="mb-1 block text-[10px] font-semibold uppercase text-stone-600">Plate Number / Conduction Sticker</label>
+            <label className="mb-1 block text-xs font-semibold uppercase text-stone-600">Plate Number / Conduction Sticker</label>
             <input className={input} value={form.plate_number} onChange={(e) => setForm({ ...form, plate_number: e.target.value })} placeholder="Leave blank if not yet plated" />
           </div>
           <div>
-            <label className="mb-1 block text-[10px] font-semibold uppercase text-stone-600">VIN / Chassis No.</label>
+            <label className="mb-1 block text-xs font-semibold uppercase text-stone-600">VIN / Chassis No.</label>
             <input className={input} value={form.vin_number} onChange={(e) => setForm({ ...form, vin_number: e.target.value })} placeholder="Optional" />
           </div>
           <div>
-            <label className="mb-1 block text-[10px] font-semibold uppercase text-stone-600">Engine Number</label>
+            <label className="mb-1 block text-xs font-semibold uppercase text-stone-600">Engine Number</label>
             <input className={input} value={form.engine_number} onChange={(e) => setForm({ ...form, engine_number: e.target.value })} placeholder="Optional" />
           </div>
         </div>
 
-        <div className="mb-2 mt-5 text-[10px] font-bold uppercase tracking-wider text-stone-400">Vehicle Details</div>
+        <div className="mb-2 mt-5 text-xs font-bold uppercase tracking-wider text-stone-400">Vehicle Details</div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="mb-1 block text-[10px] font-semibold uppercase text-stone-600">Brand *</label>
+            <label className="mb-1 block text-xs font-semibold uppercase text-stone-600">Brand *</label>
             <input className={input} value={form.make} onChange={(e) => setForm({ ...form, make: e.target.value })} />
           </div>
           <div>
-            <label className="mb-1 block text-[10px] font-semibold uppercase text-stone-600">Model *</label>
+            <label className="mb-1 block text-xs font-semibold uppercase text-stone-600">Model *</label>
             <input className={input} value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} />
           </div>
           <div>
-            <label className="mb-1 block text-[10px] font-semibold uppercase text-stone-600">Year *</label>
+            <label className="mb-1 block text-xs font-semibold uppercase text-stone-600">Year *</label>
             <input type="number" className={input} value={form.year} onChange={(e) => setForm({ ...form, year: Number(e.target.value) })} />
           </div>
           <div>
-            <label className="mb-1 block text-[10px] font-semibold uppercase text-stone-600">Variant</label>
+            <label className="mb-1 block text-xs font-semibold uppercase text-stone-600">Variant</label>
             <input className={input} value={form.variant} onChange={(e) => setForm({ ...form, variant: e.target.value })} placeholder="e.g. 2.8 V" />
           </div>
           <div>
-            <label className="mb-1 block text-[10px] font-semibold uppercase text-stone-600">Transmission *</label>
+            <label className="mb-1 block text-xs font-semibold uppercase text-stone-600">Transmission *</label>
             <select className={input} value={form.transmission_type} onChange={(e) => setForm({ ...form, transmission_type: e.target.value })}>
               <option value="Automatic">Automatic</option>
               <option value="Manual">Manual</option>
@@ -167,23 +167,23 @@ export function VehicleQuickModal({
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-[10px] font-semibold uppercase text-stone-600">Color</label>
+            <label className="mb-1 block text-xs font-semibold uppercase text-stone-600">Color</label>
             <input className={input} value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} placeholder="Optional" />
           </div>
           <div className="col-span-2">
-            <label className="mb-1 block text-[10px] font-semibold uppercase text-stone-600">Current Mileage (km) *</label>
+            <label className="mb-1 block text-xs font-semibold uppercase text-stone-600">Current Mileage (km) *</label>
             <input type="number" className={input} value={form.current_km} onChange={(e) => setForm({ ...form, current_km: Number(e.target.value) })} />
           </div>
         </div>
 
-        <div className="mb-2 mt-5 text-[10px] font-bold uppercase tracking-wider text-stone-400">Service History</div>
+        <div className="mb-2 mt-5 text-xs font-bold uppercase tracking-wider text-stone-400">Service History</div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="mb-1 block text-[10px] font-semibold uppercase text-stone-600">Last Visit Date</label>
+            <label className="mb-1 block text-xs font-semibold uppercase text-stone-600">Last Visit Date</label>
             <input type="date" className={input} value={form.last_service_date} onChange={(e) => setForm({ ...form, last_service_date: e.target.value })} />
           </div>
           <div>
-            <label className="mb-1 block text-[10px] font-semibold uppercase text-stone-600">Last Visit Mileage (km)</label>
+            <label className="mb-1 block text-xs font-semibold uppercase text-stone-600">Last Visit Mileage (km)</label>
             <input type="number" className={input} value={form.last_service_km} onChange={(e) => setForm({ ...form, last_service_km: Number(e.target.value) })} />
           </div>
           <div className="col-span-2 rounded-lg bg-stone-50 px-3 py-2 text-xs text-stone-600">
@@ -192,18 +192,18 @@ export function VehicleQuickModal({
           </div>
         </div>
 
-        <div className="mb-2 mt-5 text-[10px] font-bold uppercase tracking-wider text-stone-400">Technical Specifications (Quick Reference)</div>
+        <div className="mb-2 mt-5 text-xs font-bold uppercase tracking-wider text-stone-400">Technical Specifications (Quick Reference)</div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="mb-1 block text-[10px] font-semibold uppercase text-stone-600">Engine Code</label>
+            <label className="mb-1 block text-xs font-semibold uppercase text-stone-600">Engine Code</label>
             <input className={input} value={form.engine_code} onChange={(e) => setForm({ ...form, engine_code: e.target.value })} placeholder="e.g. 1GD-FTV" />
           </div>
           <div>
-            <label className="mb-1 block text-[10px] font-semibold uppercase text-stone-600">Tire Size</label>
+            <label className="mb-1 block text-xs font-semibold uppercase text-stone-600">Tire Size</label>
             <input className={input} value={form.tire_size} onChange={(e) => setForm({ ...form, tire_size: e.target.value })} placeholder="e.g. 265/65R17" />
           </div>
           <div className="col-span-2">
-            <label className="mb-1 block text-[10px] font-semibold uppercase text-stone-600">Bolt Pattern</label>
+            <label className="mb-1 block text-xs font-semibold uppercase text-stone-600">Bolt Pattern</label>
             <input className={input} value={form.bolt_pattern} onChange={(e) => setForm({ ...form, bolt_pattern: e.target.value })} placeholder="e.g. 6x139.7" />
           </div>
         </div>

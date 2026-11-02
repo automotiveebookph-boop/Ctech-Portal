@@ -212,7 +212,7 @@ export function AdminAppointments({
       <header className="flex items-center justify-between border-b border-stone-200 bg-white px-4 py-4 pl-16 md:px-8 md:py-6 md:pl-8">
         <div>
           <div
-            className="text-[10px] font-bold uppercase tracking-wider md:text-xs"
+            className="text-xs font-bold uppercase tracking-wider md:text-xs"
             style={{ color: "#C9A227" }}
           >
             C-Tech Staff View
@@ -224,7 +224,7 @@ export function AdminAppointments({
       </header>
 
       <main className="p-4 md:p-8">
-        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="mb-6 grid grid-cols-3 gap-2 sm:gap-4">
           <StatCard
             icon={<Clock className="h-5 w-5 text-amber-700" />}
             iconBg="rgba(217,119,6,0.15)"
@@ -250,7 +250,7 @@ export function AdminAppointments({
 
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <div className="relative min-w-[200px] flex-1 max-w-sm">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-500" />
             <input
               type="text"
               value={search}
@@ -303,10 +303,48 @@ export function AdminAppointments({
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-xl border border-stone-200 bg-white">
+        {/* Phone: one card per booking instead of a wide table. */}
+        <div className="space-y-2 sm:hidden">
+          {loading ? (
+            <div className="rounded-xl border border-stone-200 bg-white px-4 py-8 text-center text-stone-500">Loading…</div>
+          ) : filtered.length === 0 ? (
+            <div className="rounded-xl border border-stone-200 bg-white px-4 py-8 text-center text-stone-500">No appointments match these filters.</div>
+          ) : (
+            filtered.map((r) => {
+              const who = bookingWho(r);
+              const tel = phoneHref(who.phone);
+              return (
+                <div key={r.id} className={`rounded-xl border bg-white p-3 ${isMissedBooking(r) ? "border-red-200" : "border-stone-200"}`}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="font-semibold" style={{ color: "#0F1E3A" }}>{who.name}</div>
+                      <div className="truncate text-sm text-stone-600">{[who.plate, who.vehicle].filter(Boolean).join(" · ") || "—"}</div>
+                      <div className="mt-0.5 text-xs text-stone-500">{r.service_type} · {formatDate(r.preferred_date)}, {r.preferred_time}</div>
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      <StatusBadge status={r.status} />
+                      {isMissedBooking(r) && <span className="text-xs font-semibold text-red-600">Date passed</span>}
+                    </div>
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    {tel && <a href={`tel:${tel}`} className="inline-flex items-center gap-1 rounded border border-stone-300 px-2.5 py-1.5 text-xs font-semibold text-stone-700"><Phone className="h-3.5 w-3.5" /> Call</a>}
+                    {tel && <a href={`sms:${tel}`} className="inline-flex items-center gap-1 rounded border border-stone-300 px-2.5 py-1.5 text-xs font-semibold text-stone-700"><MessageSquare className="h-3.5 w-3.5" /> Text</a>}
+                    <div className="ml-auto flex gap-2">
+                      {r.status === "pending" && <button onClick={() => setModal({ kind: "confirm", row: r, note: "" })} className="rounded bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white">Confirm</button>}
+                      {r.status === "confirmed" && <button onClick={() => setModal({ kind: "complete", row: r })} className="rounded px-3 py-1.5 text-xs font-semibold text-white" style={{ backgroundColor: "#0F1E3A" }}>Complete</button>}
+                      <button onClick={() => openEdit(r)} className="rounded border border-stone-300 px-3 py-1.5 text-xs font-semibold text-stone-700">Edit</button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        <div className="hidden overflow-hidden rounded-xl border border-stone-200 bg-white sm:block">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[900px] text-sm">
-              <thead className="bg-stone-50 text-[10px] uppercase tracking-wider text-stone-500">
+              <thead className="bg-stone-50 text-xs uppercase tracking-wider text-stone-500">
                 <tr>
                   <th className="px-4 py-3 text-left font-bold">Date Requested</th>
                   <th className="px-4 py-3 text-left font-bold">Customer</th>
@@ -337,7 +375,7 @@ export function AdminAppointments({
                         <div className="text-xs text-stone-500">
                           {formatDate(r.created_at)}
                         </div>
-                        <div className="text-[10px] text-stone-400">
+                        <div className="text-xs text-stone-500">
                           {new Date(r.created_at).toLocaleDateString("en-US", {
                             weekday: "long",
                           })}
@@ -354,12 +392,12 @@ export function AdminAppointments({
                           {who.phone ?? who.email ?? ""}
                         </div>
                         {who.online && (
-                          <span className="mt-1 inline-block rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700">Online booking</span>
+                          <span className="mt-1 inline-block rounded bg-blue-50 px-1.5 py-0.5 text-xs font-semibold text-blue-700">Online booking</span>
                         )}
                         {tel && (
                           <div className="mt-1.5 flex gap-1.5">
-                            <a href={`tel:${tel}`} className="inline-flex items-center gap-1 rounded border border-stone-300 px-2 py-0.5 text-[11px] font-semibold text-stone-700 hover:bg-stone-100"><Phone className="h-3 w-3" /> Call</a>
-                            <a href={`sms:${tel}`} className="inline-flex items-center gap-1 rounded border border-stone-300 px-2 py-0.5 text-[11px] font-semibold text-stone-700 hover:bg-stone-100"><MessageSquare className="h-3 w-3" /> Text</a>
+                            <a href={`tel:${tel}`} className="inline-flex items-center gap-1 rounded border border-stone-300 px-2 py-0.5 text-xs font-semibold text-stone-700 hover:bg-stone-100"><Phone className="h-3 w-3" /> Call</a>
+                            <a href={`sms:${tel}`} className="inline-flex items-center gap-1 rounded border border-stone-300 px-2 py-0.5 text-xs font-semibold text-stone-700 hover:bg-stone-100"><MessageSquare className="h-3 w-3" /> Text</a>
                           </div>
                         )}
                       </td>
@@ -382,7 +420,7 @@ export function AdminAppointments({
                       </td>
                       <td className="px-4 py-4 align-top">
                         <StatusBadge status={r.status} />
-                        {isMissedBooking(r) && <div className="mt-1 text-[10px] font-semibold text-red-600">Date passed</div>}
+                        {isMissedBooking(r) && <div className="mt-1 text-xs font-semibold text-red-600">Date passed</div>}
                       </td>
                       <td className="px-4 py-4 align-top">
                         <div className="flex flex-wrap items-center justify-end gap-2">
@@ -454,7 +492,7 @@ export function AdminAppointments({
               </h2>
               <button
                 onClick={() => setModal({ kind: "none" })}
-                className="text-stone-400 hover:text-stone-700"
+                className="text-stone-500 hover:text-stone-700"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -660,18 +698,18 @@ function StatCard({
   sub: string;
 }) {
   return (
-    <div className="rounded-xl border border-stone-200 bg-white p-6">
+    <div className="rounded-xl border border-stone-200 bg-white p-3 sm:p-6">
       <div
-        className="mb-4 flex h-10 w-10 items-center justify-center rounded-full"
+        className="mb-4 hidden h-10 w-10 items-center justify-center rounded-full sm:flex"
         style={{ backgroundColor: iconBg }}
       >
         {icon}
       </div>
-      <div className="mb-1 text-3xl font-bold" style={{ color: "#0F1E3A" }}>
+      <div className="mb-1 text-2xl font-bold sm:text-3xl" style={{ color: "#0F1E3A" }}>
         {value}
       </div>
       <div className="text-sm font-medium text-stone-700">{label}</div>
-      <div className="mt-1 text-xs text-stone-500">{sub}</div>
+      <div className="mt-1 hidden text-xs text-stone-500 sm:block">{sub}</div>
     </div>
   );
 }
@@ -681,11 +719,11 @@ function StatusBadge({ status }: { status: string }) {
     pending: "bg-amber-50 text-amber-800 border-amber-200",
     confirmed: "bg-emerald-50 text-emerald-700 border-emerald-200",
     completed: "bg-stone-100 text-stone-600 border-stone-200",
-    cancelled: "bg-stone-50 text-stone-400 border-stone-200",
+    cancelled: "bg-stone-50 text-stone-500 border-stone-200",
   };
   return (
     <span
-      className={`inline-block rounded-md border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${map[status] ?? map.pending}`}
+      className={`inline-block rounded-md border px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider ${map[status] ?? map.pending}`}
     >
       {status}
     </span>

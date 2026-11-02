@@ -165,14 +165,14 @@ export function JobOrderModal({
             <textarea rows={2} className={input} value={form.recommendation} onChange={(e) => setForm({ ...form, recommendation: e.target.value })} placeholder="e.g. Front brake pads need inspection" />
             <div className="mt-3 grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1 block text-[10px] font-semibold uppercase text-stone-600">Priority</label>
+                <label className="mb-1 block text-xs font-semibold uppercase text-stone-600">Priority</label>
                 <select className={input} value={form.recommendation_priority} onChange={(e) => setForm({ ...form, recommendation_priority: e.target.value as RecommendationPriority })}>
                   <option value="">— None —</option>
                   {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-[10px] font-semibold uppercase text-stone-600">Recommended return (km)</label>
+                <label className="mb-1 block text-xs font-semibold uppercase text-stone-600">Recommended return (km)</label>
                 <input type="number" className={input} value={form.recommendation_due_km} onChange={(e) => setForm({ ...form, recommendation_due_km: e.target.value })} placeholder="e.g. 2000" />
               </div>
             </div>

@@ -125,7 +125,7 @@ function QuotesListPage() {
     <>
       <header className="flex flex-col gap-3 border-b border-stone-200 bg-white px-4 py-4 pl-16 sm:flex-row sm:items-center sm:justify-between md:px-8 md:py-6 md:pl-8">
         <div>
-          <div className="text-[10px] font-bold uppercase tracking-wider md:text-xs" style={{ color: "#C9A227" }}>
+          <div className="text-xs font-bold uppercase tracking-wider md:text-xs" style={{ color: "#C9A227" }}>
             C-Tech Client Dashboard
           </div>
           <h1 className="text-lg font-bold md:text-2xl" style={{ color: "#0F1E3A" }}>Quotations</h1>
@@ -142,24 +142,24 @@ function QuotesListPage() {
       </header>
 
       <main className="p-4 md:p-8">
-        <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div className="mb-4 grid grid-cols-2 gap-2 sm:mb-6 sm:gap-3 md:grid-cols-4">
           <div className="rounded-xl border p-4" style={{ borderColor: "#C9A227" }}>
-            <div className="text-[10px] font-bold uppercase tracking-wider text-stone-500">Issued this week</div>
+            <div className="text-xs font-bold uppercase tracking-wider text-stone-500">Issued this week</div>
             <div className="mt-1 text-2xl font-bold" style={{ color: "#0F1E3A" }}>{stats.issuedThisWeek}</div>
             <div className="text-xs text-stone-500">of {stats.total} total</div>
           </div>
           <button onClick={() => setFilter("followup")} className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-left">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-amber-700">To follow up</div>
+            <div className="text-xs font-bold uppercase tracking-wider text-amber-700">To follow up</div>
             <div className="mt-1 text-2xl font-bold text-amber-700">{followUpCount}</div>
             <div className="text-xs text-amber-700/80">waiting 2+ days, tap to see</div>
           </button>
           <div className="rounded-xl border border-stone-200 p-4">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-stone-500">Still waiting (30 days)</div>
+            <div className="text-xs font-bold uppercase tracking-wider text-stone-500">Still waiting (30 days)</div>
             <div className="mt-1 text-2xl font-bold" style={{ color: "#0F1E3A" }}>{peso(stats.waitingValue)}</div>
             <div className="text-xs text-stone-500">quoted, no answer yet</div>
           </div>
           <div className="rounded-xl border border-stone-200 p-4">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-stone-500">Pushed through (30 days)</div>
+            <div className="text-xs font-bold uppercase tracking-wider text-stone-500">Pushed through (30 days)</div>
             <div className="mt-1 text-2xl font-bold text-emerald-700">{peso(stats.pushedValue)}</div>
             <div className="text-xs text-stone-500">{stats.pushed} of {stats.recent} quotes</div>
           </div>
@@ -167,7 +167,7 @@ function QuotesListPage() {
 
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <div className="relative w-full max-w-sm">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-500" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -189,10 +189,46 @@ function QuotesListPage() {
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-xl border border-stone-200 bg-white">
+        {/* Phone: one card per quote instead of a wide table. */}
+        <div className="space-y-2 sm:hidden">
+          {loading ? (
+            <div className="rounded-xl border border-stone-200 bg-white px-4 py-8 text-center text-stone-500">Loading…</div>
+          ) : filtered.length === 0 ? (
+            <div className="rounded-xl border border-stone-200 bg-white px-4 py-8 text-center text-stone-500">{filter === "followup" ? "Nothing to follow up right now. 🎉" : "No quotations found."}</div>
+          ) : (
+            filtered.map((q) => {
+              const outcome = outcomeOf(q);
+              const due = needsFollowUp(q);
+              return (
+                <div key={q.id} onClick={() => navigate({ to: "/admin/walkin/quotes/$quoteId", params: { quoteId: q.id } })} className="cursor-pointer rounded-xl border border-stone-200 bg-white p-3 active:bg-stone-50">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="font-semibold" style={{ color: "#0F1E3A" }}>{q.client_name || "—"}</div>
+                      <div className="truncate text-sm text-stone-600">{[q.vehicle_description, q.plate_number].filter(Boolean).join(" · ") || "—"}</div>
+                    </div>
+                    <div className="shrink-0 text-right font-semibold">{peso(q.total_amount ?? 0)}</div>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    <div className="min-w-0 text-xs text-stone-500">
+                      <span className={`mr-1.5 rounded border px-1.5 py-0.5 font-bold ${OUTCOME_STYLE[outcome]}`}>{OUTCOME_LABEL[outcome]}</span>
+                      {outcome === "waiting" ? `${daysAgo(q.created_at)}d ago` : outcome === "not_pushed" ? q.outcome_reason ?? "" : ""}
+                    </div>
+                    {due && (
+                      <button onClick={(e) => { e.stopPropagation(); setFollowUp(q); }} className="flex shrink-0 items-center gap-1 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white">
+                        <MessageCircle className="h-3.5 w-3.5" /> Follow up
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        <div className="hidden overflow-hidden rounded-xl border border-stone-200 bg-white sm:block">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[600px] text-sm">
-              <thead className="bg-stone-50 text-[10px] uppercase tracking-wider text-stone-500">
+              <thead className="bg-stone-50 text-xs uppercase tracking-wider text-stone-500">
                 <tr>
                   <th className="px-4 py-3 text-left font-bold">Client</th>
                   <th className="px-4 py-3 text-left font-bold">Vehicle</th>
@@ -219,18 +255,18 @@ function QuotesListPage() {
                       >
                         <td className="px-4 py-3">
                           <div className="font-semibold" style={{ color: "#0F1E3A" }}>{q.client_name || "—"}</div>
-                          <div className="font-mono text-[11px] text-stone-400">{q.quote_no} · {fmtDate(q.created_at)}</div>
+                          <div className="font-mono text-xs text-stone-500">{q.quote_no} · {fmtDate(q.created_at)}</div>
                         </td>
                         <td className="px-4 py-3 text-stone-600">
                           {q.vehicle_description || "—"}
-                          {q.plate_number && <div className="text-[11px] text-stone-400">{q.plate_number}</div>}
+                          {q.plate_number && <div className="text-xs text-stone-500">{q.plate_number}</div>}
                         </td>
                         <td className="whitespace-nowrap px-4 py-3 text-right font-semibold">{peso(q.total_amount ?? 0)}</td>
                         <td className="px-4 py-3">
-                          <span className={`whitespace-nowrap rounded border px-2 py-0.5 text-[10px] font-bold ${OUTCOME_STYLE[outcome]}`}>{OUTCOME_LABEL[outcome]}</span>
-                          {outcome === "not_pushed" && q.outcome_reason && <div className="mt-1 text-[11px] text-stone-400">{q.outcome_reason}</div>}
+                          <span className={`whitespace-nowrap rounded border px-2 py-0.5 text-xs font-bold ${OUTCOME_STYLE[outcome]}`}>{OUTCOME_LABEL[outcome]}</span>
+                          {outcome === "not_pushed" && q.outcome_reason && <div className="mt-1 text-xs text-stone-500">{q.outcome_reason}</div>}
                           {outcome === "waiting" && (
-                            <div className={`mt-1 text-[11px] ${due ? "font-semibold text-amber-700" : "text-stone-400"}`}>
+                            <div className={`mt-1 text-xs ${due ? "font-semibold text-amber-700" : "text-stone-500"}`}>
                               {daysAgo(q.created_at)}d ago{q.followed_up_at ? ` · followed up ${daysAgo(q.followed_up_at)}d ago` : q.status === "sent" ? " · sent" : ""}
                             </div>
                           )}

@@ -35,13 +35,13 @@ export function ServiceRecordModal({
           </div>
 
           <div>
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">Service Performed</div>
+            <div className="text-xs font-semibold uppercase tracking-wider text-stone-400">Service Performed</div>
             <div className="mt-0.5 whitespace-pre-wrap text-stone-700">{record.service_performed}</div>
           </div>
 
           {record.notes && (
             <div>
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">Notes</div>
+              <div className="text-xs font-semibold uppercase tracking-wider text-stone-400">Notes</div>
               <div className="mt-0.5 whitespace-pre-wrap text-stone-700">{record.notes}</div>
             </div>
           )}
@@ -83,7 +83,7 @@ export function ServiceRecordModal({
 function Field({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
   return (
     <div>
-      <div className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">{label}</div>
+      <div className="text-xs font-semibold uppercase tracking-wider text-stone-400">{label}</div>
       <div className={`mt-0.5 text-stone-700 ${bold ? "font-bold" : ""}`} style={bold ? { color: "#0F1E3A" } : undefined}>
         {value}
       </div>

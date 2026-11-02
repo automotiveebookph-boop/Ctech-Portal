@@ -115,10 +115,10 @@ function CustomerProfilePage() {
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl font-bold md:text-2xl" style={{ color: "#0F1E3A" }}>{customer.full_name}</h1>
-              <span className="rounded-md border border-stone-200 bg-stone-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-stone-600">
+              <span className="rounded-md border border-stone-200 bg-stone-50 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-stone-600">
                 {CUSTOMER_TYPE_LABEL[customer.customer_type]}
               </span>
-              <span className={`rounded-md border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${isReturning ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-amber-200 bg-amber-50 text-amber-800"}`}>
+              <span className={`rounded-md border px-2 py-0.5 text-xs font-bold uppercase tracking-wide ${isReturning ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-amber-200 bg-amber-50 text-amber-800"}`}>
                 {isReturning ? "Returning Customer" : "New Customer"}
               </span>
             </div>
@@ -189,10 +189,10 @@ function CustomerProfilePage() {
                   <div key={v.id} className="rounded-xl border border-stone-200 bg-white p-5">
                     <div className="mb-2 flex items-start justify-between">
                       <div className="flex items-center gap-2">
-                        <Car className="h-4 w-4 text-stone-400" />
+                        <Car className="h-4 w-4 text-stone-500" />
                         <div className="font-bold" style={{ color: "#0F1E3A" }}>{v.plate_number || "No Plate on File"}</div>
                       </div>
-                      <span className={`inline-flex items-center gap-1.5 rounded border px-2 py-0.5 text-[10px] font-bold ${STATUS_STYLES[v.service_status].bg} ${STATUS_STYLES[v.service_status].text} ${STATUS_STYLES[v.service_status].border}`}>
+                      <span className={`inline-flex items-center gap-1.5 rounded border px-2 py-0.5 text-xs font-bold ${STATUS_STYLES[v.service_status].bg} ${STATUS_STYLES[v.service_status].text} ${STATUS_STYLES[v.service_status].border}`}>
                         <span className={`h-1.5 w-1.5 rounded-full ${STATUS_STYLES[v.service_status].dot}`} />
                         {v.service_status}
                       </span>
@@ -247,7 +247,7 @@ function CustomerProfilePage() {
           <div className="overflow-hidden rounded-xl border border-stone-200 bg-white">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[760px] text-sm">
-                <thead className="bg-stone-50 text-[10px] uppercase tracking-wider text-stone-500">
+                <thead className="bg-stone-50 text-xs uppercase tracking-wider text-stone-500">
                   <tr>
                     <th className="px-4 py-3 text-left font-bold">Date</th>
                     <th className="px-4 py-3 text-left font-bold">Vehicle</th>
@@ -329,7 +329,7 @@ function CustomerProfilePage() {
 function SummaryCard({ label, value, valueClass }: { label: string; value: string; valueClass?: string }) {
   return (
     <div className="rounded-xl border border-stone-200 bg-white p-5">
-      <div className="text-[10px] uppercase tracking-wider text-stone-500">{label}</div>
+      <div className="text-xs uppercase tracking-wider text-stone-500">{label}</div>
       <div className={`mt-1 text-xl font-bold ${valueClass ?? ""}`} style={valueClass ? undefined : { color: "#0F1E3A" }}>{value}</div>
     </div>
   );
@@ -338,7 +338,7 @@ function SummaryCard({ label, value, valueClass }: { label: string; value: strin
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">{label}</dt>
+      <dt className="text-xs font-semibold uppercase tracking-wider text-stone-500">{label}</dt>
       <dd className="mt-0.5 text-stone-700">{value}</dd>
     </div>
   );
@@ -366,7 +366,7 @@ function CustomerDocuments({ customerId, vehicleIds }: { customerId: string; veh
       const bills: DocRow[] = (b.data ?? []).map((x) => ({
         id: x.id, no: x.bill_no, kind: "bill", created_at: x.created_at, total: x.total_amount ?? 0,
         label: x.status === "paid" ? "Paid" : x.status === "void" ? "Void" : `Balance ${peso(x.balance ?? 0)}`,
-        tone: x.status === "paid" ? "text-emerald-700" : x.status === "void" ? "text-stone-400" : "text-red-600",
+        tone: x.status === "paid" ? "text-emerald-700" : x.status === "void" ? "text-stone-500" : "text-red-600",
       }));
       setRows([...quotes, ...bills].sort((a, c) => c.created_at.localeCompare(a.created_at)));
     })();
@@ -386,13 +386,13 @@ function CustomerDocuments({ customerId, vehicleIds }: { customerId: string; veh
             className="flex items-center justify-between gap-3 px-4 py-3 text-sm hover:bg-stone-50"
           >
             <div>
-              <span className={`mr-2 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${r.kind === "bill" ? "bg-amber-100 text-amber-800" : "bg-blue-50 text-blue-700"}`}>{r.kind === "bill" ? "Bill" : "Quote"}</span>
+              <span className={`mr-2 rounded px-1.5 py-0.5 text-xs font-bold uppercase ${r.kind === "bill" ? "bg-amber-100 text-amber-800" : "bg-blue-50 text-blue-700"}`}>{r.kind === "bill" ? "Bill" : "Quote"}</span>
               <span className="font-mono text-xs">{r.no}</span>
-              <span className="ml-2 text-xs text-stone-400">{formatDate(r.created_at)}</span>
+              <span className="ml-2 text-xs text-stone-500">{formatDate(r.created_at)}</span>
             </div>
             <div className="text-right">
               <div className="font-semibold">{peso(r.total)}</div>
-              <div className={`text-[11px] font-semibold ${r.tone}`}>{r.label}</div>
+              <div className={`text-xs font-semibold ${r.tone}`}>{r.label}</div>
             </div>
           </Link>
         ))}

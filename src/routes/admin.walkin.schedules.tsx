@@ -11,7 +11,7 @@ function WalkinSchedulesPage() {
       <header className="flex items-center justify-between border-b border-stone-200 bg-white px-4 py-4 pl-16 md:px-8 md:py-6 md:pl-8">
         <div>
           <div
-            className="text-[10px] font-bold uppercase tracking-wider md:text-xs"
+            className="text-xs font-bold uppercase tracking-wider md:text-xs"
             style={{ color: "#C9A227" }}
           >
             C-Tech Client Dashboard

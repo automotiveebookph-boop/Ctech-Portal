@@ -158,7 +158,7 @@ function WalkinOverview() {
     <>
       <header className="flex items-center justify-between border-b border-stone-200 bg-white px-4 py-4 pl-16 md:px-8 md:py-6 md:pl-8">
         <div>
-          <div className="text-[10px] font-bold uppercase tracking-wider md:text-xs" style={{ color: "#C9A227" }}>
+          <div className="text-xs font-bold uppercase tracking-wider md:text-xs" style={{ color: "#C9A227" }}>
             C-Tech Client Dashboard
           </div>
           <h1 className="text-lg font-bold md:text-2xl" style={{ color: "#0F1E3A" }}>
@@ -169,14 +169,14 @@ function WalkinOverview() {
 
       <main className="p-4 md:p-8">
         <div className="mb-6 rounded-2xl border-2 p-5 md:p-6" style={{ borderColor: "#C9A227", backgroundColor: "#0F1E3A" }}>
-          <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "#C9A227" }}>
+          <div className="text-xs font-bold uppercase tracking-widest" style={{ color: "#C9A227" }}>
             Front Desk Quick Search
           </div>
           <h2 className="mb-4 mt-1 text-base font-bold text-white md:text-lg">
             Search a plate number to pull up history and start a job order
           </h2>
           <div className="relative">
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-400" />
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-stone-500" />
             <input
               autoFocus
               value={plateQuery}
@@ -210,7 +210,7 @@ function WalkinOverview() {
                         <div className="text-xs text-stone-500">
                           Last service: {v.last_service_date ? formatDate(v.last_service_date) : "—"}
                         </div>
-                        <span className={`inline-flex items-center gap-1.5 rounded border px-2 py-0.5 text-[10px] font-bold ${s.bg} ${s.text} ${s.border}`}>
+                        <span className={`inline-flex items-center gap-1.5 rounded border px-2 py-0.5 text-xs font-bold ${s.bg} ${s.text} ${s.border}`}>
                           <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
                           {v.service_status}
                         </span>
@@ -370,10 +370,10 @@ function StatusPill({ status }: { status: string }) {
     pending: "bg-amber-50 text-amber-800 border-amber-200",
     confirmed: "bg-emerald-50 text-emerald-700 border-emerald-200",
     completed: "bg-stone-100 text-stone-600 border-stone-200",
-    cancelled: "bg-stone-50 text-stone-400 border-stone-200",
+    cancelled: "bg-stone-50 text-stone-500 border-stone-200",
   };
   return (
-    <span className={`inline-block rounded-md border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${map[status] ?? map.pending}`}>
+    <span className={`inline-block rounded-md border px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider ${map[status] ?? map.pending}`}>
       {status}
     </span>
   );

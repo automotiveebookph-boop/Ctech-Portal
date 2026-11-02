@@ -29,7 +29,7 @@ function PublicBillPage() {
   }, [billId]);
 
   if (state === "loading") {
-    return <div className="flex min-h-screen items-center justify-center bg-stone-50 text-stone-400">Loading your billing statement…</div>;
+    return <div className="flex min-h-screen items-center justify-center bg-stone-50 text-stone-500">Loading your billing statement…</div>;
   }
 
   if (state === "notfound" || !res?.bill) {

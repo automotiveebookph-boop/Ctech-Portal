@@ -230,7 +230,7 @@ function VehicleProfilePage() {
           <div className="overflow-hidden rounded-xl border border-stone-200 bg-white">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[900px] text-sm">
-                <thead className="bg-stone-50 text-[10px] uppercase tracking-wider text-stone-500">
+                <thead className="bg-stone-50 text-xs uppercase tracking-wider text-stone-500">
                   <tr>
                     <th className="px-4 py-3 text-left font-bold">Date</th>
                     <th className="px-4 py-3 text-left font-bold">Mileage</th>
@@ -329,7 +329,7 @@ function VehicleProfilePage() {
 function SummaryCard({ label, value, valueClass }: { label: string; value: string; valueClass?: string }) {
   return (
     <div className="rounded-xl border border-stone-200 bg-white p-5">
-      <div className="text-[10px] uppercase tracking-wider text-stone-500">{label}</div>
+      <div className="text-xs uppercase tracking-wider text-stone-500">{label}</div>
       <div className={`mt-1 text-xl font-bold ${valueClass ?? ""}`} style={valueClass ? undefined : { color: "#0F1E3A" }}>{value}</div>
     </div>
   );
@@ -338,7 +338,7 @@ function SummaryCard({ label, value, valueClass }: { label: string; value: strin
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">{label}</dt>
+      <dt className="text-xs font-semibold uppercase tracking-wider text-stone-500">{label}</dt>
       <dd className="mt-0.5 text-stone-700">{value}</dd>
     </div>
   );

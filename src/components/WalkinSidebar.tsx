@@ -76,6 +76,8 @@ export function WalkinSidebar({ email }: { email?: string }) {
   const [open, setOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
   const [dueCount, setDueCount] = useState(0);
+  // Red badges only for mileage-overdue cars; routine 3-month check-ins stay grey.
+  const [urgentCount, setUrgentCount] = useState(0);
   const [dueVehicles, setDueVehicles] = useState<DueVehicle[]>([]);
   const [notifOpen, setNotifOpen] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
@@ -103,7 +105,9 @@ export function WalkinSidebar({ email }: { email?: string }) {
         supabaseFleet
           .from("appointments")
           .select("id", { count: "exact", head: true })
-          .eq("status", "pending"),
+          .eq("status", "pending")
+          // Badge only bookings still ahead — old pending ones with passed dates are noise.
+          .gte("preferred_date", new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10)),
         supabaseFleet
           .from("vehicle_status_view")
           .select("id, plate_number, make, model, service_status, customer_id, last_service_date")
@@ -128,6 +132,7 @@ export function WalkinSidebar({ email }: { email?: string }) {
         (v) => v.service_status === "OVERDUE" || v.service_status === "DUE NOW" || isCheckInDue(v.last_service_date),
       );
       setDueCount(dueRows.length);
+      setUrgentCount(allRows.filter((v) => v.service_status === "OVERDUE" || v.service_status === "DUE NOW").length);
 
       const customerIds = [...new Set(dueRows.map((v) => v.customer_id))];
       const nameById = new Map<string, string>();
@@ -209,7 +214,7 @@ export function WalkinSidebar({ email }: { email?: string }) {
             <div className="leading-tight">
               <div className="text-lg font-bold text-white">C-TECH</div>
               <div
-                className="text-[10px] font-medium uppercase"
+                className="text-xs font-medium uppercase"
                 style={{ letterSpacing: "0.3em", color: "#C9A227" }}
               >
                 Client Dashboard
@@ -225,9 +230,9 @@ export function WalkinSidebar({ email }: { email?: string }) {
               className="relative flex h-9 w-9 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white"
             >
               <Bell className="h-5 w-5" />
-              {dueCount > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
-                  {dueCount > 9 ? "9+" : dueCount}
+              {urgentCount > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-xs font-bold text-white">
+                  {urgentCount > 9 ? "9+" : urgentCount}
                 </span>
               )}
             </button>
@@ -266,7 +271,7 @@ export function WalkinSidebar({ email }: { email?: string }) {
                             </div>
                             <div className="truncate text-xs text-stone-500">{v.customer_name ?? "—"}</div>
                           </div>
-                          <span className={`shrink-0 rounded border px-2 py-0.5 text-[10px] font-bold ${s.bg} ${s.text} ${s.border}`}>
+                          <span className={`shrink-0 rounded border px-2 py-0.5 text-xs font-bold ${s.bg} ${s.text} ${s.border}`}>
                             {label}
                           </span>
                         </Link>
@@ -305,12 +310,17 @@ export function WalkinSidebar({ email }: { email?: string }) {
                   {label}
                 </span>
                 {showBadge === "pending" && pendingCount > 0 && (
-                  <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-amber-500 px-1.5 text-[10px] font-bold text-white">
+                  <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-amber-500 px-1.5 text-xs font-bold text-white">
                     {pendingCount}
                   </span>
                 )}
-                {showBadge === "due" && dueCount > 0 && (
-                  <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
+                {showBadge === "due" && urgentCount > 0 && (
+                  <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-bold text-white">
+                    {urgentCount}
+                  </span>
+                )}
+                {showBadge === "due" && urgentCount === 0 && dueCount > 0 && (
+                  <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-white/10 px-1.5 text-xs font-semibold text-white/60" title="Due for 3-month check-in">
                     {dueCount}
                   </span>
                 )}
@@ -329,7 +339,7 @@ export function WalkinSidebar({ email }: { email?: string }) {
           </Link>
           <div className="mb-3 rounded-lg bg-white/5 px-4 py-3">
             <div
-              className="text-[10px] uppercase"
+              className="text-xs uppercase"
               style={{ letterSpacing: "0.12em", color: "#C9A227" }}
             >
               Admin Account
@@ -339,7 +349,7 @@ export function WalkinSidebar({ email }: { email?: string }) {
             </div>
             <div className="mt-2">
               <span
-                className="rounded px-2 py-0.5 text-[10px] font-bold"
+                className="rounded px-2 py-0.5 text-xs font-bold"
                 style={{ backgroundColor: "#C9A227", color: "#0F1E3A" }}
               >
                 STAFF

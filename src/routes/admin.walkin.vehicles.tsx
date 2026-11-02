@@ -97,7 +97,7 @@ function WalkinVehiclesListPage() {
     <>
       <header className="flex flex-col gap-3 border-b border-stone-200 bg-white px-4 py-4 pl-16 sm:flex-row sm:items-center sm:justify-between md:px-8 md:py-6 md:pl-8">
         <div>
-          <div className="text-[10px] font-bold uppercase tracking-wider md:text-xs" style={{ color: "#C9A227" }}>
+          <div className="text-xs font-bold uppercase tracking-wider md:text-xs" style={{ color: "#C9A227" }}>
             C-Tech Client Dashboard
           </div>
           <h1 className="text-lg font-bold md:text-2xl" style={{ color: "#0F1E3A" }}>
@@ -116,7 +116,7 @@ function WalkinVehiclesListPage() {
 
       <main className="p-4 md:p-8">
         <div className="mb-6 max-w-md relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-500" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -128,7 +128,7 @@ function WalkinVehiclesListPage() {
         <div className="overflow-hidden rounded-xl border border-stone-200 bg-white">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[860px] text-sm">
-              <thead className="bg-stone-50 text-[10px] uppercase tracking-wider text-stone-500">
+              <thead className="bg-stone-50 text-xs uppercase tracking-wider text-stone-500">
                 <tr>
                   <th className="px-4 py-3 text-left font-bold">Plate</th>
                   <th className="px-4 py-3 text-left font-bold">Vehicle</th>
@@ -161,7 +161,7 @@ function WalkinVehiclesListPage() {
                         </td>
                         <td className="px-4 py-3 font-semibold">{v.current_km.toLocaleString()}</td>
                         <td className="px-4 py-3">
-                          <span className={`inline-flex items-center gap-1.5 rounded border px-2 py-0.5 text-[10px] font-bold ${s.bg} ${s.text} ${s.border}`}>
+                          <span className={`inline-flex items-center gap-1.5 rounded border px-2 py-0.5 text-xs font-bold ${s.bg} ${s.text} ${s.border}`}>
                             <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
                             {v.service_status}
                           </span>
@@ -389,5 +389,5 @@ function VehicleModal({
 }
 
 function Label({ children }: { children: React.ReactNode }) {
-  return <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-stone-600">{children}</label>;
+  return <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-stone-600">{children}</label>;
 }

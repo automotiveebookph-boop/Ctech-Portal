@@ -69,23 +69,23 @@ export function BillDocument({ bill, lines, preparerName }: { bill: BillHeader; 
 
         <div className="grid grid-cols-1 border border-stone-200 sm:grid-cols-2">
           <div className="border-b border-stone-200 p-4 sm:border-b-0 sm:border-r">
-            <div className="text-[10px] font-bold uppercase text-stone-400">Billed to</div>
+            <div className="text-xs font-bold uppercase text-stone-500">Billed to</div>
             <div className="text-sm font-semibold" style={{ color: "#0F1E3A" }}>{bill.client_name || "—"}</div>
             <div className="text-xs text-stone-500">{bill.client_contact}</div>
           </div>
           <div className="p-4">
-            <div className="text-[10px] font-bold uppercase text-stone-400">Vehicle</div>
+            <div className="text-xs font-bold uppercase text-stone-500">Vehicle</div>
             <div className="text-sm font-semibold" style={{ color: "#0F1E3A" }}>{bill.vehicle_description || "—"}</div>
             <div className="text-xs text-stone-500">Plate {bill.plate_number || "—"}{bill.odometer_km ? ` · ${bill.odometer_km.toLocaleString()} km` : ""}</div>
           </div>
         </div>
         <div className="grid grid-cols-1 border border-t-0 border-stone-200 sm:grid-cols-2">
           <div className="border-b border-stone-200 p-4 sm:border-b-0 sm:border-r">
-            <div className="text-[10px] font-bold uppercase text-stone-400">Date issued / due date</div>
+            <div className="text-xs font-bold uppercase text-stone-500">Date issued / due date</div>
             <div className="text-sm">{fmtDate(bill.created_at)} — {fmtDate(bill.due_date)}</div>
           </div>
           <div className="p-4">
-            <div className="text-[10px] font-bold uppercase text-stone-400">Prepared by</div>
+            <div className="text-xs font-bold uppercase text-stone-500">Prepared by</div>
             <div className="text-sm">{preparerName}</div>
           </div>
         </div>
@@ -107,7 +107,7 @@ export function BillDocument({ bill, lines, preparerName }: { bill: BillHeader; 
 
         {balance > 0 && bill.status !== "void" && (
           <div className="mt-5 rounded-xl border-2 p-4" style={{ borderColor: "#C9A227" }}>
-            <div className="mb-3 text-[10px] font-bold uppercase tracking-wide" style={{ color: "#C9A227" }}>How to pay</div>
+            <div className="mb-3 text-xs font-bold uppercase tracking-wide" style={{ color: "#C9A227" }}>How to pay</div>
             <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
               <img src="/gcash-qr.jpg" alt="GCash QR code for C-Tech Automotive" className="w-44 shrink-0 rounded-lg border border-stone-200" />
               <div className="space-y-2 text-sm">
@@ -128,10 +128,10 @@ export function BillDocument({ bill, lines, preparerName }: { bill: BillHeader; 
         )}
 
         <div className="mt-5 text-sm">
-          <div className="mb-1 text-[10px] font-bold uppercase text-stone-400">Inclusions &amp; notes</div>
+          <div className="mb-1 text-xs font-bold uppercase text-stone-500">Inclusions &amp; notes</div>
           <div className="whitespace-pre-wrap">{bill.notes || "—"}</div>
         </div>
-        <div className="mt-4 border-t border-stone-200 pt-3 text-xs text-stone-400">
+        <div className="mt-4 border-t border-stone-200 pt-3 text-xs text-stone-500">
           This is a billing statement and not an official receipt. Please settle the balance on or before the due date. Thank you for choosing C-Tech Automotive.
         </div>
       </div>
@@ -143,9 +143,9 @@ function LinesTable({ title, lines }: { title: string; lines: BillLine[] }) {
   return (
     <div className="mt-4 overflow-x-auto">
       <table className="w-full text-sm">
-        <caption className="border-b-2 pb-1 text-left text-[10px] font-bold uppercase tracking-wide" style={{ color: "#C9A227", borderColor: "#0F1E3A" }}>{title}</caption>
+        <caption className="border-b-2 pb-1 text-left text-xs font-bold uppercase tracking-wide" style={{ color: "#C9A227", borderColor: "#0F1E3A" }}>{title}</caption>
         <thead>
-          <tr className="text-[10px] uppercase text-stone-400">
+          <tr className="text-xs uppercase text-stone-500">
             <th className="border-b border-stone-200 py-1.5 text-left font-bold">Description</th>
             <th className="hidden border-b border-stone-200 py-1.5 text-right font-bold sm:table-cell">Qty</th>
             <th className="hidden border-b border-stone-200 py-1.5 text-right font-bold sm:table-cell">Unit price</th>
@@ -157,14 +157,14 @@ function LinesTable({ title, lines }: { title: string; lines: BillLine[] }) {
             <tr key={l.id} className={isDeduction(l) ? "text-red-600" : undefined}>
               <td className="whitespace-pre-line border-b border-stone-100 py-1.5 pr-2">
                 {l.description}
-                <span className="block text-[11px] text-stone-400 sm:hidden">Qty {l.qty} · {pesoSigned(l.unit_price)} each</span>
+                <span className="block text-xs text-stone-500 sm:hidden">Qty {l.qty} · {pesoSigned(l.unit_price)} each</span>
               </td>
               <td className="hidden border-b border-stone-100 py-1.5 text-right font-mono sm:table-cell">{l.qty}</td>
               <td className="hidden border-b border-stone-100 py-1.5 text-right font-mono sm:table-cell">{pesoSigned(l.unit_price)}</td>
               <td className="whitespace-nowrap border-b border-stone-100 py-1.5 text-right font-mono">{pesoSigned(l.qty * l.unit_price)}</td>
             </tr>
           )) : (
-            <tr><td colSpan={4} className="py-2 italic text-stone-400">No {title.toLowerCase()}</td></tr>
+            <tr><td colSpan={4} className="py-2 italic text-stone-500">No {title.toLowerCase()}</td></tr>
           )}
         </tbody>
       </table>

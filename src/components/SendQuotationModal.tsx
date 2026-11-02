@@ -96,13 +96,13 @@ export function SendQuotationModal({ clientName, quotationLink, onClose, onSent,
               </button>
             ))}
           </div>
-          <p className="mt-1 text-[11px] text-stone-400">Only pick this if the customer has actually said they prefer it — otherwise leave it as "No title."</p>
+          <p className="mt-1 text-xs text-stone-500">Only pick this if the customer has actually said they prefer it — otherwise leave it as "No title."</p>
         </div>
 
         <div className="mb-4">
           <div className="mb-1.5 flex items-center justify-between gap-2">
             <label className="text-xs font-semibold uppercase text-stone-600">Message Preview</label>
-            <span className="text-right text-[11px] text-stone-400">Edit freely — this is exactly what gets copied</span>
+            <span className="text-right text-xs text-stone-500">Edit freely — this is exactly what gets copied</span>
           </div>
           <textarea
             value={message}
@@ -138,7 +138,7 @@ export function SendQuotationModal({ clientName, quotationLink, onClose, onSent,
           </button>
         </div>
 
-        <p className="mt-3 text-center text-[11px] text-stone-400">
+        <p className="mt-3 text-center text-xs text-stone-500">
           This copies the message and opens the app — you still choose the conversation and hit send yourself.
         </p>
       </div>

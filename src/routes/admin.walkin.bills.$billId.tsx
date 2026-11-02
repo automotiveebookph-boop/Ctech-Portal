@@ -146,7 +146,7 @@ function BillDetailPage() {
     <>
       <header className="flex flex-col gap-3 border-b border-stone-200 bg-white px-4 py-4 pl-16 sm:flex-row sm:items-center sm:justify-between md:px-8 md:py-6 md:pl-8">
         <div>
-          <div className="text-[10px] font-bold uppercase tracking-wider md:text-xs" style={{ color: "#C9A227" }}>C-Tech Client Dashboard</div>
+          <div className="text-xs font-bold uppercase tracking-wider md:text-xs" style={{ color: "#C9A227" }}>C-Tech Client Dashboard</div>
           <h1 className="text-lg font-bold md:text-2xl" style={{ color: "#0F1E3A" }}>{bill.bill_no}</h1>
           {bill.quote_id && (
             <Link to="/admin/walkin/quotes/$quoteId" params={{ quoteId: bill.quote_id }} className="text-xs text-stone-500 hover:underline">
@@ -190,13 +190,13 @@ function BillDetailPage() {
             </div>
 
             {payments.length === 0 ? (
-              <div className="mb-3 rounded-lg bg-stone-50 py-3 text-center text-xs text-stone-400">No payments yet.</div>
+              <div className="mb-3 rounded-lg bg-stone-50 py-3 text-center text-xs text-stone-500">No payments yet.</div>
             ) : (
               <div className="mb-3 divide-y divide-stone-100 rounded-lg border border-stone-100">
                 {payments.map((p) => (
                   <div key={p.id} className="flex items-center justify-between gap-2 px-3 py-2 text-sm">
                     <div className="min-w-0">
-                      <div className="font-semibold">{methodLabel(p.method)} <span className="font-normal text-stone-400">· {fmtDate(p.paid_at)}</span></div>
+                      <div className="font-semibold">{methodLabel(p.method)} <span className="font-normal text-stone-500">· {fmtDate(p.paid_at)}</span></div>
                       {p.reference && <div className="truncate text-xs text-stone-500">Ref: {p.reference}</div>}
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
@@ -254,7 +254,7 @@ function BillDetailPage() {
                   <datalist id="bill-technicians">{technicians.map((t) => <option key={t} value={t} />)}</datalist>
                 </div>
               </div>
-              {!histKm && <p className="mt-2 text-[11px] text-amber-700">Tip: add the odometer so mileage-based PMS reminders work.</p>}
+              {!histKm && <p className="mt-2 text-xs text-amber-700">Tip: add the odometer so mileage-based PMS reminders work.</p>}
               <button disabled={savingHist} onClick={() => void saveToHistory()} className="mt-3 w-full rounded-lg py-2.5 text-sm font-bold text-white disabled:opacity-50" style={{ backgroundColor: "#0F1E3A" }}>
                 {savingHist ? "Saving…" : "Save to service history"}
               </button>

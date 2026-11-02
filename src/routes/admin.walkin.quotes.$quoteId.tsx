@@ -232,7 +232,7 @@ function QuoteDetailPage() {
     <>
       <header className="flex flex-col gap-3 border-b border-stone-200 bg-white px-4 py-4 pl-16 sm:flex-row sm:items-center sm:justify-between md:px-8 md:py-6 md:pl-8">
         <div>
-          <div className="text-[10px] font-bold uppercase tracking-wider md:text-xs" style={{ color: "#C9A227" }}>C-Tech Client Dashboard</div>
+          <div className="text-xs font-bold uppercase tracking-wider md:text-xs" style={{ color: "#C9A227" }}>C-Tech Client Dashboard</div>
           <h1 className="text-lg font-bold md:text-2xl" style={{ color: "#0F1E3A" }}>{quote.quote_no}</h1>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -307,7 +307,7 @@ function QuoteDetailPage() {
           <span className="text-xs font-bold uppercase text-stone-500">Outcome</span>
           <span className={`rounded border px-2 py-0.5 text-xs font-bold ${OUTCOME_STYLE[outcome]}`}>{OUTCOME_LABEL[outcome]}</span>
           {outcome === "not_pushed" && quote.outcome_reason && <span className="text-xs text-stone-500">— {quote.outcome_reason}</span>}
-          {outcome === "waiting" && quote.followed_up_at && <span className="text-xs text-stone-400">followed up {fmtDate(quote.followed_up_at)}</span>}
+          {outcome === "waiting" && quote.followed_up_at && <span className="text-xs text-stone-500">followed up {fmtDate(quote.followed_up_at)}</span>}
           <div className="ml-auto flex flex-wrap gap-2">
             {outcome !== "pushed" && !billId && (
               <button disabled={busy} onClick={() => void setOutcome("pushed")} className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50">Pushed through</button>
@@ -346,23 +346,23 @@ function QuoteDetailPage() {
           <div className="p-8">
           <div className="grid grid-cols-2 border border-stone-200">
             <div className="border-r border-stone-200 p-4">
-              <div className="text-[10px] font-bold uppercase text-stone-400">Prepared for</div>
+              <div className="text-xs font-bold uppercase text-stone-500">Prepared for</div>
               <div className="text-sm font-semibold" style={{ color: "#0F1E3A" }}>{quote.client_name || "—"}</div>
               <div className="text-xs text-stone-500">{quote.client_contact}</div>
             </div>
             <div className="p-4">
-              <div className="text-[10px] font-bold uppercase text-stone-400">Vehicle</div>
+              <div className="text-xs font-bold uppercase text-stone-500">Vehicle</div>
               <div className="text-sm font-semibold" style={{ color: "#0F1E3A" }}>{quote.vehicle_description || "—"}</div>
               <div className="text-xs text-stone-500">Plate {quote.plate_number || "—"}{quote.odometer_km ? ` · ${quote.odometer_km.toLocaleString()} km` : ""}</div>
             </div>
           </div>
           <div className="grid grid-cols-2 border border-t-0 border-stone-200">
             <div className="border-r border-stone-200 p-4">
-              <div className="text-[10px] font-bold uppercase text-stone-400">Date issued / valid until</div>
+              <div className="text-xs font-bold uppercase text-stone-500">Date issued / valid until</div>
               <div className="text-sm">{fmtDate(quote.created_at)} — {fmtDate(quote.valid_until)}</div>
             </div>
             <div className="p-4">
-              <div className="text-[10px] font-bold uppercase text-stone-400">Prepared by</div>
+              <div className="text-xs font-bold uppercase text-stone-500">Prepared by</div>
               <div className="text-sm">{preparerName}</div>
             </div>
           </div>
@@ -381,10 +381,10 @@ function QuoteDetailPage() {
           </div>
 
           <div className="mt-5 text-sm">
-            <div className="mb-1 text-[10px] font-bold uppercase text-stone-400">Inclusions &amp; notes</div>
+            <div className="mb-1 text-xs font-bold uppercase text-stone-500">Inclusions &amp; notes</div>
             <div className="whitespace-pre-wrap">{quote.notes || "—"}</div>
           </div>
-          <div className="mt-4 border-t border-stone-200 pt-3 text-xs text-stone-400">
+          <div className="mt-4 border-t border-stone-200 pt-3 text-xs text-stone-500">
             This quotation is an estimate and is valid until the date above. Not a job order — work begins only once this quotation is approved.
           </div>
           </div>
@@ -397,9 +397,9 @@ function QuoteDetailPage() {
 function LinesTable({ title, lines }: { title: string; lines: QuoteLine[] }) {
   return (
     <table className="mt-4 w-full text-sm">
-      <caption className="border-b-2 pb-1 text-left text-[10px] font-bold uppercase tracking-wide" style={{ color: "#C9A227", borderColor: "#0F1E3A" }}>{title}</caption>
+      <caption className="border-b-2 pb-1 text-left text-xs font-bold uppercase tracking-wide" style={{ color: "#C9A227", borderColor: "#0F1E3A" }}>{title}</caption>
       <thead>
-        <tr className="text-[10px] uppercase text-stone-400">
+        <tr className="text-xs uppercase text-stone-500">
           <th className="border-b border-stone-200 py-1.5 text-left font-bold">Description</th>
           <th className="border-b border-stone-200 py-1.5 text-right font-bold">Qty</th>
           <th className="border-b border-stone-200 py-1.5 text-right font-bold">Unit price</th>
@@ -415,7 +415,7 @@ function LinesTable({ title, lines }: { title: string; lines: QuoteLine[] }) {
             <td className="border-b border-stone-100 py-1.5 text-right font-mono">{pesoSigned(l.qty * l.unit_price)}</td>
           </tr>
         )) : (
-          <tr><td colSpan={4} className="py-2 italic text-stone-400">No {title.toLowerCase()}</td></tr>
+          <tr><td colSpan={4} className="py-2 italic text-stone-500">No {title.toLowerCase()}</td></tr>
         )}
       </tbody>
     </table>
