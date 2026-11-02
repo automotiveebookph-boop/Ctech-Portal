@@ -9,6 +9,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const REDIRECT = "https://admin.ctechautomotiveph.com/reset-password";
+const APP_ORIGIN = "https://staff.ctechautomotiveph.com";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -48,7 +49,7 @@ serve(async (req) => {
       kind = "recovery";
       ({ data: linkData, error: linkError } = await supabase.auth.admin.generateLink({ type: "recovery", email, options: { redirectTo: REDIRECT } }));
     }
-    if (linkError || !linkData?.properties?.action_link || !linkData.user) {
+    if (linkError || !linkData?.properties?.hashed_token || !linkData.user) {
       return json({ error: "Couldn't create the link: " + (linkError?.message ?? "unknown error") }, 500);
     }
     const userId = linkData.user.id;
@@ -64,7 +65,10 @@ serve(async (req) => {
     }
     await supabase.from("staff").update({ auth_user_id: userId }).eq("id", staff.id);
 
-    return json({ link: linkData.properties.action_link, kind, role: existing?.role ?? "technician" });
+    // Send our own /activate page, not Supabase's one-time verify URL: chat apps
+    // preload links, which would use the one-time code before the tech taps it.
+    const link = `${APP_ORIGIN}/activate?th=${encodeURIComponent(linkData.properties.hashed_token)}&type=${kind}`;
+    return json({ link, kind, role: existing?.role ?? "technician" });
   } catch (err) {
     return json({ error: String(err) }, 500);
   }
