@@ -9,6 +9,7 @@ import {
   FileText,
   LogOut,
   Menu,
+  Package,
   Receipt,
   Users,
   Wrench,
@@ -42,7 +43,8 @@ type NavItem = {
     | "/admin/walkin/reminders"
     | "/admin/walkin/schedules"
     | "/admin/walkin/quotes"
-    | "/admin/walkin/bills";
+    | "/admin/walkin/bills"
+    | "/admin/walkin/items";
   label: string;
   icon: typeof BarChart3;
   showBadge?: "pending" | "due";
@@ -53,6 +55,7 @@ const NAV: NavItem[] = [
   { to: "/admin/walkin/customers", label: "Customers", icon: Users },
   { to: "/admin/walkin/quotes", label: "Quotations", icon: FileText },
   { to: "/admin/walkin/bills", label: "Billing", icon: Receipt },
+  { to: "/admin/walkin/items", label: "Services & Parts", icon: Package },
   {
     to: "/admin/walkin/appointments",
     label: "Appointments",
