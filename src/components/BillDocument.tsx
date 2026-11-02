@@ -18,6 +18,10 @@ export type BillHeader = {
   notes: string | null;
 };
 
+// Same GCash account shown on the landing page's home-service payment step.
+const GCASH_NUMBER = "0926 695 6051";
+const GCASH_NAME = "RO****O J* D.";
+
 export const BILL_STATUS_STYLE: Record<string, string> = {
   unpaid: "bg-red-50 text-red-700 border-red-200",
   partial: "bg-amber-50 text-amber-700 border-amber-200",
@@ -100,6 +104,28 @@ export function BillDocument({ bill, lines, preparerName }: { bill: BillHeader; 
             <div className="flex justify-between px-3 py-2 text-base font-bold text-white" style={{ backgroundColor: "#0F1E3A" }}><span>Balance due</span><span className="font-mono">{peso(balance)}</span></div>
           </div>
         </div>
+
+        {balance > 0 && bill.status !== "void" && (
+          <div className="mt-5 rounded-xl border-2 p-4" style={{ borderColor: "#C9A227" }}>
+            <div className="mb-3 text-[10px] font-bold uppercase tracking-wide" style={{ color: "#C9A227" }}>How to pay</div>
+            <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
+              <img src="/gcash-qr.jpg" alt="GCash QR code for C-Tech Automotive" className="w-36 shrink-0 rounded-lg border border-stone-200" />
+              <div className="space-y-2 text-sm">
+                <div>
+                  <div className="font-semibold" style={{ color: "#0F1E3A" }}>GCash</div>
+                  <div>Scan the QR, or send to <span className="font-mono font-semibold">{GCASH_NUMBER}</span> ({GCASH_NAME})</div>
+                </div>
+                <div>
+                  <div className="font-semibold" style={{ color: "#0F1E3A" }}>Cash or card</div>
+                  <div>At the shop — 9016 DRT Highway, Sto. Cristo, Pulilan, Bulacan</div>
+                </div>
+                <div className="rounded-lg bg-stone-50 px-3 py-2 text-xs text-stone-600">
+                  After paying by GCash, please send us the reference number or a screenshot on Messenger so we can record it. Amount due: <strong>{peso(balance)}</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="mt-5 text-sm">
           <div className="mb-1 text-[10px] font-bold uppercase text-stone-400">Inclusions &amp; notes</div>

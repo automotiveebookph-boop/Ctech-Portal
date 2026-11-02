@@ -146,7 +146,7 @@ function BillDetailPage() {
           <BillDocument bill={bill} lines={lines} preparerName={preparerName} />
         </div>
 
-        <aside className="h-fit space-y-4">
+        <aside className="order-first h-fit space-y-4 xl:order-last">
           <section className="rounded-xl border border-stone-200 bg-white p-4">
             <h2 className="mb-3 text-sm font-bold" style={{ color: "#0F1E3A" }}>Payments</h2>
             <div className="mb-3 space-y-1 text-sm">

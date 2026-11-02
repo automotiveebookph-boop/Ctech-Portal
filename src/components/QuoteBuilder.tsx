@@ -9,6 +9,7 @@ type CatalogItem = { id: string; category: string; name: string; price: number }
 type StaffOption = { id: string; full_name: string };
 type CustomerResult = { id: string; full_name: string; email: string | null; phone: string | null };
 type VehicleResult = { id: string; plate_number: string; make: string; model: string; year: number | null; customer_id: string | null };
+type SavedItem = { title: string; price: number; category: "service" | "part"; count: number };
 type Line = { key: number; category: "service" | "part"; description: string; qty: number; unit_price: number; service_pricing_id?: string | null };
 
 const catLabel = (c: string) => ({ package: "PMS & Oil Change Packages", engine_oil: "Engine Oil", filter: "Filters", wheel_balance: "Wheel Service", add_on: "Add-ons" }[c] ?? c);
@@ -154,6 +155,15 @@ export function QuoteBuilder({
   const [customQty, setCustomQty] = useState("1");
   const [customPrice, setCustomPrice] = useState("");
   const [customInclusions, setCustomInclusions] = useState("");
+  const [savedItems, setSavedItems] = useState<SavedItem[]>([]);
+  const savedMatch = savedItems.find((s) => s.title.toLowerCase() === customDesc.trim().toLowerCase()) ?? null;
+
+  function onCustomDescChange(value: string) {
+    setCustomDesc(value);
+    // Picking a remembered line fills in its last price and type (only if price is still empty).
+    const hit = savedItems.find((s) => s.title.toLowerCase() === value.trim().toLowerCase());
+    if (hit && !customPrice) { setCustomPrice(String(hit.price)); setCustomCat(hit.category); }
+  }
   const [dedKind, setDedKind] = useState<"discount" | "less">("discount");
   const [dedReason, setDedReason] = useState("");
   const [dedCat, setDedCat] = useState<"service" | "part">("service");
@@ -162,12 +172,24 @@ export function QuoteBuilder({
 
   useEffect(() => {
     (async () => {
-      const [{ data: cat }, { data: st }] = await Promise.all([
+      const [{ data: cat }, { data: st }, { data: past }] = await Promise.all([
         supabaseFleet.from("service_pricing").select("id, category, name, price").eq("active", true).order("category").order("name"),
         supabaseFleet.from("staff").select("id, full_name").eq("active", true).order("full_name"),
+        supabaseFleet.from("quote_line_items").select("description, unit_price, category").gt("unit_price", 0).order("created_at", { ascending: false }).limit(2000),
       ]);
       setCatalog((cat ?? []) as CatalogItem[]);
       setStaff((st ?? []) as StaffOption[]);
+      // Remember every line typed before: newest price wins, most-used first.
+      const seen = new Map<string, SavedItem>();
+      for (const l of (past ?? []) as { description: string; unit_price: number; category: "service" | "part" }[]) {
+        const title = l.description.split("\n")[0].trim();
+        const key = title.toLowerCase();
+        if (!title) continue;
+        const prev = seen.get(key);
+        if (prev) prev.count++;
+        else seen.set(key, { title, price: Number(l.unit_price), category: l.category, count: 1 });
+      }
+      setSavedItems([...seen.values()].sort((a, b) => b.count - a.count));
       if (st?.length && !initialPreparedBy) setPreparedBy(st[0].id);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -416,7 +438,14 @@ export function QuoteBuilder({
             <div ref={customFormRef} className={`mt-4 border-t border-dashed border-stone-200 pt-4 ${editingLine && !editingDeduction ? "-mx-2 rounded-lg bg-amber-50 px-2 pb-2 ring-2 ring-amber-400" : ""}`}>
             {editingLine && !editingDeduction && <EditingBanner onCancel={cancelEdit} />}
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_80px_80px_100px_auto]">
-              <div><label className={labelCls}>Custom line description</label><input className={inputCls} value={customDesc} onChange={(e) => setCustomDesc(e.target.value)} /></div>
+              <div>
+                <label className={labelCls}>Custom line description</label>
+                <input className={inputCls} list="saved-line-items" value={customDesc} onChange={(e) => onCustomDescChange(e.target.value)} placeholder="Start typing — past items appear" />
+                <datalist id="saved-line-items">
+                  {savedItems.map((s) => <option key={s.title} value={s.title}>{`${peso(s.price)} · ${s.category}`}</option>)}
+                </datalist>
+                {savedMatch && <div className="mt-1 text-[11px] text-stone-500">Last quoted at {peso(savedMatch.price)} · used {savedMatch.count}×</div>}
+              </div>
               <div><label className={labelCls}>Type</label><select className={inputCls} value={customCat} onChange={(e) => setCustomCat(e.target.value as "service" | "part")}><option value="service">Service</option><option value="part">Part</option></select></div>
               <div><label className={labelCls}>Qty</label><input type="number" min="1" className={inputCls} value={customQty} onChange={(e) => setCustomQty(e.target.value)} /></div>
               <div><label className={labelCls}>Price</label><input type="number" min="0" className={inputCls} value={customPrice} onChange={(e) => setCustomPrice(e.target.value)} /></div>

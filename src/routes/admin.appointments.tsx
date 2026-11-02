@@ -1,9 +1,24 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { CalendarCheck, CheckCircle2, Clock, Search, X } from "lucide-react";
+import { CalendarCheck, CheckCircle2, Clock, MessageSquare, Phone, Search, X } from "lucide-react";
 import { supabaseFleet } from "@/lib/supabase-fleet";
 import { formatDate } from "@/lib/my-car-session";
+import { isMissedBooking, parseLandingNotes, phoneHref } from "@/lib/booking-notes";
+
+// Name / phone / vehicle for a booking, falling back to the details packed into
+// the notes of landing-page bookings that have no customer record yet.
+function bookingWho(r: Row) {
+  const landing = parseLandingNotes(r.notes);
+  return {
+    name: r.customers?.full_name ?? landing?.name ?? "—",
+    phone: r.customers?.phone ?? landing?.contact ?? null,
+    email: r.customers?.email ?? landing?.email ?? null,
+    plate: r.vehicles?.plate_number ?? null,
+    vehicle: r.vehicles ? `${r.vehicles.make} ${r.vehicles.model}` : landing?.vehicle ?? "",
+    online: Boolean(landing),
+  };
+}
 
 
 
@@ -67,7 +82,7 @@ export function AdminAppointments({
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<ModalState>({ kind: "none" });
   const [saving, setSaving] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<"all" | Row["status"]>("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "missed" | Row["status"]>("all");
   const [search, setSearch] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -89,6 +104,7 @@ export function AdminAppointments({
   }, []);
 
   const pending = rows.filter((r) => r.status === "pending").length;
+  const missed = rows.filter(isMissedBooking).length;
   const confirmed = rows.filter((r) => r.status === "confirmed").length;
   const today = new Date();
   const inOneWeek = new Date();
@@ -101,7 +117,7 @@ export function AdminAppointments({
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
     return rows.filter((r) => {
-      if (statusFilter !== "all" && r.status !== statusFilter) return false;
+      if (statusFilter === "missed" ? !isMissedBooking(r) : statusFilter !== "all" && r.status !== statusFilter) return false;
       if (fromDate && r.preferred_date < fromDate) return false;
       if (toDate && r.preferred_date > toDate) return false;
       if (!q) return true;
@@ -214,7 +230,7 @@ export function AdminAppointments({
             iconBg="rgba(217,119,6,0.15)"
             value={loading ? "—" : pending}
             label="Pending"
-            sub="awaiting confirmation"
+            sub={missed ? `${missed} with dates already passed` : "awaiting confirmation"}
           />
           <StatCard
             icon={<CheckCircle2 className="h-5 w-5 text-emerald-700" />}
@@ -270,7 +286,7 @@ export function AdminAppointments({
             </button>
           )}
           <div className="flex flex-wrap gap-2">
-            {(["all", "pending", "confirmed", "completed", "cancelled"] as const).map((s) => (
+            {(["all", "pending", "missed", "confirmed", "completed", "cancelled"] as const).map((s) => (
               <button
                 key={s}
                 onClick={() => setStatusFilter(s)}
@@ -281,7 +297,7 @@ export function AdminAppointments({
                 }`}
                 style={statusFilter === s ? { backgroundColor: "#0F1E3A" } : undefined}
               >
-                {s === "all" ? "All" : s}
+                {s === "all" ? "All" : s === "missed" ? `Missed (${missed})` : s}
               </button>
             ))}
           </div>
@@ -315,8 +331,8 @@ export function AdminAppointments({
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((r) => (
-                    <tr key={r.id} className="hover:bg-stone-50">
+                  filtered.map((r) => { const who = bookingWho(r); const tel = phoneHref(who.phone); return (
+                    <tr key={r.id} className={`hover:bg-stone-50 ${isMissedBooking(r) ? "bg-red-50/40" : ""}`}>
                       <td className="px-4 py-4 align-top">
                         <div className="text-xs text-stone-500">
                           {formatDate(r.created_at)}
@@ -332,18 +348,27 @@ export function AdminAppointments({
                           className="font-semibold"
                           style={{ color: "#0F1E3A" }}
                         >
-                          {r.customers?.full_name ?? "—"}
+                          {who.name}
                         </div>
                         <div className="text-xs text-stone-500">
-                          {r.customers?.phone ?? r.customers?.email ?? ""}
+                          {who.phone ?? who.email ?? ""}
                         </div>
+                        {who.online && (
+                          <span className="mt-1 inline-block rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700">Online booking</span>
+                        )}
+                        {tel && (
+                          <div className="mt-1.5 flex gap-1.5">
+                            <a href={`tel:${tel}`} className="inline-flex items-center gap-1 rounded border border-stone-300 px-2 py-0.5 text-[11px] font-semibold text-stone-700 hover:bg-stone-100"><Phone className="h-3 w-3" /> Call</a>
+                            <a href={`sms:${tel}`} className="inline-flex items-center gap-1 rounded border border-stone-300 px-2 py-0.5 text-[11px] font-semibold text-stone-700 hover:bg-stone-100"><MessageSquare className="h-3 w-3" /> Text</a>
+                          </div>
+                        )}
                       </td>
                       <td className="px-4 py-4 align-top">
                         <div className="font-semibold">
-                          {r.vehicles?.plate_number ?? "—"}
+                          {who.plate ?? (who.vehicle ? "" : "—")}
                         </div>
-                        <div className="text-xs text-stone-500">
-                          {r.vehicles?.make} {r.vehicles?.model}
+                        <div className={who.plate ? "text-xs text-stone-500" : "text-sm"}>
+                          {who.vehicle}
                         </div>
                       </td>
                       <td className="px-4 py-4 align-top text-sm">
@@ -357,6 +382,7 @@ export function AdminAppointments({
                       </td>
                       <td className="px-4 py-4 align-top">
                         <StatusBadge status={r.status} />
+                        {isMissedBooking(r) && <div className="mt-1 text-[10px] font-semibold text-red-600">Date passed</div>}
                       </td>
                       <td className="px-4 py-4 align-top">
                         <div className="flex flex-wrap items-center justify-end gap-2">
@@ -404,7 +430,7 @@ export function AdminAppointments({
                         </div>
                       </td>
                     </tr>
-                  ))
+                  ); })
                 )}
               </tbody>
             </table>
@@ -437,11 +463,10 @@ export function AdminAppointments({
             {"row" in modal && modal.kind !== "edit" && (
               <div className="mb-4 rounded-lg bg-stone-50 p-4 text-sm">
                 <div>
-                  <strong>{modal.row.customers?.full_name}</strong>
+                  <strong>{bookingWho(modal.row).name}</strong>
                 </div>
                 <div className="text-stone-600">
-                  {modal.row.vehicles?.plate_number} ·{" "}
-                  {modal.row.vehicles?.make} {modal.row.vehicles?.model}
+                  {[bookingWho(modal.row).plate, bookingWho(modal.row).vehicle].filter(Boolean).join(" · ")}
                 </div>
                 <div className="mt-1 text-stone-600">
                   {modal.row.service_type} · {formatDate(modal.row.preferred_date)} (

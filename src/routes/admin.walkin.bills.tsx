@@ -1,4 +1,4 @@
-import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -34,6 +34,7 @@ function BillsPage() {
 }
 
 function BillsListPage() {
+  const navigate = useNavigate();
   const [bills, setBills] = useState<Bill[]>([]);
   const [status, setStatus] = useState("all");
   const [loading, setLoading] = useState(true);
@@ -134,7 +135,7 @@ function BillsListPage() {
                   <tr><td colSpan={8} className="px-4 py-10 text-center text-stone-500">No billing statements found.</td></tr>
                 ) : (
                   filtered.map((b) => (
-                    <tr key={b.id} className="hover:bg-stone-50">
+                    <tr key={b.id} onClick={() => navigate({ to: "/admin/walkin/bills/$billId", params: { billId: b.id } })} className="cursor-pointer hover:bg-stone-50">
                       <td className="px-4 py-3 font-mono text-xs">{b.bill_no}</td>
                       <td className="px-4 py-3 font-semibold" style={{ color: "#0F1E3A" }}>{b.client_name || "—"}</td>
                       <td className="px-4 py-3 text-stone-600">{b.vehicle_description || b.plate_number || "—"}</td>
@@ -144,7 +145,7 @@ function BillsListPage() {
                         <span className={`rounded border px-2 py-0.5 text-[10px] font-bold ${BILL_STATUS_STYLE[b.status]}`}>{STATUS_LABEL[b.status]}</span>
                       </td>
                       <td className="px-4 py-3 text-stone-600">{fmtDate(b.due_date)}</td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-3">
                           <Link to="/admin/walkin/bills/$billId" params={{ billId: b.id }} className="rounded-lg px-3 py-1.5 text-xs font-bold" style={{ backgroundColor: "#0F1E3A", color: "white" }}>View</Link>
                           {b.status !== "void" && (

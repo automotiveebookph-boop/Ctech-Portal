@@ -1,9 +1,12 @@
-import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Plus } from "lucide-react";
+import { MessageCircle, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 import { supabaseFleet } from "@/lib/supabase-fleet";
 import { peso } from "@/lib/fleet-utils";
+import { publicQuoteUrl } from "@/lib/quotation-message";
+import { needsFollowUp, OUTCOME_LABEL, OUTCOME_STYLE, outcomeOf, type Outcome } from "@/lib/quote-outcome";
+import { SendQuotationModal } from "@/components/SendQuotationModal";
 
 export const Route = createFileRoute("/admin/walkin/quotes")({
   component: QuotesPage,
@@ -21,20 +24,24 @@ type Quote = {
   valid_until: string | null;
   created_at: string | null;
   converted_job_order_id: string | null;
+  converted_bill_id: string | null;
+  outcome_reason: string | null;
+  followed_up_at: string | null;
 };
 
-const STATUS_ORDER = ["all", "draft", "sent", "approved", "declined", "expired"];
-const STATUS_STYLE: Record<string, string> = {
-  draft: "bg-stone-100 text-stone-600 border-stone-200",
-  sent: "bg-blue-50 text-blue-700 border-blue-200",
-  approved: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  declined: "bg-red-50 text-red-700 border-red-200",
-  expired: "bg-amber-50 text-amber-700 border-amber-200",
-};
+type Filter = "all" | "followup" | Outcome;
+const FILTERS: { value: Filter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "followup", label: "Follow up" },
+  { value: "waiting", label: "Waiting" },
+  { value: "pushed", label: "Pushed through" },
+  { value: "not_pushed", label: "Didn't push through" },
+];
 
 function fmtDate(s: string | null) {
   return s ? new Date(s).toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" }) : "—";
 }
+const daysAgo = (s: string | null) => (s ? Math.floor((Date.now() - Date.parse(s)) / 86400000) : 0);
 
 function QuotesPage() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -43,17 +50,20 @@ function QuotesPage() {
 }
 
 function QuotesListPage() {
+  const navigate = useNavigate();
   const [quotes, setQuotes] = useState<Quote[]>([]);
-  const [status, setStatus] = useState("all");
+  const [filter, setFilter] = useState<Filter>("all");
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<Quote | null>(null);
   const [busyDelete, setBusyDelete] = useState(false);
+  const [followUp, setFollowUp] = useState<Quote | null>(null);
 
   async function load() {
     setLoading(true);
     const { data } = await supabaseFleet
       .from("quotes_with_effective_status")
-      .select("id, quote_no, client_name, vehicle_description, plate_number, total_amount, status, effective_status, valid_until, created_at, converted_job_order_id")
+      .select("id, quote_no, client_name, vehicle_description, plate_number, total_amount, status, effective_status, valid_until, created_at, converted_job_order_id, converted_bill_id, outcome_reason, followed_up_at")
       .order("created_at", { ascending: false });
     setQuotes((data ?? []) as Quote[]);
     setLoading(false);
@@ -72,20 +82,39 @@ function QuotesListPage() {
     load();
   }
 
-  const filtered = useMemo(
-    () => (status === "all" ? quotes : quotes.filter((q) => q.effective_status === status)),
-    [quotes, status],
-  );
+  async function markFollowedUp(q: Quote) {
+    const { error } = await supabaseFleet
+      .from("quotes")
+      .update({ followed_up_at: new Date().toISOString(), ...(q.status === "draft" ? { status: "sent" } : {}) })
+      .eq("id", q.id);
+    if (error) { toast.error(error.message); return; }
+    load();
+  }
+
+  const followUpCount = useMemo(() => quotes.filter((q) => needsFollowUp(q)).length, [quotes]);
+
+  const filtered = useMemo(() => {
+    const s = search.trim().toLowerCase();
+    return quotes.filter((q) => {
+      if (filter === "followup" ? !needsFollowUp(q) : filter !== "all" && outcomeOf(q) !== filter) return false;
+      if (!s) return true;
+      return [q.quote_no, q.client_name, q.vehicle_description, q.plate_number].some((v) => (v ?? "").toLowerCase().includes(s));
+    });
+  }, [quotes, filter, search]);
 
   const stats = useMemo(() => {
     const weekAgo = Date.now() - 6 * 86400000;
-    const issuedThisWeek = quotes.filter((q) => q.created_at && Date.parse(q.created_at) >= weekAgo).length;
-    const approved = quotes.filter((q) => q.effective_status === "approved").length;
+    const monthAgo = Date.now() - 30 * 86400000;
+    const recent = quotes.filter((q) => q.created_at && Date.parse(q.created_at) >= monthAgo);
+    const pushed = recent.filter((q) => outcomeOf(q) === "pushed");
+    const waiting = recent.filter((q) => outcomeOf(q) === "waiting");
     return {
-      issuedThisWeek,
+      issuedThisWeek: quotes.filter((q) => q.created_at && Date.parse(q.created_at) >= weekAgo).length,
       total: quotes.length,
-      conversion: quotes.length ? Math.round((approved / quotes.length) * 100) : 0,
-      approved,
+      recent: recent.length,
+      pushed: pushed.length,
+      pushedValue: pushed.reduce((s, q) => s + (q.total_amount ?? 0), 0),
+      waitingValue: waiting.reduce((s, q) => s + (q.total_amount ?? 0), 0),
     };
   }, [quotes]);
 
@@ -110,76 +139,110 @@ function QuotesListPage() {
       </header>
 
       <main className="p-4 md:p-8">
-        <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3">
+        <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
           <div className="rounded-xl border p-4" style={{ borderColor: "#C9A227" }}>
             <div className="text-[10px] font-bold uppercase tracking-wider text-stone-500">Issued this week</div>
             <div className="mt-1 text-2xl font-bold" style={{ color: "#0F1E3A" }}>{stats.issuedThisWeek}</div>
             <div className="text-xs text-stone-500">of {stats.total} total</div>
           </div>
+          <button onClick={() => setFilter("followup")} className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-left">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-amber-700">To follow up</div>
+            <div className="mt-1 text-2xl font-bold text-amber-700">{followUpCount}</div>
+            <div className="text-xs text-amber-700/80">waiting 2+ days, tap to see</div>
+          </button>
           <div className="rounded-xl border border-stone-200 p-4">
-            <div className="text-[10px] font-bold uppercase tracking-wider text-stone-500">Conversion rate</div>
-            <div className="mt-1 text-2xl font-bold" style={{ color: "#0F1E3A" }}>{stats.conversion}%</div>
-            <div className="text-xs text-stone-500">{stats.approved} of {stats.total} approved</div>
+            <div className="text-[10px] font-bold uppercase tracking-wider text-stone-500">Still waiting (30 days)</div>
+            <div className="mt-1 text-2xl font-bold" style={{ color: "#0F1E3A" }}>{peso(stats.waitingValue)}</div>
+            <div className="text-xs text-stone-500">quoted, no answer yet</div>
+          </div>
+          <div className="rounded-xl border border-stone-200 p-4">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-stone-500">Pushed through (30 days)</div>
+            <div className="mt-1 text-2xl font-bold text-emerald-700">{peso(stats.pushedValue)}</div>
+            <div className="text-xs text-stone-500">{stats.pushed} of {stats.recent} quotes</div>
           </div>
         </div>
 
-        <div className="mb-4 flex flex-wrap gap-2">
-          {STATUS_ORDER.map((s) => (
-            <button
-              key={s}
-              onClick={() => setStatus(s)}
-              className={`rounded-full border px-3 py-1 text-xs font-semibold ${status === s ? "border-transparent text-white" : "border-stone-200 bg-white text-stone-600"}`}
-              style={status === s ? { backgroundColor: "#0F1E3A" } : undefined}
-            >
-              {s === "all" ? "All statuses" : s[0].toUpperCase() + s.slice(1)}
-            </button>
-          ))}
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <div className="relative w-full max-w-sm">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search client, vehicle, plate, quote no…"
+              className="w-full rounded-lg border border-stone-300 bg-white py-2 pl-10 pr-3 text-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-stone-900"
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {FILTERS.map((f) => (
+              <button
+                key={f.value}
+                onClick={() => setFilter(f.value)}
+                className={`rounded-full border px-3 py-1 text-xs font-semibold ${filter === f.value ? "border-transparent text-white" : "border-stone-200 bg-white text-stone-600"}`}
+                style={filter === f.value ? { backgroundColor: "#0F1E3A" } : undefined}
+              >
+                {f.label}{f.value === "followup" && followUpCount > 0 ? ` (${followUpCount})` : ""}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="overflow-hidden rounded-xl border border-stone-200 bg-white">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[820px] text-sm">
+            <table className="w-full min-w-[760px] text-sm">
               <thead className="bg-stone-50 text-[10px] uppercase tracking-wider text-stone-500">
                 <tr>
-                  <th className="px-4 py-3 text-left font-bold">Quote no.</th>
                   <th className="px-4 py-3 text-left font-bold">Client</th>
                   <th className="px-4 py-3 text-left font-bold">Vehicle</th>
                   <th className="px-4 py-3 text-right font-bold">Total</th>
-                  <th className="px-4 py-3 text-left font-bold">Status</th>
-                  <th className="px-4 py-3 text-left font-bold">Valid until</th>
+                  <th className="px-4 py-3 text-left font-bold">Outcome</th>
                   <th className="px-4 py-3 text-right font-bold">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
                 {loading ? (
-                  <tr><td colSpan={7} className="px-4 py-10 text-center text-stone-500">Loading…</td></tr>
+                  <tr><td colSpan={5} className="px-4 py-10 text-center text-stone-500">Loading…</td></tr>
                 ) : filtered.length === 0 ? (
-                  <tr><td colSpan={7} className="px-4 py-10 text-center text-stone-500">No quotations found.</td></tr>
+                  <tr><td colSpan={5} className="px-4 py-10 text-center text-stone-500">{filter === "followup" ? "Nothing to follow up right now. 🎉" : "No quotations found."}</td></tr>
                 ) : (
-                  filtered.map((q) => (
-                    <tr key={q.id} className="hover:bg-stone-50">
-                      <td className="px-4 py-3 font-mono text-xs">{q.quote_no}</td>
-                      <td className="px-4 py-3 font-semibold" style={{ color: "#0F1E3A" }}>{q.client_name || "—"}</td>
-                      <td className="px-4 py-3 text-stone-600">{q.vehicle_description || "—"}</td>
-                      <td className="px-4 py-3 text-right font-semibold">{peso(q.total_amount ?? 0)}</td>
-                      <td className="px-4 py-3">
-                        <span className={`rounded border px-2 py-0.5 text-[10px] font-bold capitalize ${STATUS_STYLE[q.effective_status ?? "draft"]}`}>
-                          {q.effective_status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-stone-600">{fmtDate(q.valid_until)}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-3">
-                          <Link
-                            to="/admin/walkin/quotes/$quoteId"
-                            params={{ quoteId: q.id }}
-                            className="rounded-lg px-3 py-1.5 text-xs font-bold"
-                            style={{ backgroundColor: "#0F1E3A", color: "white" }}
-                          >
-                            View
-                          </Link>
-                          {!q.converted_job_order_id && (
-                            <>
+                  filtered.map((q) => {
+                    const outcome = outcomeOf(q);
+                    const due = needsFollowUp(q);
+                    const editable = outcome !== "pushed" && !q.converted_job_order_id;
+                    return (
+                      <tr
+                        key={q.id}
+                        onClick={() => navigate({ to: "/admin/walkin/quotes/$quoteId", params: { quoteId: q.id } })}
+                        className="cursor-pointer hover:bg-stone-50"
+                      >
+                        <td className="px-4 py-3">
+                          <div className="font-semibold" style={{ color: "#0F1E3A" }}>{q.client_name || "—"}</div>
+                          <div className="font-mono text-[11px] text-stone-400">{q.quote_no} · {fmtDate(q.created_at)}</div>
+                        </td>
+                        <td className="px-4 py-3 text-stone-600">
+                          {q.vehicle_description || "—"}
+                          {q.plate_number && <div className="text-[11px] text-stone-400">{q.plate_number}</div>}
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3 text-right font-semibold">{peso(q.total_amount ?? 0)}</td>
+                        <td className="px-4 py-3">
+                          <span className={`whitespace-nowrap rounded border px-2 py-0.5 text-[10px] font-bold ${OUTCOME_STYLE[outcome]}`}>{OUTCOME_LABEL[outcome]}</span>
+                          {outcome === "not_pushed" && q.outcome_reason && <div className="mt-1 text-[11px] text-stone-400">{q.outcome_reason}</div>}
+                          {outcome === "waiting" && (
+                            <div className={`mt-1 text-[11px] ${due ? "font-semibold text-amber-700" : "text-stone-400"}`}>
+                              {daysAgo(q.created_at)}d ago{q.followed_up_at ? ` · followed up ${daysAgo(q.followed_up_at)}d ago` : q.status === "sent" ? " · sent" : ""}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-end gap-3">
+                            {due && (
+                              <button
+                                onClick={() => setFollowUp(q)}
+                                className="flex items-center gap-1 whitespace-nowrap rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white hover:bg-amber-600"
+                              >
+                                <MessageCircle className="h-3.5 w-3.5" /> Follow up
+                              </button>
+                            )}
+                            {editable && (
                               <Link
                                 to="/admin/walkin/quotes/edit/$quoteId"
                                 params={{ quoteId: q.id }}
@@ -188,24 +251,33 @@ function QuotesListPage() {
                               >
                                 Edit
                               </Link>
-                              <button
-                                onClick={() => setDeleting(q)}
-                                className="text-xs font-semibold text-red-600 hover:underline"
-                              >
+                            )}
+                            {editable && (
+                              <button onClick={() => setDeleting(q)} className="text-xs font-semibold text-red-600 hover:underline">
                                 Delete
                               </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
           </div>
         </div>
       </main>
+
+      {followUp && (
+        <SendQuotationModal
+          kind="followup"
+          clientName={followUp.client_name}
+          quotationLink={publicQuoteUrl(followUp.id)}
+          onClose={() => setFollowUp(null)}
+          onSent={() => void markFollowedUp(followUp)}
+        />
+      )}
 
       {deleting && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">

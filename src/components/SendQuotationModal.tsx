@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { Building2, Copy, MessageCircle, X } from "lucide-react";
 import {
   buildBillMessage,
+  buildFollowUpMessage,
   buildQuotationMessage,
   type CustomerTitle,
   MESSENGER_URL,
@@ -14,9 +15,11 @@ type Props = {
   quotationLink: string;
   onClose: () => void;
   onSent?: () => void;
-  /** "bill" sends a billing statement instead of a quotation. */
-  kind?: "quote" | "bill";
+  /** "bill" sends a billing statement; "followup" re-sends a quotation as a follow-up. */
+  kind?: "quote" | "bill" | "followup";
 };
+
+const MODAL_TITLE = { quote: "Send Quotation", bill: "Send Billing Statement", followup: "Follow Up Quotation" };
 
 const TITLE_OPTIONS: { value: CustomerTitle; label: string }[] = [
   { value: "", label: "No title" },
@@ -25,8 +28,8 @@ const TITLE_OPTIONS: { value: CustomerTitle; label: string }[] = [
 ];
 
 export function SendQuotationModal({ clientName, quotationLink, onClose, onSent, kind = "quote" }: Props) {
-  const buildMessage = kind === "bill" ? buildBillMessage : buildQuotationMessage;
-  const docName = kind === "bill" ? "billing statement" : "quotation";
+  const buildMessage = kind === "bill" ? buildBillMessage : kind === "followup" ? buildFollowUpMessage : buildQuotationMessage;
+  const docName = kind === "bill" ? "billing statement" : kind === "followup" ? "follow-up" : "quotation";
   const [title, setTitle] = useState<CustomerTitle>("");
   const [message, setMessage] = useState(() => buildMessage({ clientName, title: "", quotationLink }));
   const [edited, setEdited] = useState(false);
@@ -70,7 +73,7 @@ export function SendQuotationModal({ clientName, quotationLink, onClose, onSent,
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold" style={{ color: "#0F1E3A" }}>{kind === "bill" ? "Send Billing Statement" : "Send Quotation"}</h2>
+          <h2 className="text-xl font-bold" style={{ color: "#0F1E3A" }}>{MODAL_TITLE[kind]}</h2>
           <button type="button" onClick={onClose} aria-label="Close" className="rounded p-1 hover:bg-stone-100">
             <X className="h-5 w-5" />
           </button>

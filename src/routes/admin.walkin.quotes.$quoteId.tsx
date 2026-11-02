@@ -1,7 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Send } from "lucide-react";
+import { MessageCircle, Send } from "lucide-react";
+import { DECLINE_REASONS, OUTCOME_LABEL, OUTCOME_STYLE, outcomeOf, type Outcome } from "@/lib/quote-outcome";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { supabaseFleet } from "@/lib/supabase-fleet";
@@ -21,6 +22,7 @@ type Quote = {
   status: string | null; effective_status: string | null; valid_until: string | null; created_at: string | null;
   prepared_by: string | null; subtotal_services: number | null; subtotal_parts: number | null; total_amount: number | null;
   notes: string | null; converted_job_order_id: string | null;
+  converted_bill_id: string | null; outcome_reason: string | null; followed_up_at: string | null;
 };
 
 function fmtDate(s: string | null) {
@@ -47,6 +49,9 @@ function QuoteDetailPage() {
   const [sendOpen, setSendOpen] = useState(false);
   const [billId, setBillId] = useState<string | null>(null);
   const [billing, setBilling] = useState(false);
+  const [declineOpen, setDeclineOpen] = useState(false);
+  const [declineReason, setDeclineReason] = useState("");
+  const [followUpOpen, setFollowUpOpen] = useState(false);
   const navigate = useNavigate();
 
   async function load() {
@@ -66,20 +71,32 @@ function QuoteDetailPage() {
 
   useEffect(() => { load(); }, [quoteId]);
 
+  async function markFollowedUp() {
+    if (!quote) return;
+    const { error } = await supabaseFleet
+      .from("quotes")
+      .update({ followed_up_at: new Date().toISOString(), ...(quote.status === "draft" ? { status: "sent" } : {}) })
+      .eq("id", quote.id);
+    if (!error) load();
+  }
+
   async function markSent() {
     if (!quote || quote.status !== "draft") return;
     const { error } = await supabaseFleet.from("quotes").update({ status: "sent" }).eq("id", quote.id).eq("status", "draft");
     if (!error) setQuote({ ...quote, status: "sent", effective_status: "sent" });
   }
 
-  async function convert() {
+  // Waiting = draft/sent, Pushed through = approved, Didn't push through = declined (+ reason).
+  async function setOutcome(next: Outcome, reason: string | null = null) {
     if (!quote) return;
+    const status = next === "pushed" ? "approved" : next === "not_pushed" ? "declined" : quote.followed_up_at ? "sent" : "draft";
     setBusy(true);
-    const { data: jobOrderId, error } = await supabaseFleet.rpc("approve_and_convert_quote", { p_quote_id: quote.id });
+    const { error } = await supabaseFleet.from("quotes").update({ status, outcome_reason: reason }).eq("id", quote.id);
     setBusy(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Converted to job order");
-    setQuote({ ...quote, status: "approved", effective_status: "approved", converted_job_order_id: jobOrderId as string });
+    setDeclineOpen(false);
+    toast.success(`Marked as ${OUTCOME_LABEL[next].toLowerCase()}`);
+    load();
   }
 
   async function convertToBill() {
@@ -209,7 +226,7 @@ function QuoteDetailPage() {
   const parts = lines.filter((l) => l.category === "part" && !isDeduction(l));
   const deductions = lines.filter(isDeduction);
   const totals = quoteTotals(lines);
-  const canConvert = quote.effective_status === "draft" || quote.effective_status === "sent";
+  const outcome = outcomeOf({ ...quote, converted_bill_id: billId });
 
   return (
     <>
@@ -220,10 +237,8 @@ function QuoteDetailPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Link to="/admin/walkin/quotes" className="rounded-lg border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700">← Back to list</Link>
-          {canConvert && (
-            <button disabled={busy} onClick={() => void convert()} className="rounded-lg px-4 py-2 text-sm font-bold text-white disabled:opacity-50" style={{ backgroundColor: "#0F1E3A" }}>
-              {busy ? "Converting…" : "Approve & convert to job order"}
-            </button>
+          {outcome !== "pushed" && !quote.converted_job_order_id && (
+            <Link to="/admin/walkin/quotes/edit/$quoteId" params={{ quoteId: quote.id }} className="rounded-lg border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 hover:bg-stone-50">Edit</Link>
           )}
           {billId ? (
             <Link to="/admin/walkin/bills/$billId" params={{ billId }} className="rounded-lg border-2 px-4 py-2 text-sm font-bold" style={{ borderColor: "#C9A227", color: "#0F1E3A" }}>
@@ -256,12 +271,60 @@ function QuoteDetailPage() {
         />
       )}
 
-      <main className="p-4 md:p-8">
-        {quote.converted_job_order_id && (
-          <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-            Converted to job order.
+      {followUpOpen && (
+        <SendQuotationModal
+          kind="followup"
+          clientName={quote.client_name}
+          quotationLink={publicQuoteUrl(quote.id)}
+          onClose={() => setFollowUpOpen(false)}
+          onSent={() => void markFollowedUp()}
+        />
+      )}
+
+      {declineOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6">
+            <h2 className="mb-1 text-lg font-bold" style={{ color: "#0F1E3A" }}>Didn't push through</h2>
+            <p className="mb-3 text-sm text-stone-500">Why? This helps you see what to improve.</p>
+            <div className="mb-3 flex flex-wrap gap-2">
+              {DECLINE_REASONS.map((r) => (
+                <button key={r} onClick={() => setDeclineReason(r)} className={`rounded-full border px-3 py-1 text-xs font-semibold ${declineReason === r ? "border-transparent text-white" : "border-stone-300 text-stone-600"}`} style={declineReason === r ? { backgroundColor: "#0F1E3A" } : undefined}>
+                  {r}
+                </button>
+              ))}
+            </div>
+            <input value={declineReason} onChange={(e) => setDeclineReason(e.target.value)} placeholder="Or type a reason (optional)" className="mb-4 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm" />
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setDeclineOpen(false)} className="rounded-lg px-4 py-2 text-sm text-stone-700 hover:bg-stone-100">Cancel</button>
+              <button disabled={busy} onClick={() => void setOutcome("not_pushed", declineReason.trim() || null)} className="rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-60" style={{ backgroundColor: "#0F1E3A" }}>Save</button>
+            </div>
           </div>
-        )}
+        </div>
+      )}
+
+      <main className="p-4 md:p-8">
+        <div className="mx-auto mb-4 flex max-w-3xl flex-wrap items-center gap-2 rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm">
+          <span className="text-xs font-bold uppercase text-stone-500">Outcome</span>
+          <span className={`rounded border px-2 py-0.5 text-xs font-bold ${OUTCOME_STYLE[outcome]}`}>{OUTCOME_LABEL[outcome]}</span>
+          {outcome === "not_pushed" && quote.outcome_reason && <span className="text-xs text-stone-500">— {quote.outcome_reason}</span>}
+          {outcome === "waiting" && quote.followed_up_at && <span className="text-xs text-stone-400">followed up {fmtDate(quote.followed_up_at)}</span>}
+          <div className="ml-auto flex flex-wrap gap-2">
+            {outcome !== "pushed" && !billId && (
+              <button disabled={busy} onClick={() => void setOutcome("pushed")} className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50">Pushed through</button>
+            )}
+            {outcome !== "not_pushed" && !billId && (
+              <button disabled={busy} onClick={() => { setDeclineReason(""); setDeclineOpen(true); }} className="rounded-lg border border-stone-300 px-3 py-1.5 text-xs font-semibold text-stone-600 hover:bg-stone-50">Didn't push through</button>
+            )}
+            {outcome !== "waiting" && !billId && (
+              <button disabled={busy} onClick={() => void setOutcome("waiting")} className="rounded-lg px-3 py-1.5 text-xs font-semibold text-stone-500 hover:underline">Back to waiting</button>
+            )}
+            {outcome === "waiting" && (
+              <button onClick={() => setFollowUpOpen(true)} className="flex items-center gap-1 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white hover:bg-amber-600">
+                <MessageCircle className="h-3.5 w-3.5" /> Follow up
+              </button>
+            )}
+          </div>
+        </div>
 
         <div className="mx-auto max-w-3xl overflow-hidden rounded-xl border border-stone-200 bg-white">
           <div className="flex items-center justify-between gap-4 px-5 py-4" style={{ backgroundColor: "#0F1E3A" }}>

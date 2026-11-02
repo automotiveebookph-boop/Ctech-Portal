@@ -31,8 +31,10 @@ function EditQuotePage() {
         navigate({ to: "/admin/walkin/quotes" });
         return;
       }
-      if (q.converted_job_order_id) {
-        toast.error("This quotation was already converted to a job order and can't be edited.");
+      if (q.converted_job_order_id || q.status === "approved") {
+        toast.error(q.converted_bill_id
+          ? "This quotation was already billed — edit the bill instead."
+          : "This quotation is marked Pushed through. Set it back to Waiting to edit it.");
         navigate({ to: "/admin/walkin/quotes/$quoteId", params: { quoteId } });
         return;
       }

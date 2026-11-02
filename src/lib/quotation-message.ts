@@ -63,7 +63,26 @@ export function buildBillMessage(opts: {
   ].join("\n");
 }
 
-const portalOrigin = () => (typeof window !== "undefined" ? window.location.origin : "https://admin.ctechautomotiveph.com");
+export function buildFollowUpMessage(opts: {
+  clientName: string | null | undefined;
+  title?: CustomerTitle;
+  quotationLink: string;
+}): string {
+  const first = firstName(opts.clientName);
+  const title = opts.title || "";
+  const greeting = !first ? "Good day po! 😊" : title ? `Good day po, ${title} ${first}! 😊` : `Good day po, ${first}! 😊`;
+
+  return [
+    greeting,
+    "Following up lang po sa quotation na sinend namin for your vehicle.",
+    "Kung may questions po kayo or gusto niyo pong i-adjust ang scope, we're happy to help. If ready na po kayo, we can schedule your visit anytime. 🙂",
+    "Here's the quotation again for your reference:",
+    opts.quotationLink,
+    "Thank you po! 🙏",
+  ].join("\n");
+}
+
+const portalOrigin =() => (typeof window !== "undefined" ? window.location.origin : "https://admin.ctechautomotiveph.com");
 
 export function publicQuoteUrl(quoteId: string): string {
   return `${portalOrigin()}/quote/${quoteId}`;

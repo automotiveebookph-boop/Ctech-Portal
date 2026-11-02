@@ -4,6 +4,7 @@ import { Calendar, Car, Clock, Search, Users } from "lucide-react";
 import { toast } from "sonner";
 import { supabaseFleet } from "@/lib/supabase-fleet";
 import { formatDate } from "@/lib/my-car-session";
+import { isMissedBooking, parseLandingNotes } from "@/lib/booking-notes";
 import { STATUS_STYLES, type Customer } from "@/lib/fleet-utils";
 import { CustomerModal } from "@/components/CustomerModal";
 import { VehicleQuickModal } from "@/components/VehicleQuickModal";
@@ -20,6 +21,7 @@ type Row = {
   service_type: string;
   status: "pending" | "confirmed" | "completed" | "cancelled";
   created_at: string;
+  notes: string | null;
   customers: { full_name: string; phone: string | null } | null;
   vehicles: { plate_number: string; make: string; model: string } | null;
 };
@@ -74,7 +76,7 @@ function WalkinOverview() {
       supabaseFleet.from("appointments").select("id", { count: "exact", head: true }).gte("created_at", monthStart),
       supabaseFleet
         .from("appointments")
-        .select(`id, preferred_date, preferred_time, service_type, status, created_at,
+        .select(`id, preferred_date, preferred_time, service_type, status, created_at, notes,
           customers (full_name, phone),
           vehicles (plate_number, make, model)`)
         .order("created_at", { ascending: false })
@@ -295,18 +297,24 @@ function WalkinOverview() {
                 ) : rows.length === 0 ? (
                   <tr><td colSpan={6} className="px-4 py-10 text-center text-stone-500">No appointments yet.</td></tr>
                 ) : (
-                  rows.map((r) => (
+                  rows.map((r) => { const landing = parseLandingNotes(r.notes); return (
                     <tr key={r.id} className="hover:bg-stone-50">
                       <td className="px-4 py-3 text-xs text-stone-500">{formatDate(r.created_at)}</td>
                       <td className="px-4 py-3">
                         <div className="font-semibold" style={{ color: "#0F1E3A" }}>
-                          {r.customers?.full_name ?? "—"}
+                          {r.customers?.full_name ?? landing?.name ?? "—"}
                         </div>
-                        <div className="text-xs text-stone-500">{r.customers?.phone ?? ""}</div>
+                        <div className="text-xs text-stone-500">{r.customers?.phone ?? landing?.contact ?? ""}</div>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="font-semibold">{r.vehicles?.plate_number ?? "—"}</div>
-                        <div className="text-xs text-stone-500">{r.vehicles?.make} {r.vehicles?.model}</div>
+                        {r.vehicles ? (
+                          <>
+                            <div className="font-semibold">{r.vehicles.plate_number}</div>
+                            <div className="text-xs text-stone-500">{r.vehicles.make} {r.vehicles.model}</div>
+                          </>
+                        ) : (
+                          <div className="text-sm">{landing?.vehicle || "—"}</div>
+                        )}
                       </td>
                       <td className="px-4 py-3">{r.service_type}</td>
                       <td className="px-4 py-3">
@@ -315,9 +323,10 @@ function WalkinOverview() {
                       </td>
                       <td className="px-4 py-3">
                         <StatusPill status={r.status} />
+                        {isMissedBooking(r) && <div className="mt-1 text-[10px] font-semibold text-red-600">Date passed</div>}
                       </td>
                     </tr>
-                  ))
+                  ); })
                 )}
               </tbody>
             </table>
