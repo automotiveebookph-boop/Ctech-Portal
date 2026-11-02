@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
-import { supabaseFleet } from "@/lib/supabase-fleet";
+import { initialAuthHash, supabaseFleet } from "@/lib/supabase-fleet";
 import { CTechLogo } from "@/components/CTechLogo";
 
 export const Route = createFileRoute("/reset-password")({
@@ -28,12 +28,29 @@ function ResetPasswordPage() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
+  const [linkError, setLinkError] = useState<string | null>(null);
+
   useEffect(() => {
-    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    // Read the hash captured before the Supabase client cleared it.
+    const hash = new URLSearchParams((initialAuthHash || window.location.hash).replace(/^#/, ""));
     const type = hash.get("type");
-    const accessToken = hash.get("access_token");
+    if (hash.get("error") || hash.get("error_code")) {
+      setLinkError(
+        hash.get("error_code") === "otp_expired"
+          ? "This link was already used or has expired. Ask for a new link."
+          : hash.get("error_description")?.replace(/\+/g, " ") ?? "This link is invalid. Ask for a new link.",
+      );
+      return;
+    }
     setIsInvite(type === "invite");
-    setReady(type === "recovery" || type === "invite" || Boolean(accessToken));
+    if (type === "recovery" || type === "invite" || hash.get("access_token")) setReady(true);
+
+    // The link signs the person in; an active session means they may set a password.
+    supabaseFleet.auth.getSession().then(({ data }) => { if (data.session) setReady(true); });
+    const { data: sub } = supabaseFleet.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY" || (session && (event === "SIGNED_IN" || event === "INITIAL_SESSION"))) setReady(true);
+    });
+    return () => sub.subscription.unsubscribe();
   }, []);
 
   async function handleSubmit(e: FormEvent) {
@@ -62,19 +79,19 @@ function ResetPasswordPage() {
       return;
     }
 
-    if (isInvite) {
-      setNotice("Password set! Redirecting to your portal…");
-      // Invited technicians land on their Home Service screen; customers on My Car.
-      const { data: { user } } = await supabaseFleet.auth.getUser();
-      const { data: roleRow } = user
-        ? await supabaseFleet.from("user_roles").select("role").eq("user_id", user.id).maybeSingle()
-        : { data: null };
-      setTimeout(() => navigate({ to: roleRow?.role === "technician" ? "/tech" : "/my-car" }), 900);
-    } else {
-      await supabaseFleet.auth.signOut();
-      setNotice("Password updated. Redirecting to sign in…");
-      setTimeout(() => navigate({ to: "/login" }), 900);
-    }
+    // Already signed in by the link — send them straight to their own screen.
+    setNotice("Password saved! Opening your portal…");
+    const { data: { user } } = await supabaseFleet.auth.getUser();
+    const { data: roleRow } = user
+      ? await supabaseFleet.from("user_roles").select("role").eq("user_id", user.id).maybeSingle()
+      : { data: null };
+    const dest =
+      roleRow?.role === "technician" ? "/tech"
+      : roleRow?.role === "admin" ? "/admin/select"
+      : roleRow?.role === "fleet_manager" ? "/dashboard"
+      : roleRow?.role === "customer" ? "/my-car"
+      : "/login";
+    setTimeout(() => navigate({ to: dest }), 900);
   }
 
   return (
@@ -90,9 +107,11 @@ function ResetPasswordPage() {
             : "Create a new portal password."}
         </p>
 
-        {!ready ? (
+        {linkError ? (
+          <div className="mt-8 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{linkError}</div>
+        ) : !ready ? (
           <div className="mt-8 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            Open this page from the {isInvite ? "invitation" : "password reset"} link sent to your email.
+            Open this page from the {isInvite ? "invitation" : "password reset"} link you were sent.
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="mt-8 space-y-5">

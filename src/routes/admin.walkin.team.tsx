@@ -56,7 +56,7 @@ function TeamPage() {
 
   function copyMessage() {
     if (!link) return;
-    const msg = `Hi ${link.name}! 👋 Ito ang link para ma-set mo ang password mo sa C-Tech Home Service app:\n${link.url}\n\nPagkatapos, mag-sign in sa https://staff.ctechautomotiveph.com gamit ang email mo. Gamitin sa Chrome sa phone mo. 🔧`;
+    const msg = `Hi ${link.name}! 👋 Ito ang link para ma-set mo ang password mo sa C-Tech Home Service app.\nI-long press at piliin ang "Open in Chrome" (huwag sa loob ng Messenger), isang beses lang gumagana ang link:\n${link.url}\n\nPagkatapos, mag-sign in sa https://staff.ctechautomotiveph.com gamit ang email mo. 🔧`;
     navigator.clipboard.writeText(msg).then(() => toast.success("Message copied — paste it in Messenger"), () => toast.error("Couldn't copy"));
   }
 
