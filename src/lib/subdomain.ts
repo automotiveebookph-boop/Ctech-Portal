@@ -4,6 +4,7 @@
 // "door" with its own login page and allowed audience:
 //
 //   admin.ctechautomotiveph.com       → shop admin    (role: admin)         → /admin/walkin
+//   staff.ctechautomotiveph.com       → shop admin    (role: admin)         → /admin/walkin  (alias)
 //   fleetadmin.ctechautomotiveph.com  → fleet admin   (role: admin)         → /admin
 //   portal.ctechautomotiveph.com      → retail client (role: customer)      → /my-car
 //   fleet.ctechautomotiveph.com       → fleet client  (role: fleet_manager) → /dashboard
@@ -36,6 +37,7 @@ type AudienceInfo = {
 /** Exact hostname → audience. */
 export const HOST_AUDIENCE: Record<string, Exclude<Audience, "any">> = {
   "admin.ctechautomotiveph.com": "shop_admin",
+  "staff.ctechautomotiveph.com": "shop_admin",
   "fleetadmin.ctechautomotiveph.com": "fleet_admin",
   "portal.ctechautomotiveph.com": "customer",
   "fleet.ctechautomotiveph.com": "fleet_client",
