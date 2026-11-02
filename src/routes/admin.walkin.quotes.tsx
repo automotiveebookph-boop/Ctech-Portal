@@ -9,6 +9,8 @@ import { needsFollowUp, OUTCOME_LABEL, OUTCOME_STYLE, outcomeOf, type Outcome } 
 import { SendQuotationModal } from "@/components/SendQuotationModal";
 
 export const Route = createFileRoute("/admin/walkin/quotes")({
+  // ?filter=followup opens the list on the follow-up tab (linked from the Today overview).
+  validateSearch: (s: Record<string, unknown>): { filter?: string } => (typeof s.filter === "string" ? { filter: s.filter } : {}),
   component: QuotesPage,
 });
 
@@ -52,7 +54,8 @@ function QuotesPage() {
 function QuotesListPage() {
   const navigate = useNavigate();
   const [quotes, setQuotes] = useState<Quote[]>([]);
-  const [filter, setFilter] = useState<Filter>("all");
+  const initialFilter = Route.useSearch().filter;
+  const [filter, setFilter] = useState<Filter>(FILTERS.some((f) => f.value === initialFilter) ? (initialFilter as Filter) : "all");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<Quote | null>(null);
