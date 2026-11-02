@@ -179,6 +179,7 @@ function TechApp() {
         prepared_by: me?.staffId ?? null,
         notes: [`Home service${place ? ` — ${place}` : ""}${me ? ` · Technician: ${me.name}` : ""}`, details].filter(Boolean).join("\n"),
         home_service_booking_id: booking?.id ?? null,
+        source: "home_service",
       }).select("id, bill_no").single();
       if (error) throw error;
       const { error: lErr } = await supabaseFleet.from("bill_line_items").insert(

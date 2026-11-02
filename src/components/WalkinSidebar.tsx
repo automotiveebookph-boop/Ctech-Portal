@@ -13,6 +13,7 @@ import {
   Package,
   Receipt,
   Smartphone,
+  Truck,
   Users,
   Wrench,
   X,
@@ -48,7 +49,8 @@ type NavItem = {
     | "/admin/walkin/bills"
     | "/admin/walkin/items"
     | "/admin/walkin/team"
-    | "/tech";
+    | "/tech"
+    | "/admin/walkin/home-service";
   label: string;
   icon: typeof BarChart3;
   showBadge?: "pending" | "due";
@@ -59,6 +61,7 @@ const NAV: NavItem[] = [
   { to: "/admin/walkin/customers", label: "Customers", icon: Users },
   { to: "/admin/walkin/quotes", label: "Quotations", icon: FileText },
   { to: "/admin/walkin/bills", label: "Billing", icon: Receipt },
+  { to: "/admin/walkin/home-service", label: "Home Service jobs", icon: Truck },
   { to: "/admin/walkin/items", label: "Services & Parts", icon: Package },
   { to: "/admin/walkin/team", label: "Team & logins", icon: KeyRound },
   { to: "/tech", label: "Home Service app", icon: Smartphone },
