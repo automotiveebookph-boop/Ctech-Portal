@@ -128,7 +128,7 @@ function TechApp() {
     const [{ data: bk }, { data: bills }] = await Promise.all([
       supabaseFleet.from("home_service_bookings").select("*").in("status", ["pending", "confirmed"]).gte("visit_date", manilaDate(0)).lte("visit_date", manilaDate(1)).order("visit_date").order("time_slot"),
       me.staffId
-        ? supabaseFleet.from("bills").select("id, bill_no, client_name, total_amount, amount_paid, created_at").eq("prepared_by", me.staffId).gte("created_at", `${manilaDate(0)}T00:00:00+08:00`).order("created_at", { ascending: false })
+        ? supabaseFleet.from("bills").select("id, bill_no, client_name, total_amount, amount_paid, created_at").eq("prepared_by", me.staffId).neq("status", "void").gte("created_at", `${manilaDate(0)}T00:00:00+08:00`).order("created_at", { ascending: false })
         : Promise.resolve({ data: [] }),
     ]);
     setBookings((bk ?? []) as Booking[]);

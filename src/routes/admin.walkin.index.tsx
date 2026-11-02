@@ -87,7 +87,8 @@ function WalkinOverview() {
         .order("preferred_time"),
       supabaseFleet.from("quotes").select("status, created_at, converted_bill_id, followed_up_at, total_amount").gte("created_at", monthAgo),
       supabaseFleet.from("bills").select("balance").in("status", ["unpaid", "partial"]),
-      supabaseFleet.from("bill_payments").select("amount, method").gte("paid_at", `${d0}T00:00:00+08:00`),
+      // Payments on voided bills don't count as money collected.
+      supabaseFleet.from("bill_payments").select("amount, method, bills!inner(status)").neq("bills.status", "void").gte("paid_at", `${d0}T00:00:00+08:00`),
     ]);
     const appts = (ap.data ?? []) as unknown as Row[];
     const soon = appts.filter((r) => r.preferred_date === d0 || r.preferred_date === d1);
