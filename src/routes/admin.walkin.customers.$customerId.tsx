@@ -281,6 +281,8 @@ function CustomerProfilePage() {
             </div>
           </div>
         </div>
+
+        <CustomerDocuments customerId={customerId} vehicleIds={vehicles.map((v) => v.id)} />
       </main>
 
       {viewingRecord && (
@@ -338,6 +340,63 @@ function Field({ label, value }: { label: string; value: string }) {
     <div>
       <dt className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">{label}</dt>
       <dd className="mt-0.5 text-stone-700">{value}</dd>
+    </div>
+  );
+}
+
+type DocRow = { id: string; no: string | null; kind: "quote" | "bill"; created_at: string; total: number; label: string; tone: string };
+
+// Quotes and bills linked to this customer (or any of their cars).
+function CustomerDocuments({ customerId, vehicleIds }: { customerId: string; vehicleIds: string[] }) {
+  const [rows, setRows] = useState<DocRow[] | null>(null);
+  const vKey = vehicleIds.join(",");
+
+  useEffect(() => {
+    (async () => {
+      const filter = vehicleIds.length ? `customer_id.eq.${customerId},vehicle_id.in.(${vKey})` : `customer_id.eq.${customerId}`;
+      const [q, b] = await Promise.all([
+        supabaseFleet.from("quotes").select("id, quote_no, created_at, total_amount, status, converted_bill_id").or(filter),
+        supabaseFleet.from("bills").select("id, bill_no, created_at, total_amount, balance, status").or(filter),
+      ]);
+      const quotes: DocRow[] = (q.data ?? []).map((x) => ({
+        id: x.id, no: x.quote_no, kind: "quote", created_at: x.created_at, total: x.total_amount ?? 0,
+        label: x.status === "approved" || x.converted_bill_id ? "Pushed through" : x.status === "declined" ? "Didn't push through" : "Waiting",
+        tone: x.status === "approved" || x.converted_bill_id ? "text-emerald-700" : "text-stone-500",
+      }));
+      const bills: DocRow[] = (b.data ?? []).map((x) => ({
+        id: x.id, no: x.bill_no, kind: "bill", created_at: x.created_at, total: x.total_amount ?? 0,
+        label: x.status === "paid" ? "Paid" : x.status === "void" ? "Void" : `Balance ${peso(x.balance ?? 0)}`,
+        tone: x.status === "paid" ? "text-emerald-700" : x.status === "void" ? "text-stone-400" : "text-red-600",
+      }));
+      setRows([...quotes, ...bills].sort((a, c) => c.created_at.localeCompare(a.created_at)));
+    })();
+  }, [customerId, vKey]);
+
+  if (!rows || rows.length === 0) return null;
+
+  return (
+    <div className="mt-8">
+      <h2 className="mb-3 font-bold" style={{ color: "#0F1E3A" }}>Quotations &amp; Bills</h2>
+      <div className="divide-y divide-stone-100 overflow-hidden rounded-xl border border-stone-200 bg-white">
+        {rows.map((r) => (
+          <Link
+            key={`${r.kind}-${r.id}`}
+            to={r.kind === "bill" ? "/admin/walkin/bills/$billId" : "/admin/walkin/quotes/$quoteId"}
+            params={r.kind === "bill" ? { billId: r.id } : { quoteId: r.id }}
+            className="flex items-center justify-between gap-3 px-4 py-3 text-sm hover:bg-stone-50"
+          >
+            <div>
+              <span className={`mr-2 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${r.kind === "bill" ? "bg-amber-100 text-amber-800" : "bg-blue-50 text-blue-700"}`}>{r.kind === "bill" ? "Bill" : "Quote"}</span>
+              <span className="font-mono text-xs">{r.no}</span>
+              <span className="ml-2 text-xs text-stone-400">{formatDate(r.created_at)}</span>
+            </div>
+            <div className="text-right">
+              <div className="font-semibold">{peso(r.total)}</div>
+              <div className={`text-[11px] font-semibold ${r.tone}`}>{r.label}</div>
+            </div>
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }

@@ -215,6 +215,37 @@ export function QuoteBuilder({
     return () => clearTimeout(handle);
   }, [vehicleQuery, vehicleMode, customer]);
 
+  // A typed plate that's already on file: offer to link the existing customer + car,
+  // so the quote / bill lands in that car's history instead of a loose name.
+  const [plateMatch, setPlateMatch] = useState<{ vehicle: VehicleResult; customer: CustomerResult | null } | null>(null);
+  useEffect(() => {
+    const norm = plateNumber.replace(/\s+/g, "").toUpperCase();
+    if (vehicleMode !== "new" || norm.length < 3) { setPlateMatch(null); return; }
+    const handle = setTimeout(async () => {
+      const { data } = await supabaseFleet
+        .from("vehicles")
+        .select("id, plate_number, make, model, year, customer_id")
+        .ilike("plate_number", norm.split("").join("%"))
+        .limit(10);
+      const v = ((data ?? []) as VehicleResult[]).find((x) => x.plate_number.replace(/\s+/g, "").toUpperCase() === norm);
+      if (!v) { setPlateMatch(null); return; }
+      const { data: c } = v.customer_id
+        ? await supabaseFleet.from("customers").select("id, full_name, email, phone").eq("id", v.customer_id).maybeSingle()
+        : { data: null };
+      setPlateMatch({ vehicle: v, customer: (c ?? null) as CustomerResult | null });
+    }, 300);
+    return () => clearTimeout(handle);
+  }, [plateNumber, vehicleMode]);
+
+  function applyPlateMatch() {
+    if (!plateMatch) return;
+    setVehicleMode("existing");
+    setVehicle(plateMatch.vehicle);
+    if (plateMatch.customer) { setCustomerMode("existing"); setCustomer(plateMatch.customer); }
+    setPlateMatch(null);
+    toast.success("Linked to the existing customer and car");
+  }
+
   function addLine(line: Omit<Line, "key">) { setLines((c) => [...c, { ...line, key: nextKey.current++ }]); }
   function removeLine(key: number) { setLines((c) => c.filter((l) => l.key !== key)); if (editingKey === key) cancelEdit(); }
 
@@ -395,7 +426,18 @@ export function QuoteBuilder({
             ) : (
               <div className="mb-3 grid grid-cols-2 gap-3">
                 <div><label className={labelCls}>Vehicle</label><input className={inputCls} value={vehicleDescription} onChange={(e) => setVehicleDescription(e.target.value)} placeholder="e.g. Toyota Vios 2019, 1.3 Gas" /></div>
-                <div><label className={labelCls}>Plate number</label><input className={inputCls} value={plateNumber} onChange={(e) => setPlateNumber(e.target.value)} /></div>
+                <div><label className={labelCls}>Plate number</label><input className={inputCls} value={plateNumber} onChange={(e) => setPlateNumber(e.target.value.toUpperCase())} placeholder="Needed for service history" /></div>
+              </div>
+            )}
+            {plateMatch && (
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm">
+                <span className="text-emerald-800">
+                  <strong>{plateMatch.vehicle.plate_number}</strong> is already on file — {plateMatch.vehicle.make} {plateMatch.vehicle.model}
+                  {plateMatch.customer ? ` · ${plateMatch.customer.full_name}` : ""}
+                </span>
+                <button type="button" onClick={applyPlateMatch} className="rounded-lg bg-emerald-600 px-3 py-1 text-xs font-bold text-white hover:bg-emerald-700">
+                  Use this customer &amp; car
+                </button>
               </div>
             )}
 

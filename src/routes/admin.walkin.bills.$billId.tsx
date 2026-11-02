@@ -13,7 +13,10 @@ export const Route = createFileRoute("/admin/walkin/bills/$billId")({
   component: BillDetailPage,
 });
 
-type Bill = BillHeader & { id: string; quote_id: string | null; prepared_by: string | null };
+type Bill = BillHeader & {
+  id: string; quote_id: string | null; prepared_by: string | null;
+  service_history_id: string | null; vehicle_id: string | null; customer_id: string | null;
+};
 type Payment = { id: string; amount: number; method: string; reference: string | null; paid_at: string };
 
 const METHODS = [
@@ -42,6 +45,13 @@ function BillDetailPage() {
   const [payDate, setPayDate] = useState(todayManila());
   const [savingPay, setSavingPay] = useState(false);
 
+  const [histPlate, setHistPlate] = useState("");
+  const [histKm, setHistKm] = useState("");
+  const [histJo, setHistJo] = useState("");
+  const [histTech, setHistTech] = useState("");
+  const [technicians, setTechnicians] = useState<string[]>([]);
+  const [savingHist, setSavingHist] = useState(false);
+
   async function load() {
     const { data: b, error } = await supabaseFleet.from("bills").select("*").eq("id", billId).single();
     if (error) { toast.error(error.message); return; }
@@ -53,6 +63,10 @@ function BillDetailPage() {
     setLines((ls ?? []) as BillLine[]);
     setPayments((ps ?? []) as Payment[]);
     setPayAmount(String(Math.max(0, b.balance ?? 0)));
+    setHistPlate(b.plate_number ?? "");
+    setHistKm(b.odometer_km ? String(b.odometer_km) : "");
+    const { data: techs } = await supabaseFleet.from("staff").select("full_name").eq("active", true).eq("shop_role", "technician").order("full_name");
+    setTechnicians((techs ?? []).map((t: { full_name: string }) => t.full_name));
     if (b.prepared_by) {
       const { data: staffRow } = await supabaseFleet.from("staff").select("full_name").eq("id", b.prepared_by).maybeSingle();
       if (staffRow) setPreparerName(staffRow.full_name);
@@ -82,6 +96,26 @@ function BillDetailPage() {
     if (error) { toast.error(error.message); return; }
     toast.success(`Payment of ${peso(amount)} recorded`);
     setPayRef("");
+    load();
+  }
+
+  async function saveToHistory() {
+    if (!bill) return;
+    if (!bill.vehicle_id && !histPlate.trim()) { toast.error("Add the plate number first"); return; }
+    setSavingHist(true);
+    const { data, error } = await supabaseFleet.rpc("log_bill_to_history", {
+      p_bill_id: bill.id,
+      p_odometer: histKm ? Number(histKm) : null,
+      p_job_order_no: histJo.trim() || null,
+      p_technician: histTech.trim() || null,
+      p_plate: histPlate.trim() || null,
+    });
+    setSavingHist(false);
+    if (error) { toast.error(error.message); return; }
+    const r = data as { new_customer?: boolean; new_vehicle?: boolean };
+    toast.success(
+      `Saved to service history${r.new_customer ? " · new customer added" : ""}${r.new_vehicle ? " · new car added" : ""}. The PMS reminder clock is reset.`,
+    );
     load();
   }
 
@@ -194,6 +228,38 @@ function BillDetailPage() {
               </div>
             )}
           </section>
+
+          {!isVoid && (bill.service_history_id ? (
+            <section className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm">
+              <div className="font-bold text-emerald-800">✓ Saved to service history</div>
+              <p className="mt-1 text-xs text-emerald-700">The car's PMS / 3-month reminder clock was reset.</p>
+              <div className="mt-2 flex flex-wrap gap-3 text-xs font-semibold">
+                {bill.vehicle_id && <Link to="/admin/walkin/vehicles/$vehicleId" params={{ vehicleId: bill.vehicle_id }} className="text-emerald-800 underline">View car →</Link>}
+                {bill.customer_id && <Link to="/admin/walkin/customers/$customerId" params={{ customerId: bill.customer_id }} className="text-emerald-800 underline">View customer →</Link>}
+              </div>
+            </section>
+          ) : (
+            <section className={`rounded-xl border p-4 ${bill.status === "paid" ? "border-amber-300 bg-amber-50" : "border-stone-200 bg-white"}`}>
+              <h2 className="text-sm font-bold" style={{ color: "#0F1E3A" }}>Job done? Save to service history</h2>
+              <p className="mb-3 mt-0.5 text-xs text-stone-500">Adds this job to the car's history and resets its PMS reminder — no need to retype the job order.</p>
+              <div className="grid grid-cols-2 gap-2">
+                {!bill.vehicle_id && (
+                  <div className="col-span-2"><label className={labelCls}>Plate number *</label><input className={inputCls} value={histPlate} onChange={(e) => setHistPlate(e.target.value.toUpperCase())} placeholder="e.g. ABC 1234" /></div>
+                )}
+                <div><label className={labelCls}>Odometer (km)</label><input type="number" min="0" className={inputCls} value={histKm} onChange={(e) => setHistKm(e.target.value)} placeholder="Current km" /></div>
+                <div><label className={labelCls}>JO #</label><input className={inputCls} value={histJo} onChange={(e) => setHistJo(e.target.value)} placeholder="Optional" /></div>
+                <div className="col-span-2">
+                  <label className={labelCls}>Technician</label>
+                  <input className={inputCls} list="bill-technicians" value={histTech} onChange={(e) => setHistTech(e.target.value)} placeholder="Optional" />
+                  <datalist id="bill-technicians">{technicians.map((t) => <option key={t} value={t} />)}</datalist>
+                </div>
+              </div>
+              {!histKm && <p className="mt-2 text-[11px] text-amber-700">Tip: add the odometer so mileage-based PMS reminders work.</p>}
+              <button disabled={savingHist} onClick={() => void saveToHistory()} className="mt-3 w-full rounded-lg py-2.5 text-sm font-bold text-white disabled:opacity-50" style={{ backgroundColor: "#0F1E3A" }}>
+                {savingHist ? "Saving…" : "Save to service history"}
+              </button>
+            </section>
+          ))}
 
           <button onClick={() => void setVoid(!isVoid)} className="w-full rounded-lg border border-stone-300 bg-white py-2 text-xs font-semibold text-stone-500 hover:bg-stone-50">
             {isVoid ? "Restore this bill" : "Void this bill"}
