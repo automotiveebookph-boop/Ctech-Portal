@@ -76,6 +76,12 @@ function LoginPage() {
 
       const role = linkedRoleRow.role as Role | string;
 
+      // Technicians use the phone Home Service screen; any staff (admin-kind) door lets them in.
+      if (role === "technician" && (!audienceInfo || audienceInfo.kind === "admin")) {
+        navigate({ to: "/tech" });
+        return;
+      }
+
       // Subdomain door enforcement: on a scoped door, only its audience may enter.
       if (audienceInfo) {
         if (role === audienceInfo.allowedRole) {

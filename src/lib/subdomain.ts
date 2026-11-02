@@ -21,7 +21,7 @@ export type Audience =
   | "quotes_admin"
   | "any";
 
-export type Role = "admin" | "customer" | "fleet_manager";
+export type Role = "admin" | "customer" | "fleet_manager" | "technician";
 
 type AudienceInfo = {
   /** The single user_roles.role permitted to use this door. */
@@ -82,6 +82,7 @@ export const ROLE_HOST: Record<Role, string> = {
   admin: "admin.ctechautomotiveph.com",
   customer: "portal.ctechautomotiveph.com",
   fleet_manager: "fleet.ctechautomotiveph.com",
+  technician: "staff.ctechautomotiveph.com",
 };
 
 const OVERRIDE_KEYS: Record<string, Exclude<Audience, "any">> = {

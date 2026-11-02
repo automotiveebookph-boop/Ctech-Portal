@@ -18,6 +18,7 @@ import { Route as MyCarRouteImport } from './routes/my-car'
 import { Route as ReportRouteImport } from './routes/report'
 import { Route as RequestAccessRouteImport } from './routes/request-access'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as TechRouteImport } from './routes/tech'
 import { Route as VehiclesRouteImport } from './routes/vehicles'
 import { Route as AdminAppointmentsRouteImport } from './routes/admin.appointments'
 import { Route as AdminClientsRouteImport } from './routes/admin.clients'
@@ -44,6 +45,7 @@ import { Route as AdminWalkinItemsRouteImport } from './routes/admin.walkin.item
 import { Route as AdminWalkinQuotesRouteImport } from './routes/admin.walkin.quotes'
 import { Route as AdminWalkinRemindersRouteImport } from './routes/admin.walkin.reminders'
 import { Route as AdminWalkinSchedulesRouteImport } from './routes/admin.walkin.schedules'
+import { Route as AdminWalkinTeamRouteImport } from './routes/admin.walkin.team'
 import { Route as AdminWalkinVehiclesRouteImport } from './routes/admin.walkin.vehicles'
 import { Route as AdminWalkinBillsBillIdRouteImport } from './routes/admin.walkin.bills.$billId'
 import { Route as AdminWalkinBillsNewRouteImport } from './routes/admin.walkin.bills.new'
@@ -97,6 +99,11 @@ const RequestAccessRoute = RequestAccessRouteImport.update({
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TechRoute = TechRouteImport.update({
+  id: '/tech',
+  path: '/tech',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VehiclesRoute = VehiclesRouteImport.update({
@@ -229,6 +236,11 @@ const AdminWalkinSchedulesRoute = AdminWalkinSchedulesRouteImport.update({
   path: '/schedules',
   getParentRoute: () => AdminWalkinRoute,
 } as any)
+const AdminWalkinTeamRoute = AdminWalkinTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => AdminWalkinRoute,
+} as any)
 const AdminWalkinVehiclesRoute = AdminWalkinVehiclesRouteImport.update({
   id: '/vehicles',
   path: '/vehicles',
@@ -290,6 +302,7 @@ export interface FileRoutesByFullPath {
   '/report': typeof ReportRoute
   '/request-access': typeof RequestAccessRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/tech': typeof TechRoute
   '/vehicles': typeof VehiclesRouteWithChildren
   '/admin/appointments': typeof AdminAppointmentsRoute
   '/admin/clients': typeof AdminClientsRoute
@@ -315,6 +328,7 @@ export interface FileRoutesByFullPath {
   '/admin/walkin/quotes': typeof AdminWalkinQuotesRouteWithChildren
   '/admin/walkin/reminders': typeof AdminWalkinRemindersRoute
   '/admin/walkin/schedules': typeof AdminWalkinSchedulesRoute
+  '/admin/walkin/team': typeof AdminWalkinTeamRoute
   '/admin/walkin/vehicles': typeof AdminWalkinVehiclesRouteWithChildren
   '/admin/walkin/': typeof AdminWalkinIndexRoute
   '/admin/walkin/bills/$billId': typeof AdminWalkinBillsBillIdRoute
@@ -335,6 +349,7 @@ export interface FileRoutesByTo {
   '/report': typeof ReportRoute
   '/request-access': typeof RequestAccessRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/tech': typeof TechRoute
   '/vehicles': typeof VehiclesRouteWithChildren
   '/admin/appointments': typeof AdminAppointmentsRoute
   '/admin/clients': typeof AdminClientsRoute
@@ -359,6 +374,7 @@ export interface FileRoutesByTo {
   '/admin/walkin/quotes': typeof AdminWalkinQuotesRouteWithChildren
   '/admin/walkin/reminders': typeof AdminWalkinRemindersRoute
   '/admin/walkin/schedules': typeof AdminWalkinSchedulesRoute
+  '/admin/walkin/team': typeof AdminWalkinTeamRoute
   '/admin/walkin/vehicles': typeof AdminWalkinVehiclesRouteWithChildren
   '/admin/walkin': typeof AdminWalkinIndexRoute
   '/admin/walkin/bills/$billId': typeof AdminWalkinBillsBillIdRoute
@@ -381,6 +397,7 @@ export interface FileRoutesById {
   '/report': typeof ReportRoute
   '/request-access': typeof RequestAccessRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/tech': typeof TechRoute
   '/vehicles': typeof VehiclesRouteWithChildren
   '/admin/appointments': typeof AdminAppointmentsRoute
   '/admin/clients': typeof AdminClientsRoute
@@ -406,6 +423,7 @@ export interface FileRoutesById {
   '/admin/walkin/quotes': typeof AdminWalkinQuotesRouteWithChildren
   '/admin/walkin/reminders': typeof AdminWalkinRemindersRoute
   '/admin/walkin/schedules': typeof AdminWalkinSchedulesRoute
+  '/admin/walkin/team': typeof AdminWalkinTeamRoute
   '/admin/walkin/vehicles': typeof AdminWalkinVehiclesRouteWithChildren
   '/admin/walkin/': typeof AdminWalkinIndexRoute
   '/admin/walkin/bills/$billId': typeof AdminWalkinBillsBillIdRoute
@@ -429,6 +447,7 @@ export interface FileRouteTypes {
     | '/report'
     | '/request-access'
     | '/reset-password'
+    | '/tech'
     | '/vehicles'
     | '/admin/appointments'
     | '/admin/clients'
@@ -454,6 +473,7 @@ export interface FileRouteTypes {
     | '/admin/walkin/quotes'
     | '/admin/walkin/reminders'
     | '/admin/walkin/schedules'
+    | '/admin/walkin/team'
     | '/admin/walkin/vehicles'
     | '/admin/walkin/'
     | '/admin/walkin/bills/$billId'
@@ -474,6 +494,7 @@ export interface FileRouteTypes {
     | '/report'
     | '/request-access'
     | '/reset-password'
+    | '/tech'
     | '/vehicles'
     | '/admin/appointments'
     | '/admin/clients'
@@ -498,6 +519,7 @@ export interface FileRouteTypes {
     | '/admin/walkin/quotes'
     | '/admin/walkin/reminders'
     | '/admin/walkin/schedules'
+    | '/admin/walkin/team'
     | '/admin/walkin/vehicles'
     | '/admin/walkin'
     | '/admin/walkin/bills/$billId'
@@ -519,6 +541,7 @@ export interface FileRouteTypes {
     | '/report'
     | '/request-access'
     | '/reset-password'
+    | '/tech'
     | '/vehicles'
     | '/admin/appointments'
     | '/admin/clients'
@@ -544,6 +567,7 @@ export interface FileRouteTypes {
     | '/admin/walkin/quotes'
     | '/admin/walkin/reminders'
     | '/admin/walkin/schedules'
+    | '/admin/walkin/team'
     | '/admin/walkin/vehicles'
     | '/admin/walkin/'
     | '/admin/walkin/bills/$billId'
@@ -566,6 +590,7 @@ export interface RootRouteChildren {
   ReportRoute: typeof ReportRoute
   RequestAccessRoute: typeof RequestAccessRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  TechRoute: typeof TechRoute
   VehiclesRoute: typeof VehiclesRouteWithChildren
   BillBillIdRoute: typeof BillBillIdRoute
   QuoteQuoteIdRoute: typeof QuoteQuoteIdRoute
@@ -634,6 +659,13 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tech': {
+      id: '/tech'
+      path: '/tech'
+      fullPath: '/tech'
+      preLoaderRoute: typeof TechRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/vehicles': {
@@ -818,6 +850,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminWalkinSchedulesRouteImport
       parentRoute: typeof AdminWalkinRoute
     }
+    '/admin/walkin/team': {
+      id: '/admin/walkin/team'
+      path: '/team'
+      fullPath: '/admin/walkin/team'
+      preLoaderRoute: typeof AdminWalkinTeamRouteImport
+      parentRoute: typeof AdminWalkinRoute
+    }
     '/admin/walkin/vehicles': {
       id: '/admin/walkin/vehicles'
       path: '/vehicles'
@@ -944,6 +983,7 @@ interface AdminWalkinRouteChildren {
   AdminWalkinQuotesRoute: typeof AdminWalkinQuotesRouteWithChildren
   AdminWalkinRemindersRoute: typeof AdminWalkinRemindersRoute
   AdminWalkinSchedulesRoute: typeof AdminWalkinSchedulesRoute
+  AdminWalkinTeamRoute: typeof AdminWalkinTeamRoute
   AdminWalkinVehiclesRoute: typeof AdminWalkinVehiclesRouteWithChildren
   AdminWalkinIndexRoute: typeof AdminWalkinIndexRoute
 }
@@ -956,6 +996,7 @@ const AdminWalkinRouteChildren: AdminWalkinRouteChildren = {
   AdminWalkinQuotesRoute: AdminWalkinQuotesRouteWithChildren,
   AdminWalkinRemindersRoute: AdminWalkinRemindersRoute,
   AdminWalkinSchedulesRoute: AdminWalkinSchedulesRoute,
+  AdminWalkinTeamRoute: AdminWalkinTeamRoute,
   AdminWalkinVehiclesRoute: AdminWalkinVehiclesRouteWithChildren,
   AdminWalkinIndexRoute: AdminWalkinIndexRoute,
 }
@@ -1030,6 +1071,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReportRoute: ReportRoute,
   RequestAccessRoute: RequestAccessRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  TechRoute: TechRoute,
   VehiclesRoute: VehiclesRouteWithChildren,
   BillBillIdRoute: BillBillIdRoute,
   QuoteQuoteIdRoute: QuoteQuoteIdRoute,

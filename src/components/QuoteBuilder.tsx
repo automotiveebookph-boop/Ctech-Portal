@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { supabaseFleet } from "@/lib/supabase-fleet";
 import { peso } from "@/lib/fleet-utils";
 import { isDeduction, pesoSigned, quoteTotals } from "@/lib/quote-lines";
+import { parsePackage, type PackageInfo } from "@/lib/packages";
 
 type CatalogItem = { id: string; category: string; name: string; price: number };
 type StaffOption = { id: string; full_name: string };
@@ -21,13 +22,6 @@ const packageBadge = (item: CatalogItem): { label: string; color: string } => {
   }
   return { label: catLabel(item.category), color: "#C9A227" };
 };
-// "PMS Package — 4L Gas · Fully Synthetic (5W-30)" → { type, size: "4L Gas", liters: 4, grade }
-type PackageInfo = { type: "PMS" | "Oil Change"; size: string; liters: number; grade: string };
-function parsePackage(name: string): PackageInfo | null {
-  const m = name.match(/^(PMS|Oil Change) Package\s+—\s+((\d+)L\s+[^·]+?)\s+·\s+([^(]+?)\s*(\(|$)/);
-  return m ? { type: m[1] as PackageInfo["type"], size: m[2].trim(), liters: Number(m[3]), grade: m[4].trim() } : null;
-}
-
 const isoPlusDays =(n: number) => { const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
 const inputCls = "w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-stone-900";
 const labelCls = "mb-1 block text-xs font-semibold uppercase text-stone-600";

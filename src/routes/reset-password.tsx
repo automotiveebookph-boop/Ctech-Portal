@@ -64,7 +64,12 @@ function ResetPasswordPage() {
 
     if (isInvite) {
       setNotice("Password set! Redirecting to your portal…");
-      setTimeout(() => navigate({ to: "/my-car" }), 900);
+      // Invited technicians land on their Home Service screen; customers on My Car.
+      const { data: { user } } = await supabaseFleet.auth.getUser();
+      const { data: roleRow } = user
+        ? await supabaseFleet.from("user_roles").select("role").eq("user_id", user.id).maybeSingle()
+        : { data: null };
+      setTimeout(() => navigate({ to: roleRow?.role === "technician" ? "/tech" : "/my-car" }), 900);
     } else {
       await supabaseFleet.auth.signOut();
       setNotice("Password updated. Redirecting to sign in…");
