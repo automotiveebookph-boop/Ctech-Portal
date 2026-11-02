@@ -44,9 +44,33 @@ export function buildQuotationMessage(opts: {
   ].join("\n");
 }
 
+export function buildBillMessage(opts: {
+  clientName: string | null | undefined;
+  title?: CustomerTitle;
+  quotationLink: string;
+}): string {
+  const first = firstName(opts.clientName);
+  const title = opts.title || "";
+  const greeting = !first ? "Good day po! 😊" : title ? `Good day po, ${title} ${first}! 😊` : `Good day po, ${first}! 😊`;
+
+  return [
+    greeting,
+    "Sharing po the billing statement for the service done on your vehicle.",
+    "Nandito po ang breakdown ng services and parts, pati na rin ang balance. If may questions po kayo, just let us know. We’ll be happy to assist you.",
+    "Thank you po for trusting C-Tech Automotive. 🙏",
+    "You may view your billing statement here:",
+    opts.quotationLink,
+  ].join("\n");
+}
+
+const portalOrigin = () => (typeof window !== "undefined" ? window.location.origin : "https://admin.ctechautomotiveph.com");
+
 export function publicQuoteUrl(quoteId: string): string {
-  const origin = typeof window !== "undefined" ? window.location.origin : "https://admin.ctechautomotiveph.com";
-  return `${origin}/quote/${quoteId}`;
+  return `${portalOrigin()}/quote/${quoteId}`;
+}
+
+export function publicBillUrl(billId: string): string {
+  return `${portalOrigin()}/bill/${billId}`;
 }
 
 export const MESSENGER_URL = "https://m.me/cteachautomotive";

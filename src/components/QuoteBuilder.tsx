@@ -78,7 +78,15 @@ function buildInclusionsNotes(checklist: string[], additional: string): string {
   return sentence || extra;
 }
 
+// The same builder edits quotations and billing statements; only the tables,
+// the date field and the wording differ.
+const KIND = {
+  quote: { table: "quotes", linesTable: "quote_line_items", fk: "quote_id", dateField: "valid_until", dateLabel: "Valid until", noun: "quotation", defaultDays: 7 },
+  bill: { table: "bills", linesTable: "bill_line_items", fk: "bill_id", dateField: "due_date", dateLabel: "Due date", noun: "billing statement", defaultDays: 0 },
+} as const;
+
 export function QuoteBuilder({
+  kind = "quote",
   quoteId,
   initialCustomer = null,
   initialVehicle = null,
@@ -92,6 +100,8 @@ export function QuoteBuilder({
   initialNotes = "Includes: Free ECU Scan, Safety Inspection.",
   initialLines = [],
 }: {
+  kind?: "quote" | "bill";
+  /** id of the quote (or bill, when kind="bill") being edited */
   quoteId?: string;
   initialCustomer?: CustomerResult | null;
   initialVehicle?: VehicleResult | null;
@@ -106,6 +116,7 @@ export function QuoteBuilder({
   initialLines?: { category: "service" | "part"; description: string; qty: number; unit_price: number; service_pricing_id?: string | null }[];
 }) {
   const isEdit = Boolean(quoteId);
+  const cfg = KIND[kind];
   const navigate = useNavigate();
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
   const [staff, setStaff] = useState<StaffOption[]>([]);
@@ -127,7 +138,7 @@ export function QuoteBuilder({
   const [plateNumber, setPlateNumber] = useState(initialPlateNumber);
   const [odometerKm, setOdometerKm] = useState(initialOdometerKm);
 
-  const [validUntil, setValidUntil] = useState(initialValidUntil ?? isoPlusDays(7));
+  const [validUntil, setValidUntil] = useState(initialValidUntil ?? isoPlusDays(cfg.defaultDays));
   const [preparedBy, setPreparedBy] = useState(initialPreparedBy);
   const [inclusionType, setInclusionType] = useState<InclusionType>("custom");
   const [checkedInclusions, setCheckedInclusions] = useState<Record<string, boolean>>({});
@@ -264,43 +275,46 @@ export function QuoteBuilder({
         vehicle_description: vehicle ? null : vehicleDescription || null,
         plate_number: vehicle ? vehicle.plate_number : plateNumber || null,
         odometer_km: odometerKm ? Number(odometerKm) : null,
-        valid_until: validUntil,
+        [cfg.dateField]: validUntil,
         prepared_by: preparedBy || null,
         notes: buildInclusionsNotes(checkedItems, additionalNotes),
       };
+      const lineRows = (id: string) =>
+        lines.map((l) => ({ [cfg.fk]: id, category: l.category, description: l.description, qty: l.qty, unit_price: l.unit_price, service_pricing_id: l.service_pricing_id ?? null }));
+      const goTo = (id: string) =>
+        kind === "bill"
+          ? navigate({ to: "/admin/walkin/bills/$billId", params: { billId: id } })
+          : navigate({ to: "/admin/walkin/quotes/$quoteId", params: { quoteId: id } });
+      const Noun = cfg.noun[0].toUpperCase() + cfg.noun.slice(1);
 
       if (isEdit && quoteId) {
-        const { error } = await supabaseFleet.from("quotes").update(basePayload).eq("id", quoteId);
+        const { error } = await supabaseFleet.from(cfg.table).update(basePayload).eq("id", quoteId);
         if (error) throw error;
 
-        const { error: delErr } = await supabaseFleet.from("quote_line_items").delete().eq("quote_id", quoteId);
+        const { error: delErr } = await supabaseFleet.from(cfg.linesTable).delete().eq(cfg.fk, quoteId);
         if (delErr) throw delErr;
 
-        const { error: linesError } = await supabaseFleet.from("quote_line_items").insert(
-          lines.map((l) => ({ quote_id: quoteId, category: l.category, description: l.description, qty: l.qty, unit_price: l.unit_price, service_pricing_id: l.service_pricing_id ?? null })),
-        );
+        const { error: linesError } = await supabaseFleet.from(cfg.linesTable).insert(lineRows(quoteId));
         if (linesError) throw linesError;
 
-        toast.success("Quotation updated");
-        navigate({ to: "/admin/walkin/quotes/$quoteId", params: { quoteId } });
+        toast.success(`${Noun} updated`);
+        goTo(quoteId);
       } else {
-        const { data: quote, error } = await supabaseFleet
-          .from("quotes")
+        const { data: created, error } = await supabaseFleet
+          .from(cfg.table)
           .insert(basePayload)
           .select("id")
           .single();
         if (error) throw error;
 
-        const { error: linesError } = await supabaseFleet.from("quote_line_items").insert(
-          lines.map((l) => ({ quote_id: quote.id, category: l.category, description: l.description, qty: l.qty, unit_price: l.unit_price, service_pricing_id: l.service_pricing_id ?? null })),
-        );
+        const { error: linesError } = await supabaseFleet.from(cfg.linesTable).insert(lineRows(created.id));
         if (linesError) throw linesError;
 
-        toast.success("Quotation saved");
-        navigate({ to: "/admin/walkin/quotes/$quoteId", params: { quoteId: quote.id } });
+        toast.success(`${Noun} saved`);
+        goTo(created.id);
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Unable to save quotation");
+      toast.error((err as { message?: string })?.message ?? `Unable to save ${cfg.noun}`);
       setSaving(false);
     }
   }
@@ -310,7 +324,7 @@ export function QuoteBuilder({
       <header className="flex flex-col gap-3 border-b border-stone-200 bg-white px-4 py-4 pl-16 sm:flex-row sm:items-center sm:justify-between md:px-8 md:py-6 md:pl-8">
         <div>
           <div className="text-[10px] font-bold uppercase tracking-wider md:text-xs" style={{ color: "#C9A227" }}>C-Tech Client Dashboard</div>
-          <h1 className="text-lg font-bold md:text-2xl" style={{ color: "#0F1E3A" }}>{isEdit ? "Edit quotation" : "Build a quotation"}</h1>
+          <h1 className="text-lg font-bold md:text-2xl" style={{ color: "#0F1E3A" }}>{isEdit ? `Edit ${cfg.noun}` : `Build a ${cfg.noun}`}</h1>
         </div>
       </header>
 
@@ -365,7 +379,7 @@ export function QuoteBuilder({
 
             <div className="mb-3 grid grid-cols-2 gap-3">
               <div><label className={labelCls}>Odometer (km)</label><input type="number" className={inputCls} value={odometerKm} onChange={(e) => setOdometerKm(e.target.value)} /></div>
-              <div><label className={labelCls}>Valid until</label><input type="date" className={inputCls} value={validUntil} onChange={(e) => setValidUntil(e.target.value)} /></div>
+              <div><label className={labelCls}>{cfg.dateLabel}</label><input type="date" className={inputCls} value={validUntil} onChange={(e) => setValidUntil(e.target.value)} /></div>
             </div>
             <div>
               <label className={labelCls}>Prepared by</label>
@@ -498,8 +512,8 @@ export function QuoteBuilder({
 
         <aside className="h-fit rounded-xl border border-stone-200 bg-white">
           <div className="border-b border-dashed border-stone-200 p-4">
-            <div className="font-mono text-sm font-bold" style={{ color: "#0F1E3A" }}>{isEdit ? "Editing quotation" : "New quotation"}</div>
-            <div className="text-xs text-stone-500">Valid until {validUntil}</div>
+            <div className="font-mono text-sm font-bold" style={{ color: "#0F1E3A" }}>{isEdit ? `Editing ${cfg.noun}` : `New ${cfg.noun}`}</div>
+            <div className="text-xs text-stone-500">{cfg.dateLabel} {validUntil}</div>
           </div>
           <div className="max-h-80 overflow-y-auto p-4">
             {!lines.length && <div className="py-6 text-center text-sm text-stone-400">No line items yet.</div>}
@@ -526,7 +540,7 @@ export function QuoteBuilder({
           </div>
           <div className="p-4">
             <button disabled={saving} onClick={() => void save()} className="w-full rounded-lg py-2.5 text-sm font-bold disabled:opacity-50" style={{ backgroundColor: "#C9A227", color: "#0F1E3A" }}>
-              {saving ? "Saving…" : isEdit ? "Save changes" : "Save quotation"}
+              {saving ? "Saving…" : isEdit ? "Save changes" : `Save ${cfg.noun}`}
             </button>
           </div>
         </aside>

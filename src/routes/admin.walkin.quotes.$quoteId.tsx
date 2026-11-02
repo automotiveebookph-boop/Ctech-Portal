@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Send } from "lucide-react";
@@ -45,11 +45,17 @@ function QuoteDetailPage() {
   const [preparerName, setPreparerName] = useState("—");
   const [busy, setBusy] = useState(false);
   const [sendOpen, setSendOpen] = useState(false);
+  const [billId, setBillId] = useState<string | null>(null);
+  const [billing, setBilling] = useState(false);
+  const navigate = useNavigate();
 
   async function load() {
     const { data: q, error } = await supabaseFleet.from("quotes_with_effective_status").select("*").eq("id", quoteId).single();
     if (error) { toast.error(error.message); return; }
     setQuote(q as Quote);
+    // converted_bill_id isn't in the effective-status view, so read it from the table.
+    const { data: qb } = await supabaseFleet.from("quotes").select("converted_bill_id").eq("id", quoteId).maybeSingle();
+    setBillId(qb?.converted_bill_id ?? null);
     const { data: ls } = await supabaseFleet.from("quote_line_items").select("id, category, description, qty, unit_price").eq("quote_id", quoteId).order("created_at");
     setLines((ls ?? []) as QuoteLine[]);
     if (q?.prepared_by) {
@@ -74,6 +80,16 @@ function QuoteDetailPage() {
     if (error) { toast.error(error.message); return; }
     toast.success("Converted to job order");
     setQuote({ ...quote, status: "approved", effective_status: "approved", converted_job_order_id: jobOrderId as string });
+  }
+
+  async function convertToBill() {
+    if (!quote) return;
+    setBilling(true);
+    const { data: newBillId, error } = await supabaseFleet.rpc("convert_quote_to_bill", { p_quote_id: quote.id });
+    setBilling(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Billing statement created — review it, then send to the client");
+    navigate({ to: "/admin/walkin/bills/$billId", params: { billId: newBillId as string } });
   }
 
   async function downloadPdf() {
@@ -207,6 +223,15 @@ function QuoteDetailPage() {
           {canConvert && (
             <button disabled={busy} onClick={() => void convert()} className="rounded-lg px-4 py-2 text-sm font-bold text-white disabled:opacity-50" style={{ backgroundColor: "#0F1E3A" }}>
               {busy ? "Converting…" : "Approve & convert to job order"}
+            </button>
+          )}
+          {billId ? (
+            <Link to="/admin/walkin/bills/$billId" params={{ billId }} className="rounded-lg border-2 px-4 py-2 text-sm font-bold" style={{ borderColor: "#C9A227", color: "#0F1E3A" }}>
+              View bill
+            </Link>
+          ) : (
+            <button disabled={billing} onClick={() => void convertToBill()} className="rounded-lg px-4 py-2 text-sm font-bold disabled:opacity-50" style={{ backgroundColor: "#C9A227", color: "#0F1E3A" }}>
+              {billing ? "Creating bill…" : "Convert to bill"}
             </button>
           )}
           <button onClick={downloadPdf} className="rounded-lg border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 hover:bg-stone-50">
