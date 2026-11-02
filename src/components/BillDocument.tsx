@@ -109,7 +109,7 @@ export function BillDocument({ bill, lines, preparerName }: { bill: BillHeader; 
           <div className="mt-5 rounded-xl border-2 p-4" style={{ borderColor: "#C9A227" }}>
             <div className="mb-3 text-[10px] font-bold uppercase tracking-wide" style={{ color: "#C9A227" }}>How to pay</div>
             <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
-              <img src="/gcash-qr.jpg" alt="GCash QR code for C-Tech Automotive" className="w-36 shrink-0 rounded-lg border border-stone-200" />
+              <img src="/gcash-qr.jpg" alt="GCash QR code for C-Tech Automotive" className="w-44 shrink-0 rounded-lg border border-stone-200" />
               <div className="space-y-2 text-sm">
                 <div>
                   <div className="font-semibold" style={{ color: "#0F1E3A" }}>GCash</div>

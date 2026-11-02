@@ -188,7 +188,7 @@ function QuotesListPage() {
 
         <div className="overflow-hidden rounded-xl border border-stone-200 bg-white">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] text-sm">
+            <table className="w-full min-w-[600px] text-sm">
               <thead className="bg-stone-50 text-[10px] uppercase tracking-wider text-stone-500">
                 <tr>
                   <th className="px-4 py-3 text-left font-bold">Client</th>

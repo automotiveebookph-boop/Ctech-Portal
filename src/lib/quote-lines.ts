@@ -22,4 +22,4 @@ export function quoteTotals(lines: MoneyLine[]) {
 }
 
 // Shows a deduction as "−₱500" rather than "₱-500".
-export const pesoSigned = (n: number) => (n < 0 ? `−${peso(-n)}` : peso(n));
+export const pesoSigned = (n: number) => (n < 0 ? `−${peso(-n)}` : peso(Math.abs(n)));
