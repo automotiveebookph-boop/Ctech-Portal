@@ -183,7 +183,49 @@ export function QuoteBuilder({
   }, [vehicleQuery, vehicleMode, customer]);
 
   function addLine(line: Omit<Line, "key">) { setLines((c) => [...c, { ...line, key: nextKey.current++ }]); }
-  function removeLine(key: number) { setLines((c) => c.filter((l) => l.key !== key)); }
+  function removeLine(key: number) { setLines((c) => c.filter((l) => l.key !== key)); if (editingKey === key) cancelEdit(); }
+
+  // Clicking a line in the summary loads it back into the custom-line (or
+  // discount / less) form; the form's button then replaces it in place.
+  const [editingKey, setEditingKey] = useState<number | null>(null);
+  const customFormRef = useRef<HTMLDivElement>(null);
+  const dedFormRef = useRef<HTMLDivElement>(null);
+  const editingLine = lines.find((l) => l.key === editingKey) ?? null;
+  const editingDeduction = editingLine ? isDeduction(editingLine) : false;
+
+  function startEdit(l: Line) {
+    setEditingKey(l.key);
+    if (isDeduction(l)) {
+      const [label, ...rest] = l.description.split(": ");
+      setDedKind(label.startsWith("Less") ? "less" : "discount");
+      setDedReason(rest.join(": "));
+      setDedCat(l.category);
+      setDedUnit("peso");
+      setDedAmount(String(-(l.qty * l.unit_price)));
+      dedFormRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    } else {
+      const [title, ...items] = l.description.split("\n");
+      setCustomDesc(title);
+      setCustomInclusions(items.map((i) => i.replace(/^\s*•\s*/, "")).join("\n"));
+      setCustomCat(l.category);
+      setCustomQty(String(l.qty));
+      setCustomPrice(String(l.unit_price));
+      customFormRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }
+
+  function cancelEdit() {
+    setEditingKey(null);
+    setCustomDesc(""); setCustomPrice(""); setCustomQty("1"); setCustomInclusions("");
+    setDedReason(""); setDedAmount("");
+  }
+
+  // Adds a new line, or replaces the one being edited (keeping its catalog link).
+  function putLine(line: Omit<Line, "key">) {
+    if (editingKey == null) { addLine(line); return; }
+    setLines((c) => c.map((l) => (l.key === editingKey ? { ...line, key: l.key, service_pricing_id: line.service_pricing_id ?? l.service_pricing_id } : l)));
+    setEditingKey(null);
+  }
 
   const totals = quoteTotals(lines);
   const grand = totals.total;
@@ -197,10 +239,10 @@ export function QuoteBuilder({
     const base = dedCat === "service" ? totals.services : totals.parts;
     const amount = dedUnit === "percent" ? Math.round((base * value) / 100 * 100) / 100 : value;
     // Never let a type's net go below zero (it becomes the job order's labor/parts cost).
-    const netForCat = lines.filter((l) => l.category === dedCat).reduce((s, l) => s + l.qty * l.unit_price, 0);
+    const netForCat = lines.filter((l) => l.category === dedCat && l.key !== editingKey).reduce((s, l) => s + l.qty * l.unit_price, 0);
     if (amount <= 0 || amount > netForCat) { toast.error(`That is more than the remaining ${dedCat === "service" ? "services" : "parts"} total (${peso(netForCat)})`); return; }
     const label = dedKind === "discount" ? `Discount${dedUnit === "percent" ? ` (${value}%)` : ""}` : "Less";
-    addLine({ category: dedCat, description: reason ? `${label}: ${reason}` : label, qty: 1, unit_price: -amount });
+    putLine({ category: dedCat, description: reason ? `${label}: ${reason}` : label, qty: 1, unit_price: -amount });
     setDedReason(""); setDedAmount("");
   }
   const categories = ["all", ...Array.from(new Set(catalog.map((c) => c.category)))];
@@ -357,7 +399,8 @@ export function QuoteBuilder({
               {!filteredCatalog.length && <div className="text-sm text-stone-400">No catalog items in this category.</div>}
             </div>
 
-            <div className="mt-4 border-t border-dashed border-stone-200 pt-4">
+            <div ref={customFormRef} className={`mt-4 border-t border-dashed border-stone-200 pt-4 ${editingLine && !editingDeduction ? "-mx-2 rounded-lg bg-amber-50 px-2 pb-2 ring-2 ring-amber-400" : ""}`}>
+            {editingLine && !editingDeduction && <EditingBanner onCancel={cancelEdit} />}
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_80px_80px_100px_auto]">
               <div><label className={labelCls}>Custom line description</label><input className={inputCls} value={customDesc} onChange={(e) => setCustomDesc(e.target.value)} /></div>
               <div><label className={labelCls}>Type</label><select className={inputCls} value={customCat} onChange={(e) => setCustomCat(e.target.value as "service" | "part")}><option value="service">Service</option><option value="part">Part</option></select></div>
@@ -367,13 +410,13 @@ export function QuoteBuilder({
                 onClick={() => {
                   const price = Number(customPrice); const qty = Number(customQty) || 1;
                   if (!customDesc.trim() || Number.isNaN(price)) return;
-                  addLine({ category: customCat, description: buildLineDescription(customDesc, customInclusions), qty, unit_price: price });
+                  putLine({ category: customCat, description: buildLineDescription(customDesc, customInclusions), qty, unit_price: price });
                   setCustomDesc(""); setCustomPrice(""); setCustomQty("1"); setCustomInclusions("");
                 }}
                 className="self-end rounded-lg px-4 py-2 text-sm font-bold text-white"
                 style={{ backgroundColor: "#0F1E3A" }}
               >
-                Add line
+                {editingLine && !editingDeduction ? "Update line" : "Add line"}
               </button>
             </div>
             <div className="mt-2">
@@ -382,7 +425,8 @@ export function QuoteBuilder({
             </div>
             </div>
 
-            <div className="mt-4 border-t border-dashed border-stone-200 pt-4">
+            <div ref={dedFormRef} className={`mt-4 border-t border-dashed border-stone-200 pt-4 ${editingDeduction ? "-mx-2 rounded-lg bg-amber-50 px-2 pb-2 ring-2 ring-amber-400" : ""}`}>
+              {editingDeduction && <EditingBanner onCancel={cancelEdit} />}
               <label className={labelCls}>Discount / less</label>
               <div className="mb-2 flex w-fit overflow-hidden rounded-lg border border-stone-300">
                 {([["discount", "Discount"], ["less", "Less (part not done)"]] as const).map(([v, label]) => (
@@ -408,7 +452,7 @@ export function QuoteBuilder({
                   </div>
                 </div>
                 <button onClick={addDeduction} className="self-end rounded-lg border-2 px-4 py-2 text-sm font-bold" style={{ borderColor: "#0F1E3A", color: "#0F1E3A" }}>
-                  Add {dedKind === "discount" ? "discount" : "less"}
+                  {editingDeduction ? "Update" : "Add"} {dedKind === "discount" ? "discount" : "less"}
                 </button>
               </div>
             </div>
@@ -460,12 +504,13 @@ export function QuoteBuilder({
           <div className="max-h-80 overflow-y-auto p-4">
             {!lines.length && <div className="py-6 text-center text-sm text-stone-400">No line items yet.</div>}
             {lines.map((l) => (
-              <div key={l.key} className="flex items-start justify-between gap-2 border-b border-stone-100 py-2 text-sm">
-                <div className="min-w-0">
+              <div key={l.key} className={`flex items-start justify-between gap-2 border-b border-stone-100 py-2 text-sm ${editingKey === l.key ? "-mx-2 rounded bg-amber-50 px-2" : ""}`}>
+                <button type="button" onClick={() => startEdit(l)} title="Click to edit" className="min-w-0 flex-1 text-left hover:opacity-70">
                   <div className="text-[10px] uppercase text-stone-400">{isDeduction(l) ? `deduction · ${l.category}` : `${l.category} · qty ${l.qty}`}</div>
                   <div className={`truncate ${isDeduction(l) ? "text-red-600" : ""}`}>{l.description.split("\n")[0]}</div>
                   {l.description.includes("\n") && <div className="whitespace-pre-line pl-2 text-xs text-stone-500">{l.description.split("\n").slice(1).join("\n")}</div>}
-                </div>
+                  <div className="text-[10px] font-semibold text-amber-600">{editingKey === l.key ? "Editing…" : "Tap to edit"}</div>
+                </button>
                 <div className="flex shrink-0 items-center gap-2">
                   <div className={`font-mono ${isDeduction(l) ? "text-red-600" : ""}`}>{pesoSigned(l.qty * l.unit_price)}</div>
                   <button onClick={() => removeLine(l.key)} className="text-red-500" aria-label="Remove">×</button>
@@ -487,6 +532,15 @@ export function QuoteBuilder({
         </aside>
       </main>
     </>
+  );
+}
+
+function EditingBanner({ onCancel }: { onCancel: () => void }) {
+  return (
+    <div className="mb-2 flex items-center justify-between text-xs font-semibold text-amber-700">
+      <span>Editing a saved line — change it below, then tap Update.</span>
+      <button type="button" onClick={onCancel} className="rounded border border-amber-300 bg-white px-2 py-0.5 text-amber-700">Cancel</button>
+    </div>
   );
 }
 
