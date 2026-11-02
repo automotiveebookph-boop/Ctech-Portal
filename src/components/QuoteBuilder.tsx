@@ -503,8 +503,8 @@ export function QuoteBuilder({
 
             <div ref={customFormRef} className={editingLine && !editingDeduction ? "-mx-2 rounded-lg bg-amber-50 px-2 py-2 ring-2 ring-amber-400" : ""}>
             {editingLine && !editingDeduction && <EditingBanner onCancel={cancelEdit} />}
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_90px_70px_110px_auto]">
-              <div>
+            <div className="grid grid-cols-[1fr_64px_100px_auto] gap-2">
+              <div className="col-span-full">
                 <label className={labelCls}>Item / service</label>
                 <input className={inputCls} list="saved-line-items" value={customDesc} onChange={(e) => onCustomDescChange(e.target.value)} placeholder="Type an item — e.g. Brake Fluid, Coolant…" />
                 <datalist id="saved-line-items">
