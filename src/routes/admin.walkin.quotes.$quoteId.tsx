@@ -249,6 +249,9 @@ function QuoteDetailPage() {
               {billing ? "Creating bill…" : "Convert to bill"}
             </button>
           )}
+          <Link to="/admin/walkin/dispatch" search={{ quote: quote.id }} className="rounded-lg border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 hover:bg-stone-50">
+            Send to technician
+          </Link>
           <button onClick={downloadPdf} className="rounded-lg border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 hover:bg-stone-50">
             Print / Save as PDF
           </button>

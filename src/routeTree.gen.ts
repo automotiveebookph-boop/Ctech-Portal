@@ -42,6 +42,7 @@ import { Route as AdminWalkinIndexRouteImport } from './routes/admin.walkin.inde
 import { Route as AdminWalkinAppointmentsRouteImport } from './routes/admin.walkin.appointments'
 import { Route as AdminWalkinBillsRouteImport } from './routes/admin.walkin.bills'
 import { Route as AdminWalkinCustomersRouteImport } from './routes/admin.walkin.customers'
+import { Route as AdminWalkinDispatchRouteImport } from './routes/admin.walkin.dispatch'
 import { Route as AdminWalkinHomeServiceRouteImport } from './routes/admin.walkin.home-service'
 import { Route as AdminWalkinItemsRouteImport } from './routes/admin.walkin.items'
 import { Route as AdminWalkinQuotesRouteImport } from './routes/admin.walkin.quotes'
@@ -223,6 +224,11 @@ const AdminWalkinCustomersRoute = AdminWalkinCustomersRouteImport.update({
   path: '/customers',
   getParentRoute: () => AdminWalkinRoute,
 } as any)
+const AdminWalkinDispatchRoute = AdminWalkinDispatchRouteImport.update({
+  id: '/dispatch',
+  path: '/dispatch',
+  getParentRoute: () => AdminWalkinRoute,
+} as any)
 const AdminWalkinHomeServiceRoute = AdminWalkinHomeServiceRouteImport.update({
   id: '/home-service',
   path: '/home-service',
@@ -337,6 +343,7 @@ export interface FileRoutesByFullPath {
   '/admin/walkin/appointments': typeof AdminWalkinAppointmentsRoute
   '/admin/walkin/bills': typeof AdminWalkinBillsRouteWithChildren
   '/admin/walkin/customers': typeof AdminWalkinCustomersRouteWithChildren
+  '/admin/walkin/dispatch': typeof AdminWalkinDispatchRoute
   '/admin/walkin/home-service': typeof AdminWalkinHomeServiceRoute
   '/admin/walkin/items': typeof AdminWalkinItemsRoute
   '/admin/walkin/quotes': typeof AdminWalkinQuotesRouteWithChildren
@@ -385,6 +392,7 @@ export interface FileRoutesByTo {
   '/admin/walkin/appointments': typeof AdminWalkinAppointmentsRoute
   '/admin/walkin/bills': typeof AdminWalkinBillsRouteWithChildren
   '/admin/walkin/customers': typeof AdminWalkinCustomersRouteWithChildren
+  '/admin/walkin/dispatch': typeof AdminWalkinDispatchRoute
   '/admin/walkin/home-service': typeof AdminWalkinHomeServiceRoute
   '/admin/walkin/items': typeof AdminWalkinItemsRoute
   '/admin/walkin/quotes': typeof AdminWalkinQuotesRouteWithChildren
@@ -436,6 +444,7 @@ export interface FileRoutesById {
   '/admin/walkin/appointments': typeof AdminWalkinAppointmentsRoute
   '/admin/walkin/bills': typeof AdminWalkinBillsRouteWithChildren
   '/admin/walkin/customers': typeof AdminWalkinCustomersRouteWithChildren
+  '/admin/walkin/dispatch': typeof AdminWalkinDispatchRoute
   '/admin/walkin/home-service': typeof AdminWalkinHomeServiceRoute
   '/admin/walkin/items': typeof AdminWalkinItemsRoute
   '/admin/walkin/quotes': typeof AdminWalkinQuotesRouteWithChildren
@@ -488,6 +497,7 @@ export interface FileRouteTypes {
     | '/admin/walkin/appointments'
     | '/admin/walkin/bills'
     | '/admin/walkin/customers'
+    | '/admin/walkin/dispatch'
     | '/admin/walkin/home-service'
     | '/admin/walkin/items'
     | '/admin/walkin/quotes'
@@ -536,6 +546,7 @@ export interface FileRouteTypes {
     | '/admin/walkin/appointments'
     | '/admin/walkin/bills'
     | '/admin/walkin/customers'
+    | '/admin/walkin/dispatch'
     | '/admin/walkin/home-service'
     | '/admin/walkin/items'
     | '/admin/walkin/quotes'
@@ -586,6 +597,7 @@ export interface FileRouteTypes {
     | '/admin/walkin/appointments'
     | '/admin/walkin/bills'
     | '/admin/walkin/customers'
+    | '/admin/walkin/dispatch'
     | '/admin/walkin/home-service'
     | '/admin/walkin/items'
     | '/admin/walkin/quotes'
@@ -854,6 +866,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminWalkinCustomersRouteImport
       parentRoute: typeof AdminWalkinRoute
     }
+    '/admin/walkin/dispatch': {
+      id: '/admin/walkin/dispatch'
+      path: '/dispatch'
+      fullPath: '/admin/walkin/dispatch'
+      preLoaderRoute: typeof AdminWalkinDispatchRouteImport
+      parentRoute: typeof AdminWalkinRoute
+    }
     '/admin/walkin/home-service': {
       id: '/admin/walkin/home-service'
       path: '/home-service'
@@ -1018,6 +1037,7 @@ interface AdminWalkinRouteChildren {
   AdminWalkinAppointmentsRoute: typeof AdminWalkinAppointmentsRoute
   AdminWalkinBillsRoute: typeof AdminWalkinBillsRouteWithChildren
   AdminWalkinCustomersRoute: typeof AdminWalkinCustomersRouteWithChildren
+  AdminWalkinDispatchRoute: typeof AdminWalkinDispatchRoute
   AdminWalkinHomeServiceRoute: typeof AdminWalkinHomeServiceRoute
   AdminWalkinItemsRoute: typeof AdminWalkinItemsRoute
   AdminWalkinQuotesRoute: typeof AdminWalkinQuotesRouteWithChildren
@@ -1032,6 +1052,7 @@ const AdminWalkinRouteChildren: AdminWalkinRouteChildren = {
   AdminWalkinAppointmentsRoute: AdminWalkinAppointmentsRoute,
   AdminWalkinBillsRoute: AdminWalkinBillsRouteWithChildren,
   AdminWalkinCustomersRoute: AdminWalkinCustomersRouteWithChildren,
+  AdminWalkinDispatchRoute: AdminWalkinDispatchRoute,
   AdminWalkinHomeServiceRoute: AdminWalkinHomeServiceRoute,
   AdminWalkinItemsRoute: AdminWalkinItemsRoute,
   AdminWalkinQuotesRoute: AdminWalkinQuotesRouteWithChildren,

@@ -7,6 +7,7 @@ import { peso } from "@/lib/fleet-utils";
 import { OIL_CHANGE_INCLUSIONS, PMS_INCLUSIONS, parsePackage, type PackageInfo } from "@/lib/packages";
 import { publicBillUrl } from "@/lib/quotation-message";
 import { bluetoothSupported, buildReceipt, connectedPrinterName, forgetPrinter, printBluetooth, rawbtUrl, type ReceiptData } from "@/lib/thermal-print";
+import { ACTIVE_JOB_STATUSES, fmtJobDate, JOB_STATUS_LABEL, JOB_STATUS_STYLE, type TechJob } from "@/lib/tech-jobs";
 
 export const Route = createFileRoute("/tech")({
   head: () => ({ meta: [{ title: "Home Service — C-Tech Automotive" }] }),
@@ -35,9 +36,12 @@ let lineKey = 1;
 
 function TechApp() {
   const navigate = useNavigate();
-  const [me, setMe] = useState<{ staffId: string | null; name: string } | null>(null);
+  const [me, setMe] = useState<{ staffId: string | null; name: string; isAdmin: boolean } | null>(null);
   const [view, setView] = useState<"home" | "job" | "pay" | "done">("home");
   const [bookings, setBookings] = useState<Booking[]>([]);
+  // Job orders the office dispatched to this technician (admins see everyone's).
+  const [myJobs, setMyJobs] = useState<TechJob[]>([]);
+  const [currentJob, setCurrentJob] = useState<TechJob | null>(null);
   const [myBills, setMyBills] = useState<MyBill[]>([]);
   const [packages, setPackages] = useState<{ item: CatalogItem; pkg: PackageInfo }[]>([]);
   const [common, setCommon] = useState<Saved[]>([]);
@@ -103,7 +107,7 @@ function TechApp() {
       const { data: role } = await supabaseFleet.from("user_roles").select("role").eq("user_id", user.id).maybeSingle();
       if (role?.role !== "technician" && role?.role !== "admin") { navigate({ to: "/login" }); return; }
       const { data: staff } = await supabaseFleet.from("staff").select("id, full_name").ilike("email", user.email ?? "").maybeSingle();
-      setMe({ staffId: staff?.id ?? null, name: staff?.full_name ?? user.email ?? "Technician" });
+      setMe({ staffId: staff?.id ?? null, name: staff?.full_name ?? user.email ?? "Technician", isAdmin: role?.role === "admin" });
       const [{ data: cat }, { data: past }] = await Promise.all([
         supabaseFleet.from("service_pricing").select("id, name, price").eq("active", true),
         supabaseFleet.from("quote_line_items").select("description, unit_price, category").gt("unit_price", 0).order("created_at", { ascending: false }).limit(2000),
@@ -125,18 +129,51 @@ function TechApp() {
 
   async function loadHome() {
     if (!me) return;
-    const [{ data: bk }, { data: bills }] = await Promise.all([
-      supabaseFleet.from("home_service_bookings").select("*").in("status", ["pending", "confirmed"]).gte("visit_date", manilaDate(0)).lte("visit_date", manilaDate(1)).order("visit_date").order("time_slot"),
+    let jobsQ = supabaseFleet.from("tech_jobs").select("*").in("status", ACTIVE_JOB_STATUSES).order("scheduled_date", { ascending: true, nullsFirst: false }).order("time_slot");
+    if (!me.isAdmin) jobsQ = jobsQ.eq("assigned_to", me.staffId ?? "00000000-0000-0000-0000-000000000000");
+    const [{ data: jobs }, { data: bk }, { data: bills }] = await Promise.all([
+      jobsQ,
+      // Unassigned online bookings: admins only — technicians work from what's dispatched to them.
+      me.isAdmin
+        ? supabaseFleet.from("home_service_bookings").select("*").in("status", ["pending", "confirmed"]).gte("visit_date", manilaDate(0)).lte("visit_date", manilaDate(1)).order("visit_date").order("time_slot")
+        : Promise.resolve({ data: [] }),
       me.staffId
         ? supabaseFleet.from("bills").select("id, bill_no, client_name, total_amount, amount_paid, created_at").eq("prepared_by", me.staffId).neq("status", "void").gte("created_at", `${manilaDate(0)}T00:00:00+08:00`).order("created_at", { ascending: false })
         : Promise.resolve({ data: [] }),
     ]);
-    setBookings((bk ?? []) as Booking[]);
+    const jobList = (jobs ?? []) as TechJob[];
+    setMyJobs(jobList);
+    const dispatched = new Set(jobList.map((j) => j.home_service_booking_id));
+    setBookings(((bk ?? []) as Booking[]).filter((b) => !dispatched.has(b.id)));
     setMyBills((bills ?? []) as MyBill[]);
   }
   useEffect(() => { if (view === "home") void loadHome(); }, [me, view]);
+  // New jobs from the office show up without the tech having to reload.
+  useEffect(() => {
+    if (view !== "home") return;
+    const refresh = () => void loadHome();
+    const t = setInterval(refresh, 60000);
+    window.addEventListener("focus", refresh);
+    return () => { clearInterval(t); window.removeEventListener("focus", refresh); };
+  }, [me, view]);
+
+  async function setJobStatus(j: TechJob, status: TechJob["status"]) {
+    const stamp = status === "accepted" ? { accepted_at: new Date().toISOString() } : status === "in_progress" ? { started_at: new Date().toISOString() } : {};
+    const { error } = await supabaseFleet.from("tech_jobs").update({ status, ...stamp }).eq("id", j.id);
+    if (error) { toast.error(error.message); return false; }
+    return true;
+  }
+
+  async function startTechJob(j: TechJob) {
+    if (j.status !== "in_progress" && !(await setJobStatus(j, "in_progress"))) return;
+    startJob(null);
+    setCurrentJob({ ...j, status: "in_progress" });
+    setClient(j.client_name); setPhone(j.client_contact ?? ""); setVehicle(j.vehicle_description ?? ""); setPlate(j.plate_number ?? "");
+    setLines(j.planned_items.filter((i) => i.title).map((i) => ({ key: lineKey++, title: i.title, category: i.category, qty: i.qty, price: i.price, service_pricing_id: i.service_pricing_id ?? null })));
+  }
 
   function startJob(b: Booking | null) {
+    setCurrentJob(null);
     setBooking(b);
     setClient(b?.name ?? ""); setPhone(b?.contact ?? ""); setVehicle(b?.vehicle ?? "");
     setPlate(""); setKm(""); setLines([]); setOtherName(""); setOtherPrice("");
@@ -169,7 +206,8 @@ function TechApp() {
     const details = detailsText();
     setSaving(true);
     try {
-      const place = [booking?.barangay, booking?.municipality].filter(Boolean).join(", ");
+      const place = currentJob?.address || [booking?.barangay, booking?.municipality].filter(Boolean).join(", ");
+      const bookingId = booking?.id ?? currentJob?.home_service_booking_id ?? null;
       const { data: bill, error } = await supabaseFleet.from("bills").insert({
         client_name: client.trim(),
         client_contact: phone.trim() || null,
@@ -178,7 +216,8 @@ function TechApp() {
         odometer_km: km ? Number(km) : null,
         prepared_by: me?.staffId ?? null,
         notes: [`Home service${place ? ` — ${place}` : ""}${me ? ` · Technician: ${me.name}` : ""}`, details].filter(Boolean).join("\n"),
-        home_service_booking_id: booking?.id ?? null,
+        home_service_booking_id: bookingId,
+        tech_job_id: currentJob?.id ?? null,
         source: "home_service",
       }).select("id, bill_no").single();
       if (error) throw error;
@@ -198,7 +237,8 @@ function TechApp() {
           p_recommendation: findings.trim() || null, p_next_km: nextKmValue, p_notes: details || null });
         if (hErr) toast.error(`Saved, but not added to service history: ${hErr.message}`);
       }
-      if (booking) await supabaseFleet.from("home_service_bookings").update({ status: "completed" }).eq("id", booking.id);
+      if (bookingId) await supabaseFleet.from("home_service_bookings").update({ status: "completed" }).eq("id", bookingId);
+      if (currentJob) await supabaseFleet.from("tech_jobs").update({ status: "done", completed_at: new Date().toISOString(), bill_id: bill.id }).eq("id", currentJob.id);
 
       setReceipt({
         billId: bill.id, billNo: bill.bill_no, date: new Date(), client: client.trim(), phone: phone.trim() || null,
@@ -283,9 +323,52 @@ function TechApp() {
           </button>
 
           <section>
-            <h2 className="mb-2 font-bold" style={{ color: NAVY }}>Bookings — today &amp; tomorrow</h2>
+            <h2 className="mb-2 font-bold" style={{ color: NAVY }}>{me.isAdmin ? "All active job orders" : "My jobs"} ({myJobs.length})</h2>
+            {myJobs.length === 0 ? (
+              <div className="rounded-2xl bg-white p-5 text-center text-stone-500">No jobs assigned yet. New jobs from the office appear here.</div>
+            ) : (
+              <div className="space-y-3">
+                {myJobs.map((j) => {
+                  const tel = j.client_contact?.replace(/[^\d+]/g, "");
+                  const next = j.status === "assigned" ? { label: "Accept job", to: "accepted" as const } : j.status === "accepted" ? { label: "On the way", to: "on_the_way" as const } : null;
+                  return (
+                    <div key={j.id} className="rounded-2xl border-l-4 bg-white p-4 shadow-sm" style={{ borderLeftColor: GOLD }}>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="text-xs font-semibold text-stone-500">{j.job_no} · {j.scheduled_date === manilaDate(0) ? "Today" : j.scheduled_date === manilaDate(1) ? "Tomorrow" : fmtJobDate(j.scheduled_date)}{j.time_slot ? `, ${j.time_slot}` : ""}</div>
+                          <div className="text-lg font-bold" style={{ color: NAVY }}>{j.client_name}</div>
+                          <div className="text-sm text-stone-600">{[j.vehicle_description, j.plate_number].filter(Boolean).join(" · ")}</div>
+                          {j.address && <div className="text-sm text-stone-500">{j.address}</div>}
+                        </div>
+                        <span className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-bold ${JOB_STATUS_STYLE[j.status]}`}>{JOB_STATUS_LABEL[j.status]}</span>
+                      </div>
+                      {j.planned_items.length > 0 && (
+                        <div className="mt-2 rounded-xl bg-stone-50 p-3 text-sm text-stone-700">
+                          {j.planned_items.map((i, k) => <div key={k}>• {i.qty > 1 ? `${i.qty} × ` : ""}{i.title}</div>)}
+                        </div>
+                      )}
+                      {j.instructions && <div className="mt-2 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">📝 {j.instructions}</div>}
+                      <div className="mt-3 grid grid-cols-3 gap-2">
+                        {tel ? <a href={`tel:${tel}`} className="flex items-center justify-center gap-1 rounded-xl border-2 border-stone-200 py-3 font-semibold text-stone-700"><Phone className="h-4 w-4" /> Call</a> : <span />}
+                        {j.maps_link ? <a href={j.maps_link} target="_blank" rel="noopener" className="flex items-center justify-center gap-1 rounded-xl border-2 border-stone-200 py-3 font-semibold text-stone-700"><MapPin className="h-4 w-4" /> Map</a> : <span />}
+                        {next ? (
+                          <button onClick={() => void setJobStatus(j, next.to).then((ok) => { if (ok) void loadHome(); })} className="rounded-xl py-3 text-sm font-bold text-white" style={{ backgroundColor: NAVY }}>{next.label}</button>
+                        ) : (
+                          <button onClick={() => void startTechJob(j)} className="rounded-xl py-3 font-bold" style={{ backgroundColor: GOLD, color: NAVY }}>{j.status === "in_progress" ? "Continue" : "Start"}</button>
+                        )}
+                      </div>
+                      {next && <button onClick={() => void startTechJob(j)} className="mt-2 w-full rounded-xl py-2 text-sm font-semibold text-stone-600">Skip ahead → Start job now</button>}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+
+          <section className={me.isAdmin ? "" : "hidden"}>
+            <h2 className="mb-2 font-bold" style={{ color: NAVY }}>Unassigned bookings — today &amp; tomorrow</h2>
             {bookings.length === 0 ? (
-              <div className="rounded-2xl bg-white p-5 text-center text-stone-500">No home service bookings.</div>
+              <div className="rounded-2xl bg-white p-5 text-center text-stone-500">No unassigned home service bookings.</div>
             ) : (
               <div className="space-y-3">
                 {bookings.map((b) => (
@@ -334,6 +417,14 @@ function TechApp() {
 
       {view === "job" && (
         <main className="space-y-4 p-4">
+          {currentJob && (
+            <section className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+              <div className="font-bold">{currentJob.job_no} · from the office</div>
+              {currentJob.address && <div className="mt-1">📍 {currentJob.address}</div>}
+              {currentJob.instructions && <div className="mt-1">📝 {currentJob.instructions}</div>}
+              <div className="mt-1 text-xs text-amber-800">The planned work is already in "Work done" below — change it to match what you actually did.</div>
+            </section>
+          )}
           <section className="space-y-3 rounded-2xl bg-white p-4 shadow-sm">
             <h2 className="text-lg font-bold" style={{ color: NAVY }}>Customer &amp; car</h2>
             <div><label className={label}>Customer name *</label><input className={bigInput} value={client} onChange={(e) => setClient(e.target.value)} /></div>
