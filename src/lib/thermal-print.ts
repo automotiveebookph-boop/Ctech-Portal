@@ -19,6 +19,8 @@ export type ReceiptData = {
   method?: string | null;
   technician?: string | null;
   link?: string | null;
+  /** Multi-line job details: package checklist, oil used, next service, findings. */
+  details?: string | null;
 };
 
 const WIDTH = 32; // characters per line, 58mm paper, font A
@@ -29,6 +31,8 @@ const GS = 0x1d;
 function ascii(s: string): string {
   return s
     .replace(/₱/g, "P")
+    .replace(/✓/g, "[x]")
+    .replace(/✗/g, "[ ]")
     .replace(/[—–]/g, "-")
     .replace(/[·•]/g, "-")
     .replace(/[ñÑ]/g, (c) => (c === "ñ" ? "n" : "N"))
@@ -103,6 +107,16 @@ export function buildReceipt(r: ReceiptData): Uint8Array {
   b.line(leftRight(`Paid${r.method ? ` (${r.method})` : ""}`, money(r.paid)));
   b.bold(true).line(leftRight("BALANCE", money(Math.max(0, r.total - r.paid)))).bold(false);
   b.divider();
+  if (r.details?.trim()) {
+    b.bold(true).line("JOB DETAILS").bold(false);
+    for (const raw of r.details.trim().split("\n")) {
+      const isHeading = /:$/.test(raw.trim());
+      if (isHeading) b.bold(true);
+      for (const l of wrap(raw)) b.line(l);
+      if (isHeading) b.bold(false);
+    }
+    b.divider();
+  }
   if (r.technician) b.line(`Technician: ${r.technician}`);
   b.align("center");
   if (r.link) {

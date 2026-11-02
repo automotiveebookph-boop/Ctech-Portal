@@ -1,10 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Check, LogOut, MapPin, Minus, Phone, Plus, Printer, Send, Trash2, Wrench } from "lucide-react";
+import { ArrowLeft, Check, ClipboardCheck, LogOut, MapPin, Minus, Phone, Plus, Printer, Send, Trash2, Wrench } from "lucide-react";
 import { supabaseFleet } from "@/lib/supabase-fleet";
 import { peso } from "@/lib/fleet-utils";
-import { parsePackage, type PackageInfo } from "@/lib/packages";
+import { OIL_CHANGE_INCLUSIONS, PMS_INCLUSIONS, parsePackage, type PackageInfo } from "@/lib/packages";
 import { publicBillUrl } from "@/lib/quotation-message";
 import { bluetoothSupported, buildReceipt, connectedPrinterName, forgetPrinter, printBluetooth, rawbtUrl, type ReceiptData } from "@/lib/thermal-print";
 
@@ -57,6 +57,13 @@ function TechApp() {
   const [pkgSize, setPkgSize] = useState<string | null>(null);
   const [pkgGrade, setPkgGrade] = useState("Fully Synthetic");
 
+  // Job details (PMS / oil change checklist, oil used, next service, findings)
+  const [unchecked, setUnchecked] = useState<Record<string, boolean>>({});
+  const [oilBrand, setOilBrand] = useState("");
+  const [nextKm, setNextKm] = useState("");
+  const [nextDate, setNextDate] = useState("");
+  const [findings, setFindings] = useState("");
+
   // Payment + result
   const [method, setMethod] = useState<"cash" | "gcash" | "later">("cash");
   const [paid, setPaid] = useState("");
@@ -66,6 +73,28 @@ function TechApp() {
   const [printing, setPrinting] = useState(false);
 
   const total = lines.reduce((s, l) => s + l.qty * l.price, 0);
+  const pkgLine = lines.find((l) => parsePackage(l.title)) ?? null;
+  const jobPkg = pkgLine ? parsePackage(pkgLine.title) : null;
+  const checklist = jobPkg ? (jobPkg.type === "PMS" ? PMS_INCLUSIONS : OIL_CHANGE_INCLUSIONS) : [];
+  const viscosity = pkgLine?.title.match(/\(([^)]+)\)/)?.[1] ?? "";
+  const defaultNextKm = km ? Number(km) + 5000 : null;
+  const defaultNextDate = (() => { const d = new Date(Date.now() + 8 * 3600000); d.setMonth(d.getMonth() + 3); return d.toISOString().slice(0, 10); })();
+  const nextKmValue = nextKm ? Number(nextKm) : defaultNextKm;
+  const nextDateValue = nextDate || defaultNextDate;
+
+  // The full write-up of the job: goes on the bill notes, service history and receipt.
+  function detailsText(): string {
+    const out: string[] = [];
+    if (jobPkg) {
+      out.push(`${jobPkg.type === "PMS" ? "PMS" : "Oil change"} checklist:`);
+      for (const item of checklist) out.push(`${unchecked[item] ? "✗" : "✓"} ${item}${unchecked[item] ? " (not done)" : ""}`);
+      out.push(`Oil used: ${[oilBrand.trim(), `${jobPkg.liters}L`, jobPkg.grade, viscosity].filter(Boolean).join(" ")}`);
+    }
+    const nd = new Date(nextDateValue + "T00:00:00").toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" });
+    if (jobPkg || km) out.push(`Next ${jobPkg?.type === "Oil Change" ? "oil change" : "PMS"}: ${nextKmValue ? `${nextKmValue.toLocaleString()} km or ` : ""}${nd}, whichever comes first`);
+    if (findings.trim()) out.push(`Findings / recommendations: ${findings.trim()}`);
+    return out.join("\n");
+  }
 
   useEffect(() => {
     (async () => {
@@ -112,6 +141,7 @@ function TechApp() {
     setClient(b?.name ?? ""); setPhone(b?.contact ?? ""); setVehicle(b?.vehicle ?? "");
     setPlate(""); setKm(""); setLines([]); setOtherName(""); setOtherPrice("");
     setMethod("cash"); setPaid(""); setGcashRef(""); setReceipt(null);
+    setUnchecked({}); setOilBrand(""); setNextKm(""); setNextDate(""); setFindings("");
     setView("job");
     window.scrollTo(0, 0);
   }
@@ -136,6 +166,7 @@ function TechApp() {
     if (!client.trim()) { toast.error("Enter the customer's name"); setView("job"); return; }
     if (!lines.length) { toast.error("Add at least one item"); setView("job"); return; }
     const amount = method === "later" ? 0 : Number(paid || total);
+    const details = detailsText();
     setSaving(true);
     try {
       const place = [booking?.barangay, booking?.municipality].filter(Boolean).join(", ");
@@ -146,7 +177,7 @@ function TechApp() {
         plate_number: plate.trim().toUpperCase() || null,
         odometer_km: km ? Number(km) : null,
         prepared_by: me?.staffId ?? null,
-        notes: `Home service${place ? ` — ${place}` : ""}${me ? ` · Technician: ${me.name}` : ""}`,
+        notes: [`Home service${place ? ` — ${place}` : ""}${me ? ` · Technician: ${me.name}` : ""}`, details].filter(Boolean).join("\n"),
         home_service_booking_id: booking?.id ?? null,
       }).select("id, bill_no").single();
       if (error) throw error;
@@ -162,7 +193,8 @@ function TechApp() {
       }
       // Best effort: car history + PMS clock (needs a plate), and close the booking.
       if (plate.trim()) {
-        const { error: hErr } = await supabaseFleet.rpc("log_bill_to_history", { p_bill_id: bill.id, p_odometer: km ? Number(km) : null, p_job_order_no: null, p_technician: me?.name ?? null, p_plate: plate.trim() });
+        const { error: hErr } = await supabaseFleet.rpc("log_bill_to_history", { p_bill_id: bill.id, p_odometer: km ? Number(km) : null, p_job_order_no: null, p_technician: me?.name ?? null, p_plate: plate.trim(),
+          p_recommendation: findings.trim() || null, p_next_km: nextKmValue, p_notes: details || null });
         if (hErr) toast.error(`Saved, but not added to service history: ${hErr.message}`);
       }
       if (booking) await supabaseFleet.from("home_service_bookings").update({ status: "completed" }).eq("id", booking.id);
@@ -172,6 +204,7 @@ function TechApp() {
         vehicle: vehicle.trim() || null, plate: plate.trim().toUpperCase() || null, odometer: km ? Number(km) : null,
         lines: lines.map((l) => ({ title: l.title, qty: l.qty, amount: l.qty * l.price })), deductions: 0, total, paid: amount,
         method: amount > 0 ? (method === "gcash" ? "GCash" : "Cash") : null, technician: me?.name ?? null, link: publicBillUrl(bill.id),
+        details,
       });
       setView("done");
       window.scrollTo(0, 0);
@@ -184,13 +217,14 @@ function TechApp() {
 
   async function reprint(b: MyBill) {
     const { data: ls } = await supabaseFleet.from("bill_line_items").select("description, qty, unit_price, amount").eq("bill_id", b.id).order("created_at");
-    const { data: full } = await supabaseFleet.from("bills").select("client_contact, vehicle_description, plate_number, odometer_km").eq("id", b.id).single();
+    const { data: full } = await supabaseFleet.from("bills").select("client_contact, vehicle_description, plate_number, odometer_km, notes").eq("id", b.id).single();
     const rows = (ls ?? []) as { description: string; qty: number; unit_price: number; amount: number }[];
     setReceipt({
       billId: b.id, billNo: b.bill_no, date: new Date(b.created_at), client: b.client_name ?? "", phone: full?.client_contact, vehicle: full?.vehicle_description,
       plate: full?.plate_number, odometer: full?.odometer_km, lines: rows.filter((r) => r.amount >= 0).map((r) => ({ title: r.description.split("\n")[0], qty: r.qty, amount: Number(r.amount) })),
       deductions: -rows.filter((r) => r.amount < 0).reduce((s, r) => s + Number(r.amount), 0), total: Number(b.total_amount), paid: Number(b.amount_paid),
       method: null, technician: me?.name ?? null, link: publicBillUrl(b.id),
+      details: (full?.notes ?? "").split("\n").slice(1).join("\n"),
     });
     setView("done");
   }
@@ -393,6 +427,55 @@ function TechApp() {
               </div>
             )}
           </section>
+
+          <section className="space-y-4 rounded-2xl bg-white p-4 shadow-sm">
+            <h2 className="flex items-center gap-2 text-lg font-bold" style={{ color: NAVY }}><ClipboardCheck className="h-5 w-5" /> Job details</h2>
+
+            {jobPkg ? (
+              <>
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="font-semibold text-stone-700">{jobPkg.type} checklist — untick anything not done</span>
+                    <span className="text-sm font-bold" style={{ color: NAVY }}>{checklist.filter((i) => !unchecked[i]).length}/{checklist.length}</span>
+                  </div>
+                  <div className="divide-y divide-stone-100 rounded-xl border-2 border-stone-200">
+                    {checklist.map((item) => {
+                      const done = !unchecked[item];
+                      return (
+                        <button key={item} onClick={() => setUnchecked((u) => ({ ...u, [item]: done }))} className="flex w-full items-center gap-3 px-3 py-3 text-left">
+                          <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border-2 ${done ? "border-emerald-600 bg-emerald-600" : "border-stone-300 bg-white"}`}>
+                            {done && <Check className="h-5 w-5 text-white" />}
+                          </span>
+                          <span className={`text-base ${done ? "text-stone-800" : "text-stone-400 line-through"}`}>{item}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div>
+                  <label className={label}>Oil used</label>
+                  <div className="mb-2 rounded-xl bg-stone-50 px-4 py-3 text-base font-semibold" style={{ color: NAVY }}>{jobPkg.liters}L · {jobPkg.grade}{viscosity ? ` · ${viscosity}` : ""}</div>
+                  <input className={bigInput} value={oilBrand} onChange={(e) => setOilBrand(e.target.value)} placeholder="Oil brand (e.g. the brand on the bottle)" />
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-stone-500">Add a PMS or Oil Change package above to get its full checklist.</p>
+            )}
+
+            <div>
+              <label className={label}>Next {jobPkg?.type === "Oil Change" ? "oil change" : "PMS"} due</label>
+              <div className="grid grid-cols-2 gap-3">
+                <input className={bigInput} inputMode="numeric" value={nextKm} onChange={(e) => setNextKm(e.target.value.replace(/\D/g, ""))} placeholder={defaultNextKm ? `${defaultNextKm.toLocaleString()} km` : "km"} />
+                <input type="date" className={bigInput} value={nextDateValue} onChange={(e) => setNextDate(e.target.value)} />
+              </div>
+              <p className="mt-1 text-xs text-stone-500">{km ? "Suggested: +5,000 km or 3 months — change if needed." : "Enter the odometer above to suggest the next km."}</p>
+            </div>
+
+            <div>
+              <label className={label}>Findings / recommendations</label>
+              <textarea className={bigInput} rows={3} value={findings} onChange={(e) => setFindings(e.target.value)} placeholder="e.g. Front brake pads at 30%, replace next visit. (Tap 🎤 to speak)" />
+            </div>
+          </section>
         </main>
       )}
 
@@ -401,6 +484,8 @@ function TechApp() {
           <section className="rounded-2xl bg-white p-5 text-center shadow-sm">
             <div className="text-sm font-semibold text-stone-500">{client || "Customer"} · {lines.length} item{lines.length === 1 ? "" : "s"}</div>
             <div className="mt-1 text-4xl font-bold" style={{ color: NAVY }}>{peso(total)}</div>
+            {jobPkg && <div className="mt-2 text-sm text-stone-600">{jobPkg.type} checklist: {checklist.filter((i) => !unchecked[i]).length} of {checklist.length} done</div>}
+            {nextKmValue && <div className="text-sm text-stone-600">Next due: {nextKmValue.toLocaleString()} km or {new Date(nextDateValue + "T00:00:00").toLocaleDateString("en-PH", { month: "short", day: "numeric", year: "numeric" })}</div>}
           </section>
           <section className="space-y-3 rounded-2xl bg-white p-4 shadow-sm">
             <h2 className="text-lg font-bold" style={{ color: NAVY }}>Payment</h2>

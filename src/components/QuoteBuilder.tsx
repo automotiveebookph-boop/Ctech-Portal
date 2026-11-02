@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { supabaseFleet } from "@/lib/supabase-fleet";
 import { peso } from "@/lib/fleet-utils";
 import { isDeduction, pesoSigned, quoteTotals } from "@/lib/quote-lines";
-import { parsePackage, type PackageInfo } from "@/lib/packages";
+import { OIL_CHANGE_INCLUSIONS, PMS_INCLUSIONS, parsePackage, type PackageInfo } from "@/lib/packages";
 
 type CatalogItem = { id: string; category: string; name: string; price: number };
 type StaffOption = { id: string; full_name: string };
@@ -31,33 +31,6 @@ const INCLUSION_TABS: { value: InclusionType; label: string }[] = [
   { value: "custom", label: "Custom / free text" },
   { value: "pms", label: "PMS Package" },
   { value: "oil_change", label: "Oil Change Package" },
-];
-const PMS_INCLUSIONS = [
-  "Engine Oil",
-  "Oil Filter",
-  "Cabin Filter Cleaning",
-  "Air Filter Cleaning",
-  "Fluid Top-Up",
-  "Battery Health Check-Up",
-  "Labor",
-  "Brake Cleaning",
-  "Brake Cleaner",
-  "Under Chassis Check-Up",
-  "Tire Rotation (upon request)",
-  "Windshield Washer Fluid",
-  "Engine Bay Cleaning",
-  "Car Seat Cover Kit",
-  "FREE! Full System ECU Scanning",
-  "FREE! Safety Inspection",
-];
-const OIL_CHANGE_INCLUSIONS = [
-  "Engine Oil",
-  "Oil Filter",
-  "Cabin Filter Cleaning",
-  "Air Filter Cleaning",
-  "Fluid Top-Up",
-  "Battery Health Check-Up",
-  "Labor",
 ];
 
 // Sub-inclusions of a custom line are stored inside the description itself:
